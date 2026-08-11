@@ -1,0 +1,24 @@
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: agro_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: agro_rental_db
+      MYSQL_USER: agro_user
+      MYSQL_PASSWORD: agropassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  adminer:
+    image: adminer:latest
+    container_name: agro_adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mysql-db
+
+volumes:
+  mysql_data:
