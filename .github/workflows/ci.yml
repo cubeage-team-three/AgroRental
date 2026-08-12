@@ -1,3 +1,4 @@
+# CI workflow for AgroRental
 name: CI - AgroRental
 
 on:
