@@ -21,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -44,7 +44,7 @@ jobs:
         env:
           MYSQL_DATABASE: agro_rental_db
           MYSQL_USER: agro_user
-          MYSQL_PASSWORD: ci_password
+          MYSQL_PASSWORD: agropassword
           MYSQL_ROOT_PASSWORD: ci_root_password
         ports:
           - 3307:3306
@@ -72,8 +72,9 @@ jobs:
       - name: Make Maven wrapper executable
         run: chmod +x mvnw
 
-      - name: Run backend tests
-        run: ./mvnw test
-
-      - name: Build backend
-        run: ./mvnw package -DskipTests
+      - name: Run backend tests and build
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3307/agro_rental_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+          SPRING_DATASOURCE_USERNAME: agro_user
+          SPRING_DATASOURCE_PASSWORD: agropassword
+        run: ./mvnw -B verify   
