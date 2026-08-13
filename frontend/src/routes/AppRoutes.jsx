@@ -21,6 +21,8 @@ import EquipmentDetails from '../pages/farmer/EquipmentDetails';
 import BookEquipment from '../pages/farmer/BookEquipment';
 import MyBookings from '../pages/farmer/MyBookings';
 import BookingDetails from '../pages/farmer/BookingDetails';
+import CheckoutPayment from '../pages/farmer/CheckoutPayment';
+import WriteReview from '../pages/farmer/WriteReview';
 import FarmerPayments from '../pages/farmer/Payments';
 import FarmerComplaints from '../pages/farmer/Complaints';
 import FarmerNotifications from '../pages/farmer/Notifications';
@@ -82,6 +84,8 @@ function AppRoutes() {
         <Route path="book/:equipmentId" element={<BookEquipment />} />
         <Route path="bookings" element={<MyBookings />} />
         <Route path="bookings/:id" element={<BookingDetails />} />
+        <Route path="bookings/:id/pay" element={<CheckoutPayment />} />
+        <Route path="bookings/:id/review" element={<WriteReview />} />
         <Route path="payments" element={<FarmerPayments />} />
         <Route path="complaints" element={<FarmerComplaints />} />
         <Route path="notifications" element={<FarmerNotifications />} />
