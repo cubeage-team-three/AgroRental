@@ -1,5 +1,7 @@
 package com.agrorental.operator.entity;
 
+import com.agrorental.common.entity.BaseEntity;
+import com.agrorental.partner.entity.Partner;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,16 +12,12 @@ import lombok.*;
         @UniqueConstraint(columnNames = "mobile_number")
     }
 )
-@Getter
-@Setter
+@Data
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Operator {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Operator extends BaseEntity {
 
     @Column(name = "full_name", nullable = false)
     private String fullName;
@@ -46,6 +44,7 @@ public class Operator {
     private String skills;
 
     @Column(name = "password", nullable = false)
+    @ToString.Exclude
     private String password;
 
     @Column(name = "profile_photo")
@@ -55,4 +54,9 @@ public class Operator {
     @Column(name = "status", nullable = false)
     @Builder.Default
     private OperatorStatus status = OperatorStatus.PENDING;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "partner_id")
+    @ToString.Exclude
+    private Partner partner;
 }
