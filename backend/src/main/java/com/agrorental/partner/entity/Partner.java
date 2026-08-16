@@ -1,9 +1,8 @@
 package com.agrorental.partner.entity;
 
+import com.agrorental.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(
@@ -13,16 +12,12 @@ import java.time.LocalDateTime;
         @UniqueConstraint(columnNames = "email")
     }
 )
-@Getter
-@Setter
+@Data
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Partner {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Partner extends BaseEntity {
 
     @Column(name = "full_name", nullable = false)
     private String fullName;
@@ -49,34 +44,20 @@ public class Partner {
     private String panNumber;
 
     @Column(nullable = false)
+    @ToString.Exclude
     private String password;
 
     @Column(name = "profile_photo")
     private String profilePhoto;
 
     @Column(name = "otp_verified", nullable = false)
+    @Builder.Default
     private boolean otpVerified = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "verification_status", nullable = false)
+    @Builder.Default
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 
     public enum VerificationStatus {
         PENDING,

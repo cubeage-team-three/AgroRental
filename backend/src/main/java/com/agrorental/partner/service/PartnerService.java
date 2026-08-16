@@ -4,15 +4,18 @@ import com.agrorental.partner.dto.PartnerRegistrationRequest;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PartnerService {
 
     private final PartnerRepository partnerRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public PartnerService(PartnerRepository partnerRepository) {
+    public PartnerService(PartnerRepository partnerRepository, PasswordEncoder passwordEncoder) {
         this.partnerRepository = partnerRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Partner registerPartner(PartnerRegistrationRequest request) {
@@ -35,7 +38,7 @@ public class PartnerService {
                 .gstNumber(request.getGstNumber())
                 .aadhaarNumber(request.getAadhaarNumber())
                 .panNumber(request.getPanNumber())
-                .password(request.getPassword())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .profilePhoto(request.getProfilePhoto())
                 .otpVerified(false)
                 .verificationStatus(Partner.VerificationStatus.PENDING)
