@@ -1,8 +1,10 @@
 package com.agrorental.equipment.entity;
 
+import com.agrorental.common.entity.BaseEntity;
 import com.agrorental.equipment.enums.AvailabilityStatus;
 import com.agrorental.equipment.enums.EquipmentCategory;
 import com.agrorental.equipment.enums.FuelType;
+import com.agrorental.partner.entity.Partner;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -10,7 +12,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,13 +26,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Equipment {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+public class Equipment extends BaseEntity {
 
     @NotBlank(message = "Equipment name is mandatory")
     @Column(name = "name", nullable = false)
@@ -72,9 +68,11 @@ public class Equipment {
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @NotNull(message = "Partner ID is mandatory")
-    @Column(name = "partner_id", nullable = false)
-    private Long partnerId;
+    @NotNull(message = "Partner is mandatory")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "partner_id", nullable = false)
+    @ToString.Exclude
+    private Partner partner;
 
     @NotBlank(message = "Location address is mandatory")
     @Column(name = "location_address", nullable = false)
@@ -102,12 +100,6 @@ public class Equipment {
     @Builder.Default
     private Boolean isDisabled = false;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @OneToMany(mappedBy = "equipment", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
@@ -126,23 +118,5 @@ public class Equipment {
             images.remove(image);
             image.setEquipment(null);
         }
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-        if (this.availabilityStatus == null) {
-            this.availabilityStatus = AvailabilityStatus.AVAILABLE;
-        }
-        if (this.isDisabled == null) {
-            this.isDisabled = false;
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
     }
 }
