@@ -21,11 +21,12 @@ import java.util.List;
  */
 @Entity
 @Table(name = "equipment")
-@Data
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class Equipment extends BaseEntity {
 
     @NotBlank(message = "Equipment name is mandatory")
