@@ -1,5 +1,6 @@
 package com.agrorental.partner.controller;
 
+import com.agrorental.partner.dto.PartnerDashboardResponse;
 import com.agrorental.partner.dto.PartnerRegistrationRequest;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.service.PartnerService;
@@ -11,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/partners")
-@CrossOrigin(origins = "http://localhost:5173")
 public class PartnerController {
 
     private final PartnerService partnerService;
@@ -29,5 +29,14 @@ public class PartnerController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(partner);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<PartnerDashboardResponse> getPartnerDashboard(
+            @PathVariable Long id) {
+
+        return partnerService.getPartnerDashboard(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

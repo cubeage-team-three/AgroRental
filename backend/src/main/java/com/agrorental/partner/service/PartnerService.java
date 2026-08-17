@@ -6,6 +6,8 @@ import com.agrorental.partner.repository.PartnerRepository;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.agrorental.partner.dto.PartnerDashboardResponse;
+import java.util.Optional;
 
 @Service
 public class PartnerService {
@@ -46,4 +48,19 @@ public class PartnerService {
 
         return partnerRepository.save(partner);
     }
+
+    public Optional<PartnerDashboardResponse> getPartnerDashboard(Long id) {
+
+    return partnerRepository.findById(id)
+            .map(partner -> new PartnerDashboardResponse(
+                    partner.getId(),
+                    partner.getFullName(),
+                    partner.getBusinessName(),
+                    partner.getMobileNumber(),
+                    partner.getEmail(),
+                    partner.getAddress(),
+                    partner.isOtpVerified(),
+                    partner.getVerificationStatus()
+            ));
+}
 }
