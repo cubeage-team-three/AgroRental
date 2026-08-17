@@ -46,6 +46,7 @@ import OperatorEarnings from '../pages/operator/Earnings';
 import JobHistory from '../pages/operator/JobHistory';
 import OperatorRatings from '../pages/operator/Ratings';
 import OperatorNotifications from '../pages/operator/Notifications';
+import OperatorDocuments from '../pages/operator/OperatorDocuments';
 
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import ManageFarmers from '../pages/admin/ManageFarmers';
@@ -72,6 +73,8 @@ function AppRoutes() {
         <Route path="register/partner" element={<RegisterPartner />} />
         <Route path="register/operator" element={<RegisterOperator />} />
         <Route path="verify-otp" element={<VerifyOtp />} />
+        <Route path="operator/verify-otp" element={<VerifyOtp />} />
+        <Route path="operator/documents" element={<OperatorDocuments />} />
       </Route>
 
       {/* Farmer routes */}

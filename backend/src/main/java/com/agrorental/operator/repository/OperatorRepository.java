@@ -11,4 +11,8 @@ public interface OperatorRepository extends JpaRepository<Operator, Long> {
     boolean existsByMobileNumber(String mobileNumber);
 
     Optional<Operator> findByMobileNumber(String mobileNumber);
+
+    Optional<Operator> findByEmail(String email);
+
+    Optional<Operator> findByMobileNumberOrEmail(String mobileNumber, String email);
 }

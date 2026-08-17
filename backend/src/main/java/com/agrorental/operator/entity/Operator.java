@@ -55,6 +55,14 @@ public class Operator extends BaseEntity {
     @Builder.Default
     private OperatorStatus status = OperatorStatus.PENDING;
 
+    @Column(name = "mobile_verified", nullable = false)
+    @Builder.Default
+    private boolean mobileVerified = false;
+
+    @Column(name = "documents_submitted", nullable = false)
+    @Builder.Default
+    private boolean documentsSubmitted = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "partner_id")
     @ToString.Exclude
