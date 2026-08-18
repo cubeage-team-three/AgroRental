@@ -15,10 +15,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Primary domain entity representing agricultural equipment listed on AgroRental.
- * Maps strictly to requirements defined in FR-15, FR-16, FR-05, FR-06, and FR-39.
- */
 @Entity
 @Table(name = "equipment")
 @Data
@@ -54,8 +50,16 @@ public class Equipment extends BaseEntity {
     private String capacity;
 
     @NotNull(message = "Rental price is mandatory")
-    @DecimalMin(value = "0.01", message = "Rental price must be greater than zero")
-    @Column(name = "rental_price", nullable = false, precision = 12, scale = 2)
+    @DecimalMin(
+        value = "0.01",
+        message = "Rental price must be greater than zero"
+    )
+    @Column(
+        name = "rental_price",
+        nullable = false,
+        precision = 12,
+        scale = 2
+    )
     private BigDecimal rentalPrice;
 
     @NotNull(message = "Fuel type is mandatory")
@@ -64,7 +68,11 @@ public class Equipment extends BaseEntity {
     private FuelType fuelType;
 
     @NotBlank(message = "Description is mandatory")
-    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
+    @Column(
+        name = "description",
+        nullable = false,
+        columnDefinition = "TEXT"
+    )
     private String description;
 
     @NotNull(message = "Partner is mandatory")
@@ -89,7 +97,8 @@ public class Equipment extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "availability_status", nullable = false)
     @Builder.Default
-    private AvailabilityStatus availabilityStatus = AvailabilityStatus.AVAILABLE;
+    private AvailabilityStatus availabilityStatus =
+            AvailabilityStatus.AVAILABLE;
 
     @Column(name = "maintenance_notes")
     private String maintenanceNotes;
@@ -99,7 +108,11 @@ public class Equipment extends BaseEntity {
     @Builder.Default
     private Boolean isDisabled = false;
 
-    @OneToMany(mappedBy = "equipment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(
+        mappedBy = "equipment",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
     @Builder.Default
     @ToString.Exclude
     private List<EquipmentImage> images = new ArrayList<>();
@@ -108,6 +121,7 @@ public class Equipment extends BaseEntity {
         if (images == null) {
             images = new ArrayList<>();
         }
+
         images.add(image);
         image.setEquipment(this);
     }

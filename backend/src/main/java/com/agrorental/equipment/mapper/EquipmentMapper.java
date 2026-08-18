@@ -11,20 +11,19 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Spring-managed Mapper component responsible for converting between Equipment DTOs and JPA Entities.
- * Contains pure object transformation logic with zero database, service, or business dependencies.
+ * Spring-managed Mapper component responsible for converting between
+ * Equipment DTOs and JPA Entities.
  */
 @Component
 public class EquipmentMapper {
 
     /**
-     * Maps an EquipmentCreateRequest DTO and resolved Partner domain entity into a new Equipment entity.
-     *
-     * @param request Equipment creation request payload
-     * @param partner Resolved Partner entity owning the equipment
-     * @return Initialized Equipment entity
+     * Maps EquipmentCreateRequest and Partner into Equipment entity.
      */
-    public Equipment toEntity(EquipmentCreateRequest request, Partner partner) {
+    public Equipment toEntity(
+            EquipmentCreateRequest request,
+            Partner partner) {
+
         if (request == null) {
             return null;
         }
@@ -47,9 +46,13 @@ public class EquipmentMapper {
                 .isDisabled(false)
                 .build();
 
-        if (request.getImages() != null && !request.getImages().isEmpty()) {
+        if (request.getImages() != null
+                && !request.getImages().isEmpty()) {
+
             for (EquipmentImageRequest imageRequest : request.getImages()) {
+
                 EquipmentImage image = toEntity(imageRequest);
+
                 if (image != null) {
                     equipment.addImage(image);
                 }
@@ -60,30 +63,37 @@ public class EquipmentMapper {
     }
 
     /**
-     * Maps an EquipmentImageRequest DTO to an unlinked EquipmentImage entity.
-     *
-     * @param request Image request DTO
-     * @return Initialized EquipmentImage entity
+     * Maps EquipmentImageRequest to EquipmentImage entity.
      */
-    public EquipmentImage toEntity(EquipmentImageRequest request) {
+    public EquipmentImage toEntity(
+            EquipmentImageRequest request) {
+
         if (request == null) {
             return null;
         }
 
         return EquipmentImage.builder()
                 .imageUrl(request.getImageUrl())
-                .isPrimary(request.getIsPrimary() != null ? request.getIsPrimary() : false)
-                .displayOrder(request.getDisplayOrder() != null ? request.getDisplayOrder() : 0)
+                .isPrimary(
+                        request.getIsPrimary() != null
+                                ? request.getIsPrimary()
+                                : false
+                )
+                .displayOrder(
+                        request.getDisplayOrder() != null
+                                ? request.getDisplayOrder()
+                                : 0
+                )
                 .build();
     }
 
     /**
-     * Updates an existing Equipment entity with mutable fields from EquipmentUpdateRequest.
-     *
-     * @param request Equipment update request DTO
-     * @param equipment Existing Equipment entity to be modified
+     * Updates an existing Equipment entity.
      */
-    public void updateEntity(EquipmentUpdateRequest request, Equipment equipment) {
+    public void updateEntity(
+            EquipmentUpdateRequest request,
+            Equipment equipment) {
+
         if (request == null || equipment == null) {
             return;
         }
@@ -92,45 +102,87 @@ public class EquipmentMapper {
         equipment.setCategory(request.getCategory());
         equipment.setBrand(request.getBrand());
         equipment.setModel(request.getModel());
-        equipment.setManufacturingYear(request.getManufacturingYear());
+        equipment.setManufacturingYear(
+                request.getManufacturingYear()
+        );
         equipment.setCapacity(request.getCapacity());
         equipment.setRentalPrice(request.getRentalPrice());
         equipment.setFuelType(request.getFuelType());
         equipment.setDescription(request.getDescription());
-        equipment.setLocationAddress(request.getLocationAddress());
+        equipment.setLocationAddress(
+                request.getLocationAddress()
+        );
         equipment.setLatitude(request.getLatitude());
         equipment.setLongitude(request.getLongitude());
 
         if (request.getAvailabilityStatus() != null) {
-            equipment.setAvailabilityStatus(request.getAvailabilityStatus());
+            equipment.setAvailabilityStatus(
+                    request.getAvailabilityStatus()
+            );
         }
+
         if (request.getMaintenanceNotes() != null) {
-            equipment.setMaintenanceNotes(request.getMaintenanceNotes());
+            equipment.setMaintenanceNotes(
+                    request.getMaintenanceNotes()
+            );
         }
+
         if (request.getIsDisabled() != null) {
-            equipment.setIsDisabled(request.getIsDisabled());
+            equipment.setIsDisabled(
+                    request.getIsDisabled()
+            );
         }
     }
 
     /**
-     * Maps an Equipment entity into a complete EquipmentResponse DTO for public API responses.
-     *
-     * @param equipment Equipment domain entity
-     * @return Populated EquipmentResponse DTO
+     * Maps Equipment entity to complete EquipmentResponse.
      */
-    public EquipmentResponse toResponse(Equipment equipment) {
+    public EquipmentResponse toResponse(
+            Equipment equipment) {
+
         if (equipment == null) {
             return null;
         }
 
-        Long partnerId = equipment.getPartner() != null ? equipment.getPartner().getId() : null;
+        Long partnerId = null;
 
-        List<EquipmentImageResponse> imageResponses = Collections.emptyList();
-        if (equipment.getImages() != null && !equipment.getImages().isEmpty()) {
-            imageResponses = equipment.getImages().stream()
-                    .sorted(java.util.Comparator.comparing(
-                            EquipmentImage::getDisplayOrder,
-                            java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+        if (equipment.getPartner() != null) {
+            partnerId = equipment.getPartner().getId();
+        }
+
+        List<EquipmentImageResponse> imageResponses =
+                Collections.emptyList();
+
+        if (equipment.getImages() != null
+                && !equipment.getImages().isEmpty()) {
+
+            imageResponses = equipment.getImages()
+                    .stream()
+
+                    // Fixed null-safety warning
+                    .sorted((image1, image2) -> {
+
+                        Integer order1 =
+                                image1.getDisplayOrder();
+
+                        Integer order2 =
+                                image2.getDisplayOrder();
+
+                        if (order1 == null && order2 == null) {
+                            return 0;
+                        }
+
+                        if (order1 == null) {
+                            return 1;
+                        }
+
+                        if (order2 == null) {
+                            return -1;
+                        }
+
+                        return order1.compareTo(order2);
+                    })
+
                     .map(this::toImageResponse)
                     .toList();
         }
@@ -141,17 +193,25 @@ public class EquipmentMapper {
                 .category(equipment.getCategory())
                 .brand(equipment.getBrand())
                 .model(equipment.getModel())
-                .manufacturingYear(equipment.getManufacturingYear())
+                .manufacturingYear(
+                        equipment.getManufacturingYear()
+                )
                 .capacity(equipment.getCapacity())
                 .rentalPrice(equipment.getRentalPrice())
                 .fuelType(equipment.getFuelType())
                 .description(equipment.getDescription())
                 .partnerId(partnerId)
-                .locationAddress(equipment.getLocationAddress())
+                .locationAddress(
+                        equipment.getLocationAddress()
+                )
                 .latitude(equipment.getLatitude())
                 .longitude(equipment.getLongitude())
-                .availabilityStatus(equipment.getAvailabilityStatus())
-                .maintenanceNotes(equipment.getMaintenanceNotes())
+                .availabilityStatus(
+                        equipment.getAvailabilityStatus()
+                )
+                .maintenanceNotes(
+                        equipment.getMaintenanceNotes()
+                )
                 .isDisabled(equipment.getIsDisabled())
                 .images(imageResponses)
                 .createdAt(equipment.getCreatedAt())
@@ -160,12 +220,11 @@ public class EquipmentMapper {
     }
 
     /**
-     * Maps an EquipmentImage entity into an EquipmentImageResponse DTO.
-     *
-     * @param image EquipmentImage domain entity
-     * @return Populated EquipmentImageResponse DTO
+     * Maps EquipmentImage entity to EquipmentImageResponse.
      */
-    public EquipmentImageResponse toImageResponse(EquipmentImage image) {
+    public EquipmentImageResponse toImageResponse(
+            EquipmentImage image) {
+
         if (image == null) {
             return null;
         }
@@ -181,25 +240,29 @@ public class EquipmentMapper {
     }
 
     /**
-     * Maps an Equipment entity into a compact EquipmentSummaryResponse DTO for card/search listings.
-     *
-     * @param equipment Equipment domain entity
-     * @return Populated EquipmentSummaryResponse DTO
+     * Maps Equipment entity to compact EquipmentSummaryResponse.
      */
-    public EquipmentSummaryResponse toSummaryResponse(Equipment equipment) {
+    public EquipmentSummaryResponse toSummaryResponse(
+            Equipment equipment) {
+
         if (equipment == null) {
             return null;
         }
 
         String primaryImageUrl = null;
-        if (equipment.getImages() != null && !equipment.getImages().isEmpty()) {
-            primaryImageUrl = equipment.getImages().stream()
-                    .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
-                    .map(EquipmentImage::getImageUrl)
-                    .findFirst()
-                    .orElse(null);
-        }
 
+        if (equipment.getImages() != null
+                && !equipment.getImages().isEmpty()) {
+
+          primaryImageUrl = equipment.getImages()
+        .stream()
+        .filter(image ->
+                Boolean.TRUE.equals(image.getIsPrimary())
+        )
+        .map(image -> image.getImageUrl())
+        .findFirst()
+        .orElse(null);
+    }
         return EquipmentSummaryResponse.builder()
                 .id(equipment.getId())
                 .name(equipment.getName())
@@ -208,10 +271,14 @@ public class EquipmentMapper {
                 .model(equipment.getModel())
                 .rentalPrice(equipment.getRentalPrice())
                 .fuelType(equipment.getFuelType())
-                .locationAddress(equipment.getLocationAddress())
+                .locationAddress(
+                        equipment.getLocationAddress()
+                )
                 .latitude(equipment.getLatitude())
                 .longitude(equipment.getLongitude())
-                .availabilityStatus(equipment.getAvailabilityStatus())
+                .availabilityStatus(
+                        equipment.getAvailabilityStatus()
+                )
                 .isDisabled(equipment.getIsDisabled())
                 .primaryImageUrl(primaryImageUrl)
                 .build();
