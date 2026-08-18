@@ -15,22 +15,11 @@ function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  let t = (key, defaultVal) => defaultVal || key;
-  let language = 'English';
-  let setLanguage = () => { };
-  let LANGUAGES = {};
-
-  try {
-    const langCtx = useLanguage();
-    if (langCtx) {
-      t = (key, defaultVal) => langCtx.t(key) !== key ? langCtx.t(key) : (defaultVal || key);
-      language = langCtx.language;
-      setLanguage = langCtx.setLanguage;
-      LANGUAGES = langCtx.LANGUAGES || {};
-    }
-  } catch (e) {
-    // Fallback if not wrapped in LanguageProvider
-  }
+  const langCtx = useLanguage();
+  const t = (key, defaultVal) => (langCtx?.t && langCtx.t(key) !== key ? langCtx.t(key) : (defaultVal || key));
+  const language = langCtx?.language || 'English';
+  const setLanguage = langCtx?.setLanguage || (() => {});
+  const LANGUAGES = langCtx?.LANGUAGES || {};
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 8);
