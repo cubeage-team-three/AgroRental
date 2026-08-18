@@ -321,6 +321,10 @@ public class EquipmentService {
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with ID: " + equipmentId));
 
+        if (equipment.getAvailabilityStatus() == AvailabilityStatus.BOOKED) {
+            throw new BadRequestException("Cannot delete equipment while it is currently booked");
+        }
+
         equipmentRepository.delete(equipment);
     }
 
@@ -336,6 +340,10 @@ public class EquipmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with ID: " + equipmentId));
 
         validateOwnership(equipment, requestingPartnerId);
+
+        if (equipment.getAvailabilityStatus() == AvailabilityStatus.BOOKED) {
+            throw new BadRequestException("Cannot delete equipment while it is currently booked");
+        }
 
         equipmentRepository.delete(equipment);
     }

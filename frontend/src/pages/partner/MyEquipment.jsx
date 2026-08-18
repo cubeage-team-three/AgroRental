@@ -19,6 +19,7 @@ function MyEquipment() {
   const fetchPartnerEquipment = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     try {
       const data = await equipmentService.getPartnerEquipment(partnerId);
       setEquipmentList(data || []);
@@ -36,12 +37,14 @@ function MyEquipment() {
 
   const handleToggleEnable = async (id, currentIsDisabled) => {
     setActionLoading(id);
+
     try {
       if (currentIsDisabled) {
         await equipmentService.enableEquipment(id, partnerId);
       } else {
         await equipmentService.disableEquipment(id, partnerId);
       }
+
       await fetchPartnerEquipment();
     } catch (err) {
       alert(err.message || 'Failed to update equipment status');
@@ -56,6 +59,7 @@ function MyEquipment() {
     }
 
     setActionLoading(id);
+
     try {
       await equipmentService.deleteEquipment(id, partnerId);
       await fetchPartnerEquipment();
@@ -74,6 +78,7 @@ function MyEquipment() {
           <h1 className="text-3xl font-bold text-green-800 tracking-tight">My Equipment Inventory</h1>
           <p className="text-gray-600 mt-1">Manage your machinery listings, rental pricing, and availability status.</p>
         </div>
+
         <button
           onClick={() => navigate('/partner/equipment/add')}
           className="px-5 py-2.5 bg-green-700 text-white font-bold rounded-xl hover:bg-green-800 transition shadow-sm text-sm flex items-center justify-center gap-2"
@@ -146,11 +151,13 @@ function MyEquipment() {
                         e.target.src = DEFAULT_EQUIPMENT_IMAGE;
                       }}
                     />
+
                     <span
                       className={`absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full border shadow-sm ${badge.badgeClass}`}
                     >
                       {badge.label}
                     </span>
+
                     {item.isDisabled && (
                       <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-md">
                         DISABLED
@@ -205,6 +212,7 @@ function MyEquipment() {
                     >
                       Edit
                     </button>
+
                     <button
                       disabled={isProcessing}
                       onClick={() => handleDelete(item.id, item.name)}

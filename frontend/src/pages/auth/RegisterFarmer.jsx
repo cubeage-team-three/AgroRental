@@ -1,10 +1,7 @@
+import Register from './Register';
+
 function RegisterFarmer() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-green-800 mb-2">Farmer Registration</h1>
-      <p className="text-gray-600">Outline here.</p>
-    </div>
-  );
+  return <Register />;
 }
 
 export default RegisterFarmer;

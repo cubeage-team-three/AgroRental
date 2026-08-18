@@ -1,9 +1,15 @@
 package com.agrorental.equipment.controller;
 
 import com.agrorental.common.dto.ApiResponse;
-import com.agrorental.equipment.dto.*;
+import com.agrorental.equipment.dto.EquipmentCreateRequest;
+import com.agrorental.equipment.dto.EquipmentResponse;
+import com.agrorental.equipment.dto.EquipmentSearchRequest;
+import com.agrorental.equipment.dto.EquipmentSummaryResponse;
+import com.agrorental.equipment.dto.EquipmentUpdateRequest;
 import com.agrorental.equipment.service.EquipmentService;
+
 import jakarta.validation.Valid;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -19,7 +25,12 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/equipment")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:5176"
+})
 public class EquipmentController {
 
     private final EquipmentService equipmentService;

@@ -6,6 +6,7 @@ import { EQUIPMENT_CATEGORIES, FUEL_TYPES } from '../../utils/constants';
 function AddEquipment() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
   const editId = searchParams.get('edit');
   const partnerId = localStorage.getItem('partnerId') || '1';
 
@@ -31,53 +32,60 @@ function AddEquipment() {
   const [conflictWarning, setConflictWarning] = useState(null);
 
   useEffect(() => {
-    if (editId) {
-      setFetchingEditData(true);
-      equipmentService
-        .getEquipmentById(editId)
-        .then((data) => {
-          if (data) {
-            const primaryImg = data.images && data.images.length > 0
-              ? (data.images.find((img) => img.isPrimary) || data.images[0]).imageUrl
-              : '';
+    if (!editId) return;
 
-            setFormData({
-              name: data.name || '',
-              category: data.category || 'TRACTOR',
-              brand: data.brand || '',
-              model: data.model || '',
-              manufacturingYear: data.manufacturingYear || new Date().getFullYear(),
-              capacity: data.capacity || '',
-              rentalPrice: data.rentalPrice || '',
-              fuelType: data.fuelType || 'DIESEL',
-              description: data.description || '',
-              locationAddress: data.locationAddress || '',
-              latitude: data.latitude || 18.5204,
-              longitude: data.longitude || 73.8567,
-              imageUrl: primaryImg,
-            });
-          }
-        })
-        .catch((err) => {
-          console.error('Failed to fetch equipment for editing:', err);
-          setError('Failed to load existing equipment details');
-        })
-        .finally(() => setFetchingEditData(false));
-    }
+    setFetchingEditData(true);
+
+    equipmentService
+      .getEquipmentById(editId)
+      .then((data) => {
+        if (!data) return;
+
+        const primaryImage =
+          data.images && data.images.length > 0
+            ? (data.images.find((img) => img.isPrimary) || data.images[0]).imageUrl
+            : '';
+
+        setFormData({
+          name: data.name || '',
+          category: data.category || 'TRACTOR',
+          brand: data.brand || '',
+          model: data.model || '',
+          manufacturingYear: data.manufacturingYear || new Date().getFullYear(),
+          capacity: data.capacity || '',
+          rentalPrice: data.rentalPrice || '',
+          fuelType: data.fuelType || 'DIESEL',
+          description: data.description || '',
+          locationAddress: data.locationAddress || '',
+          latitude: data.latitude || 18.5204,
+          longitude: data.longitude || 73.8567,
+          imageUrl: primaryImage,
+        });
+      })
+      .catch((err) => {
+        console.error('Failed to fetch equipment for editing:', err);
+        setError('Failed to load existing equipment details.');
+      })
+      .finally(() => {
+        setFetchingEditData(false);
+      });
   }, [editId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setLoading(true);
     setError(null);
     setConflictWarning(null);
 
-    // Form Client Validation
     if (!formData.name.trim() || !formData.brand.trim() || !formData.model.trim()) {
       setError('Please fill in all required machinery identification fields.');
       setLoading(false);
@@ -126,7 +134,9 @@ function AddEquipment() {
     } catch (err) {
       console.error('Equipment submit error:', err);
       if (err.status === 409) {
-        setConflictWarning(err.message || 'This equipment was updated by another session. Please refresh and try again.');
+        setConflictWarning(
+          err.message || 'This equipment was updated by another session. Please refresh and try again.'
+        );
       } else {
         setError(err.message || 'Failed to save equipment. Please check all fields.');
       }
@@ -158,7 +168,9 @@ function AddEquipment() {
               : 'List new farm machinery to make it available for regional rental.'}
           </p>
         </div>
+
         <button
+          type="button"
           onClick={() => navigate('/partner/equipment')}
           className="text-sm font-semibold text-gray-600 hover:text-gray-800 transition"
         >
@@ -166,17 +178,19 @@ function AddEquipment() {
         </button>
       </div>
 
-      {/* Warnings & Alerts */}
+      {/* Error Alert */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
           ⚠️ {error}
         </div>
       )}
 
+      {/* Conflict Warning */}
       {conflictWarning && (
         <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 text-amber-800 text-sm flex items-center justify-between">
           <span>⚠️ {conflictWarning}</span>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="px-3 py-1 bg-amber-700 text-white font-semibold rounded-lg hover:bg-amber-800 text-xs"
           >
@@ -187,7 +201,7 @@ function AddEquipment() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-6 shadow-sm">
-        {/* Basic Details */}
+        {/* Section 1 */}
         <div className="space-y-4">
           <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide border-b border-gray-100 pb-2">
             1. Machinery Identification
@@ -217,6 +231,7 @@ function AddEquipment() {
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
+                required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               >
                 {EQUIPMENT_CATEGORIES.map((cat) => (
@@ -308,7 +323,7 @@ function AddEquipment() {
           </div>
         </div>
 
-        {/* Pricing & Location */}
+        {/* Section 2 */}
         <div className="space-y-4">
           <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide border-b border-gray-100 pb-2">
             2. Pricing & Operational Location
@@ -373,7 +388,7 @@ function AddEquipment() {
           </div>
         </div>
 
-        {/* Media & Description */}
+        {/* Section 3 */}
         <div className="space-y-4">
           <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide border-b border-gray-100 pb-2">
             3. Media & Operational Description

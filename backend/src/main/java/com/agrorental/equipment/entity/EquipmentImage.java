@@ -6,10 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-/**
- * Domain entity representing an image asset belonging to an Equipment listing.
- * Maps strictly to requirements defined in FR-15 and FR-06.
- */
 @Entity
 @Table(name = "equipment_images")
 @Getter
@@ -43,6 +39,7 @@ public class EquipmentImage extends BaseEntity {
         if (this.isPrimary == null) {
             this.isPrimary = false;
         }
+
         if (this.displayOrder == null) {
             this.displayOrder = 0;
         }

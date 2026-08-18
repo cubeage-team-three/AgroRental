@@ -8,6 +8,7 @@ import com.agrorental.partner.entity.Partner;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -128,9 +129,9 @@ public class EquipmentMapper {
         List<EquipmentImageResponse> imageResponses = Collections.emptyList();
         if (equipment.getImages() != null && !equipment.getImages().isEmpty()) {
             imageResponses = equipment.getImages().stream()
-                    .sorted(java.util.Comparator.comparing(
+                    .sorted(Comparator.comparing(
                             EquipmentImage::getDisplayOrder,
-                            java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+                            Comparator.nullsLast(Comparator.naturalOrder())))
                     .map(this::toImageResponse)
                     .toList();
         }

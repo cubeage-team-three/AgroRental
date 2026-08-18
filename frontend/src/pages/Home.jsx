@@ -1,12 +1,42 @@
+import HeroSection from "../components/home/HeroSection";
+import StatsBanner from "../components/home/StatsBanner";
+import ServicesGrid from "../components/home/ServicesGrid";
+import BookingSteps from "../components/home/BookingSteps";
+import RoleEcosystem from "../components/home/RoleEcosystem";
+import WhatsAppBooking from "../components/home/WhatsAppBooking";
+import PricingCards from "../components/home/PricingCards";
+import PlatformCapabilities from "../components/home/PlatformCapabilities";
+import FAQSection from "../components/home/FAQSection";
+import CallToAction from "../components/home/CallToAction";
+import { Reveal } from "../components/motion/Reveal";
+
+/**
+ * Hero and StatsBanner animate on mount / on their own (parallax + counters),
+ * so they are intentionally left unwrapped. Everything below the fold gets a
+ * scroll-triggered reveal as it enters the viewport.
+ */
+const belowTheFold = [
+  ServicesGrid,
+  BookingSteps,
+  RoleEcosystem,
+  WhatsAppBooking,
+  PricingCards,
+  PlatformCapabilities,
+  FAQSection,
+  CallToAction,
+];
+
 function Home() {
   return (
-    <div className="text-center">
-      <h1 className="text-3xl font-bold text-green-800 mb-2">
-        Welcome to Agro Rental Platform
-      </h1>
-      <p className="text-gray-600">
-        Rent farm equipment from partners and operators near you.
-      </p>
+    <div>
+      <HeroSection />
+      <StatsBanner />
+
+      {belowTheFold.map((Section) => (
+        <Reveal key={Section.name} amount={0.12} duration={0.8}>
+          <Section />
+        </Reveal>
+      ))}
     </div>
   );
 }

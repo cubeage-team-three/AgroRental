@@ -12,13 +12,16 @@ import com.agrorental.equipment.repository.EquipmentRepository;
 import com.agrorental.equipment.service.EquipmentService;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -85,7 +88,10 @@ class EquipmentServiceTest {
                 .name("Mahindra 575 DI")
                 .build();
 
-        EquipmentResponse expectedResponse = EquipmentResponse.builder().id(10L).name("Mahindra 575 DI").build();
+        EquipmentResponse expectedResponse = EquipmentResponse.builder()
+                .id(10L)
+                .name("Mahindra 575 DI")
+                .build();
 
         when(partnerRepository.findById(1L)).thenReturn(Optional.of(partnerA));
         when(equipmentMapper.toEntity(request, partnerA)).thenReturn(equipmentA);
@@ -96,8 +102,11 @@ class EquipmentServiceTest {
 
         assertNotNull(actualResponse);
         assertEquals(10L, actualResponse.getId());
+        assertEquals("Mahindra 575 DI", actualResponse.getName());
+
         verify(partnerRepository).findById(1L);
         verify(equipmentRepository).save(equipmentA);
+        verify(equipmentMapper).toResponse(equipmentA);
     }
 
     @Test
@@ -116,7 +125,10 @@ class EquipmentServiceTest {
     @Test
     @DisplayName("Should return equipment by ID when exists")
     void shouldReturnEquipmentById() {
-        EquipmentResponse expectedResponse = EquipmentResponse.builder().id(10L).build();
+        EquipmentResponse expectedResponse = EquipmentResponse.builder()
+                .id(10L)
+                .name("Mahindra 575 DI")
+                .build();
 
         when(equipmentRepository.findById(10L)).thenReturn(Optional.of(equipmentA));
         when(equipmentMapper.toResponse(equipmentA)).thenReturn(expectedResponse);
@@ -125,6 +137,10 @@ class EquipmentServiceTest {
 
         assertNotNull(response);
         assertEquals(10L, response.getId());
+        assertEquals("Mahindra 575 DI", response.getName());
+
+        verify(equipmentRepository).findById(10L);
+        verify(equipmentMapper).toResponse(equipmentA);
     }
 
     @Test
@@ -133,6 +149,7 @@ class EquipmentServiceTest {
         when(equipmentRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> equipmentService.getEquipmentById(99L));
+        verify(equipmentMapper, never()).toResponse(any());
     }
 
     @Test
@@ -142,7 +159,10 @@ class EquipmentServiceTest {
                 .name("Updated Mahindra")
                 .build();
 
-        EquipmentResponse updatedResponse = EquipmentResponse.builder().id(10L).name("Updated Mahindra").build();
+        EquipmentResponse updatedResponse = EquipmentResponse.builder()
+                .id(10L)
+                .name("Updated Mahindra")
+                .build();
 
         when(equipmentRepository.findById(10L)).thenReturn(Optional.of(equipmentA));
         when(equipmentRepository.save(equipmentA)).thenReturn(equipmentA);
@@ -153,6 +173,7 @@ class EquipmentServiceTest {
         assertNotNull(response);
         assertEquals("Updated Mahindra", response.getName());
         verify(equipmentMapper).updateEntity(updateRequest, equipmentA);
+        verify(equipmentRepository).save(equipmentA);
     }
 
     @Test
@@ -201,6 +222,7 @@ class EquipmentServiceTest {
 
         assertTrue(equipmentA.getIsDisabled());
         assertTrue(result.getIsDisabled());
+        verify(equipmentRepository).save(equipmentA);
     }
 
     @Test
@@ -217,6 +239,7 @@ class EquipmentServiceTest {
 
         assertFalse(equipmentA.getIsDisabled());
         assertFalse(result.getIsDisabled());
+        verify(equipmentRepository).save(equipmentA);
     }
 
     @Test
@@ -226,14 +249,21 @@ class EquipmentServiceTest {
                 .category(EquipmentCategory.TRACTOR)
                 .build();
 
-        EquipmentSummaryResponse summary = EquipmentSummaryResponse.builder().id(10L).build();
+        EquipmentSummaryResponse summary = EquipmentSummaryResponse.builder()
+                .id(10L)
+                .name("Mahindra 575 DI")
+                .build();
 
         when(equipmentRepository.findAll(any(Specification.class))).thenReturn(List.of(equipmentA));
         when(equipmentMapper.toSummaryResponse(equipmentA)).thenReturn(summary);
 
         List<EquipmentSummaryResponse> results = equipmentService.searchEquipment(request);
 
+        assertNotNull(results);
         assertEquals(1, results.size());
+        assertEquals(10L, results.get(0).getId());
+
         verify(equipmentRepository).findAll(any(Specification.class));
+        verify(equipmentMapper).toSummaryResponse(equipmentA);
     }
 }
