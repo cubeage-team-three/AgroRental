@@ -1,12 +1,28 @@
+import HeroSection from "../components/home/HeroSection";
+import StatsBanner from "../components/home/StatsBanner";
+import ServicesGrid from "../components/home/ServicesGrid";
+import BookingSteps from "../components/home/BookingSteps";
+import RoleEcosystem from "../components/home/RoleEcosystem";
+import WhatsAppBooking from "../components/home/WhatsAppBooking";
+import PricingCards from "../components/home/PricingCards";
+import PlatformCapabilities from "../components/home/PlatformCapabilities";
+import FAQSection from "../components/home/FAQSection";
+import CallToAction from "../components/home/CallToAction";
+
 function Home() {
   return (
-    <div className="text-center">
-      <h1 className="text-3xl font-bold text-green-800 mb-2">
-        Welcome to Agro Rental Platform
-      </h1>
-      <p className="text-gray-600">
-        Rent farm equipment from partners and operators near you.
-      </p>
+    <div>
+      <HeroSection />
+      <StatsBanner />
+      <ServicesGrid />
+      <BookingSteps />
+      <RoleEcosystem />
+      <WhatsAppBooking />
+      <PricingCards />
+      <PlatformCapabilities />
+      {/* Testimonials — pending */}
+      <FAQSection />
+      <CallToAction />
     </div>
   );
 }
