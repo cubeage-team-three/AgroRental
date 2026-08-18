@@ -101,15 +101,15 @@ function RoleEcosystem() {
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(16,185,129,0.10),transparent_60%)]" />
 
-      <div className="relative mx-auto max-w-7xl px-6 py-24">
+      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:py-24">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-700">
+          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest sm:px-4 sm:text-xs text-emerald-700">
             Role-Based Architecture
           </span>
-          <h2 className="mt-5 font-display text-4xl font-bold tracking-tight text-emerald-950 sm:text-5xl">
+          <h2 className="mt-4 font-display sm:mt-5 text-3xl font-bold tracking-tight text-emerald-950 sm:text-4xl lg:text-5xl">
             Four Panels, One Ecosystem
           </h2>
-          <p className="mt-4 text-lg leading-relaxed text-slate-600">
+          <p className="mt-3 text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
             One platform, four tailored experiences — each built around what
             that role actually needs.
           </p>
@@ -125,7 +125,7 @@ function RoleEcosystem() {
                 type="button"
                 onClick={() => setActiveId(role.id)}
                 aria-pressed={isActive}
-                className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-300 ease-out hover:-translate-y-1 ${
+                className={`inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold sm:px-6 transition-all duration-300 ease-out hover:-translate-y-1 ${
                   isActive
                     ? "bg-gradient-to-r from-emerald-700 to-emerald-600 text-white shadow-lg shadow-emerald-600/30"
                     : "border border-slate-200 bg-white/70 text-slate-600 shadow-sm backdrop-blur-md hover:border-emerald-300 hover:text-emerald-800 hover:shadow-md"
@@ -139,7 +139,7 @@ function RoleEcosystem() {
         </div>
 
         {/* Panel */}
-        <div className="mt-14 rounded-[2rem] border border-white/60 bg-white/70 p-6 shadow-2xl shadow-emerald-900/10 backdrop-blur-xl sm:p-10">
+        <div className="mt-10 rounded-3xl border border-white/60 bg-white/70 p-5 shadow-2xl shadow-emerald-900/10 backdrop-blur-xl sm:rounded-[2rem] sm:p-8 lg:mt-14 lg:p-10">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeRole.id}
@@ -147,10 +147,10 @@ function RoleEcosystem() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-14"
+              className="grid grid-cols-1 items-center gap-8 md:gap-10 lg:grid-cols-2 lg:gap-14"
             >
               <div>
-                <h3 className="font-display text-3xl font-bold tracking-tight text-emerald-950">
+                <h3 className="font-display text-2xl font-bold tracking-tight text-emerald-950 sm:text-3xl">
                   {activeRole.title}
                 </h3>
 
@@ -170,7 +170,7 @@ function RoleEcosystem() {
 
                 <Link
                   to={activeRole.ctaTo}
-                  className="group mt-9 inline-flex items-center gap-2 rounded-xl bg-lime-400 px-7 py-3.5 font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-lime-300 hover:shadow-[0_0_30px_rgba(132,204,22,0.7)]"
+                  className="group mt-8 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-7 py-3.5 sm:w-auto lg:mt-9 font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-lime-300 hover:shadow-[0_0_30px_rgba(132,204,22,0.7)]"
                 >
                   {activeRole.ctaLabel}
                   <ArrowRight className="h-5 w-5 transition-transform duration-300 ease-out group-hover:translate-x-1" />

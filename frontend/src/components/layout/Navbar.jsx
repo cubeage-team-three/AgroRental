@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, ArrowRight } from 'lucide-react';
-import agroRentLogo from '../../assets/images/agrorent-logo.png';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 const navLinks = [
   { label: 'Services', href: '/#services' },
@@ -29,13 +29,34 @@ function Navbar() {
           : 'border-b border-transparent bg-white/50 backdrop-blur-md'
       }`}
     >
-      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3">
+      <nav
+        className={`mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 transition-all duration-300 ease-out sm:px-6 ${
+          isScrolled ? "py-1.5" : "py-3"
+        }`}
+      >
         <Link
           to="/"
           className="flex shrink-0 items-center transition-transform duration-300 ease-out hover:scale-105"
           onClick={() => setIsOpen(false)}
         >
-          <img src={agroRentLogo} alt="AgroRent" className="h-14 w-auto" />
+          {/*
+            The logo is a JPEG (no alpha) on a white background with generous
+            baked-in padding. The wrapper crops that dead space so the mark reads
+            larger, and the white card makes the opaque background deliberate
+            rather than a stray rectangle floating on the glass bar.
+            Swap in a transparent PNG/SVG and this card can go away.
+          */}
+          <span
+            className={`flex items-center overflow-hidden rounded-xl bg-white px-2.5 shadow-sm ring-1 ring-slate-900/5 transition-all duration-300 ease-out ${
+              isScrolled ? "h-10 sm:h-11" : "h-12 sm:h-14"
+            }`}
+          >
+            <img
+              src={agroRentLogo}
+              alt="AgroRent — Agriculture Service Marketplace"
+              className="h-[175%] w-auto max-w-none object-contain"
+            />
+          </span>
         </Link>
 
         {/* Pill nav */}
@@ -44,7 +65,7 @@ function Navbar() {
             <a
               key={link.label}
               href={link.href}
-              className="rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition-all duration-300 ease-out hover:bg-white hover:text-emerald-700 hover:shadow-sm"
+              className="inline-flex min-h-[44px] items-center rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition-all duration-300 ease-out hover:bg-white hover:text-emerald-700 hover:shadow-sm"
             >
               {link.label}
             </a>
@@ -55,13 +76,13 @@ function Navbar() {
         <div className="hidden shrink-0 items-center gap-3 md:flex">
           <Link
             to="/login"
-            className="rounded-xl border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-800 hover:shadow-md"
+            className="inline-flex min-h-[44px] items-center rounded-xl border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-800 hover:shadow-md"
           >
             Log In
           </Link>
           <Link
             to="/register"
-            className="group inline-flex items-center gap-1.5 rounded-xl bg-lime-400 px-5 py-2.5 text-sm font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-lime-300 hover:shadow-[0_0_25px_rgba(132,204,22,0.7)]"
+            className="group inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-lime-400 px-5 py-2.5 text-sm font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-lime-300 hover:shadow-[0_0_25px_rgba(132,204,22,0.7)]"
           >
             Sign Up Free
             <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
