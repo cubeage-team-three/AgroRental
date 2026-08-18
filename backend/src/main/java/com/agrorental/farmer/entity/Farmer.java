@@ -1,39 +1,5 @@
 package com.agrorental.farmer.entity;
 
-<<<<<<< HEAD
-import jakarta.persistence.*;
-import lombok.*;
-
-import java.time.LocalDateTime;
-
-@Entity
-@Table(name = "farmers")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class Farmer {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "farmer_id")
-    private Long farmerId;
-
-    @Column(name = "full_name", nullable = false, length = 100)
-    private String fullName;
-
-    @Column(name = "mobile_number", nullable = false, unique = true, length = 15)
-    private String mobileNumber;
-
-    @Column(name = "email", length = 120)
-    private String email;
-
-    @Column(name = "password")
-    private String password;
-
-    @Column(name = "preferred_language", length = 50)
-    private String preferredLanguage;
-=======
 import com.agrorental.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -93,7 +59,6 @@ public class Farmer extends BaseEntity {
     @Column(name = "preferred_language", length = 50)
     @Builder.Default
     private String preferredLanguage = "English";
->>>>>>> origin/development
 
     @Column(name = "address", length = 255)
     private String address;
@@ -101,45 +66,11 @@ public class Farmer extends BaseEntity {
     @Column(name = "profile_image", length = 255)
     private String profileImage;
 
-<<<<<<< HEAD
-=======
-    /**
-     * TODO: promote to a proper enum (e.g. FarmerAccountStatus) — currently
-     * a free-form string ("PENDING_OTP" / "ACTIVE") set in FarmerService and
-     * FarmerOtpService with no compile-time guard against typos or drift.
-     * Left as-is here since retyping it also means retyping two response
-     * DTOs and every call site; not done as a drive-by inside a conflict fix.
-     */
->>>>>>> origin/development
     @Column(name = "account_status", length = 30)
     @Builder.Default
     private String accountStatus = "PENDING_OTP";
 
-<<<<<<< HEAD
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-        if (this.accountStatus == null) {
-            this.accountStatus = "PENDING_OTP";
-        }
-        if (this.preferredLanguage == null) {
-            this.preferredLanguage = "English";
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-=======
     public Long getFarmerId() {
         return getId();
->>>>>>> origin/development
     }
 }

@@ -59,9 +59,7 @@ import ManageComplaints from '../pages/admin/ManageComplaints';
 import Reports from '../pages/admin/Reports';
 import AdminNotifications from '../pages/admin/Notifications';
 import SystemSettings from '../pages/admin/SystemSettings';
-import AuditLogs from '../pages/admin/AuditLogs';
 
-import Register from '../pages/auth/Register';
 
 function AppRoutes() {
   return (

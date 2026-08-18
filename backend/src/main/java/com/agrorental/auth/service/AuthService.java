@@ -7,20 +7,14 @@ import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.farmer.repository.FarmerRepository;
 import com.agrorental.farmer.service.FarmerOtpService;
 import com.agrorental.farmer.dto.VerifyOtpRequest;
-<<<<<<< HEAD
-=======
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
->>>>>>> origin/development
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-<<<<<<< HEAD
-=======
 import java.util.Optional;
->>>>>>> origin/development
 import java.util.UUID;
 
 @Slf4j
@@ -29,10 +23,7 @@ import java.util.UUID;
 public class AuthService {
 
     private final FarmerRepository farmerRepository;
-<<<<<<< HEAD
-=======
     private final PartnerRepository partnerRepository;
->>>>>>> origin/development
     private final FarmerOtpService farmerOtpService;
     private final PasswordEncoder passwordEncoder;
 
@@ -40,12 +31,6 @@ public class AuthService {
         String input = request.getMobileOrEmail().trim();
         log.info("Processing login request for user: {}", input);
 
-<<<<<<< HEAD
-        // Find farmer by mobile number or email using DB query
-        Farmer farmer = farmerRepository.findByMobileNumberOrEmail(input, input)
-                .orElseThrow(() -> new BadRequestException("Farmer account not found with provided mobile or email: " + input));
-
-=======
         // 1. Try finding in Farmer repository first
         Optional<Farmer> farmerOpt = farmerRepository.findByMobileNumberOrEmail(input, input);
         if (farmerOpt.isPresent()) {
@@ -66,7 +51,6 @@ public class AuthService {
     }
 
     private LoginResponse loginFarmer(Farmer farmer, LoginRequest request) {
->>>>>>> origin/development
         // Rule: Check Account Status
         if ("PENDING_OTP".equalsIgnoreCase(farmer.getAccountStatus())) {
             log.warn("Login blocked for farmer ID {}: Account is pending OTP verification", farmer.getFarmerId());
@@ -118,10 +102,6 @@ public class AuthService {
                 .message("Login successful. Welcome back, " + farmer.getFullName() + "!")
                 .build();
     }
-<<<<<<< HEAD
-}
-
-=======
 
     private LoginResponse loginPartner(Partner partner, LoginRequest request) {
         if (!partner.isActive()) {
@@ -151,4 +131,3 @@ public class AuthService {
                 .build();
     }
 }
->>>>>>> origin/development

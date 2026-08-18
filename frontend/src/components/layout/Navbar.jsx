@@ -1,13 +1,8 @@
-import { ArrowRight, Menu, X } from 'lucide-react';
+import { ArrowRight, Globe, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-<<<<<<< HEAD
-import { Menu, X, ArrowRight, Globe } from 'lucide-react';
 import agroRentLogo from '../../assets/images/agrorent-logo.png';
 import { useLanguage } from '../../context/LanguageContext';
-=======
-import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
->>>>>>> origin/development
 
 const navLinks = [
   { label: 'Services', href: '/#services' },
@@ -19,12 +14,12 @@ const navLinks = [
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  
+
   let t = (key, defaultVal) => defaultVal || key;
   let language = 'English';
-  let setLanguage = () => {};
+  let setLanguage = () => { };
   let LANGUAGES = {};
-  
+
   try {
     const langCtx = useLanguage();
     if (langCtx) {
@@ -46,16 +41,14 @@ function Navbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-300 ease-out ${
-        isScrolled
+      className={`sticky top-0 z-50 transition-all duration-300 ease-out ${isScrolled
           ? 'border-b border-slate-200/60 bg-white/75 shadow-lg shadow-emerald-900/5 backdrop-blur-xl'
           : 'border-b border-transparent bg-white/50 backdrop-blur-md'
-      }`}
+        }`}
     >
       <nav
-        className={`mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 transition-all duration-300 ease-out sm:px-6 ${
-          isScrolled ? "py-1.5" : "py-3"
-        }`}
+        className={`mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 transition-all duration-300 ease-out sm:px-6 ${isScrolled ? "py-1.5" : "py-3"
+          }`}
       >
         <Link
           to="/"
@@ -70,9 +63,8 @@ function Navbar() {
             Swap in a transparent PNG/SVG and this card can go away.
           */}
           <span
-            className={`flex items-center overflow-hidden rounded-xl bg-white px-2.5 shadow-sm ring-1 ring-slate-900/5 transition-all duration-300 ease-out ${
-              isScrolled ? "h-10 sm:h-11" : "h-12 sm:h-14"
-            }`}
+            className={`flex items-center overflow-hidden rounded-xl bg-white px-2.5 shadow-sm ring-1 ring-slate-900/5 transition-all duration-300 ease-out ${isScrolled ? "h-10 sm:h-11" : "h-12 sm:h-14"
+              }`}
           >
             <img
               src={agroRentLogo}
@@ -97,7 +89,6 @@ function Navbar() {
 
         {/* Actions */}
         <div className="hidden shrink-0 items-center gap-3 md:flex">
-<<<<<<< HEAD
           {Object.keys(LANGUAGES).length > 0 && (
             <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-xs font-semibold text-slate-700 backdrop-blur-md">
               <Globe className="h-4 w-4 text-emerald-600" />
@@ -114,9 +105,6 @@ function Navbar() {
               </select>
             </div>
           )}
-=======
-                
->>>>>>> origin/development
           <Link
             to="/login"
             className="inline-flex min-h-[44px] items-center rounded-xl border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-800 hover:shadow-md"

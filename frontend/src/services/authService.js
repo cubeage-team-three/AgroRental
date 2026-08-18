@@ -12,12 +12,9 @@ export const saveUserSession = (userData) => {
   if (userData && userData.token) {
     localStorage.setItem('agro_token', userData.token);
     localStorage.setItem('agro_user', JSON.stringify(userData));
-<<<<<<< HEAD
-=======
     if (userData.partnerId) {
       localStorage.setItem('partnerId', String(userData.partnerId));
     }
->>>>>>> origin/development
   }
 };
 
@@ -26,11 +23,6 @@ export const getCurrentUser = () => {
   return user ? JSON.parse(user) : null;
 };
 
-<<<<<<< HEAD
-export const logoutUser = () => {
-  localStorage.removeItem('agro_token');
-  localStorage.removeItem('agro_user');
-=======
 export const isPartner = () => {
   const user = getCurrentUser();
   return user && user.role === 'PARTNER';
@@ -49,5 +41,4 @@ export const logoutUser = () => {
   localStorage.removeItem('agro_token');
   localStorage.removeItem('agro_user');
   localStorage.removeItem('partnerId');
->>>>>>> origin/development
 };
