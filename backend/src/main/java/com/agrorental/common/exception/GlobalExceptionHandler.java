@@ -1,5 +1,6 @@
 package com.agrorental.common.exception;
 
+import com.agrorental.booking.exception.EquipmentNotAvailableException;
 import com.agrorental.common.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -33,6 +34,13 @@ public class GlobalExceptionHandler {
         log.warn("Bad request: {}", ex.getMessage());
         ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(EquipmentNotAvailableException.class)
+    public ResponseEntity<ApiResponse<Object>> handleEquipmentNotAvailable(EquipmentNotAvailableException ex) {
+        log.warn("Equipment not available: {}", ex.getMessage());
+        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
