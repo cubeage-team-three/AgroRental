@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../utils/constants';
+import { getAuthToken } from '../utils/auth';
 
 /**
  * Core HTTP client for executing REST requests against the Spring Boot backend.
@@ -7,9 +8,18 @@ import { API_BASE_URL } from '../utils/constants';
 export async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-  };
+  const defaultHeaders = {};
+
+  // Don't set Content-Type if uploading FormData (browser sets boundary automatically)
+  if (!(options.body instanceof FormData)) {
+    defaultHeaders['Content-Type'] = 'application/json';
+  }
+
+  // Include Bearer auth token if present
+  const token = options.token || getAuthToken();
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`;
+  }
 
   // Include X-Partner-Id header if partner context is present in options or localStorage
   const partnerId = options.partnerId || localStorage.getItem('partnerId') || '1';

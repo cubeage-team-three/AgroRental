@@ -38,10 +38,13 @@ import PartnerEarnings from '../pages/partner/Earnings';
 import PartnerReviews from '../pages/partner/Reviews';
 import PartnerNotifications from '../pages/partner/Notifications';
 
+import OperatorLanding from '../pages/operator/OperatorLanding';
 import OperatorDashboard from '../pages/operator/OperatorDashboard';
 import OperatorProfile from '../pages/operator/OperatorProfile';
 import AssignedJobs from '../pages/operator/AssignedJobs';
 import JobDetails from '../pages/operator/JobDetails';
+import ActiveJob from '../pages/operator/ActiveJob';
+import GPSCheckIn from '../pages/operator/GPSCheckIn';
 import OperatorEarnings from '../pages/operator/Earnings';
 import JobHistory from '../pages/operator/JobHistory';
 import OperatorRatings from '../pages/operator/Ratings';
@@ -64,9 +67,13 @@ import AuditLogs from '../pages/admin/AuditLogs';
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public / Auth routes */}
+      {/* Public / Landing / Auth routes */}
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
+        <Route path="operator" element={<OperatorLanding />} />
+        <Route path="operator/landing" element={<OperatorLanding />} />
+        <Route path="operator/register" element={<RegisterOperator />} />
+        <Route path="operator/login" element={<Login />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<SelectRole />} />
         <Route path="register/farmer" element={<RegisterFarmer />} />
@@ -108,12 +115,15 @@ function AppRoutes() {
         <Route path="notifications" element={<PartnerNotifications />} />
       </Route>
 
-      {/* Operator routes */}
+      {/* Operator Dashboard & Portal routes */}
       <Route path="/operator" element={<DashboardLayout />}>
         <Route path="dashboard" element={<OperatorDashboard />} />
         <Route path="profile" element={<OperatorProfile />} />
+        <Route path="documents-management" element={<OperatorDocuments />} />
         <Route path="jobs" element={<AssignedJobs />} />
         <Route path="jobs/:id" element={<JobDetails />} />
+        <Route path="work" element={<ActiveJob />} />
+        <Route path="gps" element={<GPSCheckIn />} />
         <Route path="earnings" element={<OperatorEarnings />} />
         <Route path="history" element={<JobHistory />} />
         <Route path="ratings" element={<OperatorRatings />} />

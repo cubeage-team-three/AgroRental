@@ -116,6 +116,45 @@ public class JwtTokenProvider {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
 
+    public Long getOperatorIdFromToken(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                return null;
+            }
+            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+            long opId = extractLongFromJson(payloadJson, "operatorId");
+            return opId > 0 ? opId : null;
+        } catch (Exception e) {
+            log.error("Failed to extract operatorId from token: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public String getMobileNumberFromToken(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                return null;
+            }
+            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+            return extractStringFromJson(payloadJson, "sub");
+        } catch (Exception e) {
+            log.error("Failed to extract mobileNumber from token: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private String extractStringFromJson(String json, String key) {
+        String pattern = "\"" + key + "\":\"";
+        int idx = json.indexOf(pattern);
+        if (idx == -1) return null;
+        int start = idx + pattern.length();
+        int end = json.indexOf("\"", start);
+        if (end == -1) return null;
+        return json.substring(start, end);
+    }
+
     private String escapeJson(String raw) {
         if (raw == null) return "";
         return raw.replace("\\", "\\\\").replace("\"", "\\\"");

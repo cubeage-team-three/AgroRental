@@ -31,7 +31,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/equipment/search/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/equipment/{id:[0-9]+}").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/partners/register").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/operators/register").permitAll()
+                .requestMatchers("/api/operators/**").permitAll()
                 // Protected equipment management routes
                 .requestMatchers("/api/equipment/**").authenticated()
                 .anyRequest().authenticated()
