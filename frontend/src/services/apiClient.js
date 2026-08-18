@@ -59,3 +59,10 @@ export async function request(endpoint, options = {}) {
     throw networkErr;
   }
 }
+
+export const apiClient = {
+  get: (endpoint, options) => request(endpoint, { method: 'GET', ...options }),
+  post: (endpoint, body, options) => request(endpoint, { method: 'POST', body: JSON.stringify(body), ...options }),
+  put: (endpoint, body, options) => request(endpoint, { method: 'PUT', body: JSON.stringify(body), ...options }),
+  delete: (endpoint, options) => request(endpoint, { method: 'DELETE', ...options }),
+};
