@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
@@ -86,6 +87,24 @@ public class OperatorJob extends BaseEntity {
     @Column(name = "status", nullable = false, length = 30)
     @Builder.Default
     private JobStatus status = JobStatus.PENDING_RESPONSE;
+
+    @Column(name = "traveling_at")
+    private LocalDateTime travelingAt;
+
+    @Column(name = "reached_location_at")
+    private LocalDateTime reachedLocationAt;
+
+    @Column(name = "work_started_at")
+    private LocalDateTime workStartedAt;
+
+    @Column(name = "work_paused_at")
+    private LocalDateTime workPausedAt;
+
+    @Column(name = "work_resumed_at")
+    private LocalDateTime workResumedAt;
+
+    @Column(name = "work_completed_at")
+    private LocalDateTime workCompletedAt;
 
     @Column(name = "assigned_by", length = 100)
     private String assignedBy;

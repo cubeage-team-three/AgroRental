@@ -8,14 +8,17 @@ import com.agrorental.equipment.enums.EquipmentCategory;
 import com.agrorental.equipment.repository.EquipmentRepository;
 import com.agrorental.operator.controller.OperatorJobController;
 import com.agrorental.operator.dto.JobAssignRequest;
+import com.agrorental.operator.dto.JobStatusUpdateRequest;
 import com.agrorental.operator.dto.OperatorJobResponse;
 import com.agrorental.operator.dto.OperatorJobSummaryResponse;
 import com.agrorental.operator.entity.JobStatus;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorJob;
 import com.agrorental.operator.entity.OperatorStatus;
+import com.agrorental.operator.entity.OperatorWorkMilestone;
 import com.agrorental.operator.repository.OperatorJobRepository;
 import com.agrorental.operator.repository.OperatorRepository;
+import com.agrorental.operator.repository.OperatorWorkMilestoneRepository;
 import com.agrorental.operator.service.OperatorJobService;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
@@ -30,6 +33,7 @@ import org.springframework.http.ResponseEntity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,6 +57,9 @@ public class OperatorJobTest {
     private PartnerRepository partnerRepository;
 
     @Mock
+    private OperatorWorkMilestoneRepository operatorWorkMilestoneRepository;
+
+    @Mock
     private JwtTokenProvider jwtTokenProvider;
 
     private OperatorJobService operatorJobService;
@@ -70,7 +77,8 @@ public class OperatorJobTest {
                 operatorJobRepository,
                 operatorRepository,
                 equipmentRepository,
-                partnerRepository
+                partnerRepository,
+                operatorWorkMilestoneRepository
         );
         operatorJobController = new OperatorJobController(operatorJobService, jwtTokenProvider);
 
@@ -137,6 +145,7 @@ public class OperatorJobTest {
         when(operatorRepository.existsById(10L)).thenReturn(true);
         when(operatorJobRepository.findAllByOperatorIdOrderByScheduledDateDescCreatedAtDesc(10L))
                 .thenReturn(List.of(testJob));
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(any())).thenReturn(Collections.emptyList());
 
         ResponseEntity<?> response = operatorJobController.getAssignedJobs("Bearer " + validToken, null);
 
@@ -151,6 +160,7 @@ public class OperatorJobTest {
         when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
         when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
         when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(100L)).thenReturn(Collections.emptyList());
 
         ResponseEntity<?> response = operatorJobController.getJobDetails("Bearer " + validToken, 100L);
 
@@ -164,7 +174,6 @@ public class OperatorJobTest {
     void testGetJobDetails_ForbiddenForOtherOperator() {
         when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
         when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
-        // Job 999 does not belong to operator 10
         when(operatorJobRepository.findByIdAndOperatorId(999L, 10L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> {
@@ -195,6 +204,7 @@ public class OperatorJobTest {
             saved.setId(101L);
             return saved;
         });
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(any())).thenReturn(Collections.emptyList());
 
         JobAssignRequest request = JobAssignRequest.builder()
                 .operatorId(10L)
@@ -247,6 +257,7 @@ public class OperatorJobTest {
         when(operatorJobRepository.countByOperatorIdAndStatus(10L, JobStatus.PENDING_RESPONSE)).thenReturn(3L);
         when(operatorJobRepository.countByOperatorIdAndStatus(10L, JobStatus.ACCEPTED)).thenReturn(2L);
         when(operatorJobRepository.countByOperatorIdAndStatus(10L, JobStatus.COMPLETED)).thenReturn(2L);
+        when(operatorJobRepository.countByOperatorIdAndStatus(10L, JobStatus.WORK_COMPLETED)).thenReturn(0L);
         when(operatorJobRepository.countByOperatorIdAndStatus(10L, JobStatus.REJECTED)).thenReturn(1L);
         when(operatorJobRepository.countByOperatorIdAndStatus(10L, JobStatus.CANCELLED)).thenReturn(0L);
 
@@ -263,6 +274,7 @@ public class OperatorJobTest {
         when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
         when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
         when(operatorJobRepository.save(any(OperatorJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(100L)).thenReturn(Collections.emptyList());
 
         ResponseEntity<?> response = operatorJobController.acceptJob("Bearer " + validToken, 100L);
 
@@ -270,6 +282,7 @@ public class OperatorJobTest {
         assertEquals(200, response.getStatusCode().value());
         assertEquals(JobStatus.ACCEPTED, testJob.getStatus());
         verify(operatorJobRepository, times(1)).save(testJob);
+        verify(operatorWorkMilestoneRepository, times(1)).save(any(OperatorWorkMilestone.class));
     }
 
     @Test
@@ -279,6 +292,7 @@ public class OperatorJobTest {
         when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
         when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
         when(operatorJobRepository.save(any(OperatorJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(100L)).thenReturn(Collections.emptyList());
 
         ResponseEntity<?> response = operatorJobController.rejectJob("Bearer " + validToken, 100L, "Schedule conflict with prior booking");
 
@@ -287,5 +301,222 @@ public class OperatorJobTest {
         assertEquals(JobStatus.REJECTED, testJob.getStatus());
         assertTrue(testJob.getNotes().contains("Schedule conflict"));
         verify(operatorJobRepository, times(1)).save(testJob);
+    }
+
+    // ==========================================
+    // MODULE 8 — WORK STATUS MANAGEMENT TESTS
+    // ==========================================
+
+    @Test
+    @DisplayName("Module 8: ACCEPTED -> TRAVELING status update succeeds and records travelingAt timestamp")
+    void testStatusTransition_AcceptedToTraveling_Success() {
+        testJob.setStatus(JobStatus.ACCEPTED);
+        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
+        when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
+        when(operatorJobRepository.save(any(OperatorJob.class))).thenAnswer(i -> i.getArgument(0));
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(100L)).thenReturn(Collections.emptyList());
+
+        JobStatusUpdateRequest request = JobStatusUpdateRequest.builder()
+                .status(JobStatus.TRAVELING)
+                .notes("En route to field")
+                .build();
+
+        ResponseEntity<?> response = operatorJobController.updateJobStatus("Bearer " + validToken, 100L, request);
+
+        assertNotNull(response);
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(JobStatus.TRAVELING, testJob.getStatus());
+        assertNotNull(testJob.getTravelingAt());
+        verify(operatorWorkMilestoneRepository, times(1)).save(any(OperatorWorkMilestone.class));
+    }
+
+    @Test
+    @DisplayName("Module 8: TRAVELING -> REACHED_LOCATION status update succeeds")
+    void testStatusTransition_TravelingToReachedLocation_Success() {
+        testJob.setStatus(JobStatus.TRAVELING);
+        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
+        when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
+        when(operatorJobRepository.save(any(OperatorJob.class))).thenAnswer(i -> i.getArgument(0));
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(100L)).thenReturn(Collections.emptyList());
+
+        JobStatusUpdateRequest request = JobStatusUpdateRequest.builder()
+                .status(JobStatus.REACHED_LOCATION)
+                .build();
+
+        ResponseEntity<?> response = operatorJobController.updateJobStatus("Bearer " + validToken, 100L, request);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(JobStatus.REACHED_LOCATION, testJob.getStatus());
+        assertNotNull(testJob.getReachedLocationAt());
+    }
+
+    @Test
+    @DisplayName("Module 8: REACHED_LOCATION -> WORK_STARTED status update succeeds")
+    void testStatusTransition_ReachedLocationToWorkStarted_Success() {
+        testJob.setStatus(JobStatus.REACHED_LOCATION);
+        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
+        when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
+        when(operatorJobRepository.save(any(OperatorJob.class))).thenAnswer(i -> i.getArgument(0));
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(100L)).thenReturn(Collections.emptyList());
+
+        JobStatusUpdateRequest request = JobStatusUpdateRequest.builder()
+                .status(JobStatus.WORK_STARTED)
+                .build();
+
+        ResponseEntity<?> response = operatorJobController.updateJobStatus("Bearer " + validToken, 100L, request);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(JobStatus.WORK_STARTED, testJob.getStatus());
+        assertNotNull(testJob.getWorkStartedAt());
+    }
+
+    @Test
+    @DisplayName("Module 8: WORK_STARTED -> WORK_PAUSED status update succeeds")
+    void testStatusTransition_WorkStartedToWorkPaused_Success() {
+        testJob.setStatus(JobStatus.WORK_STARTED);
+        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
+        when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
+        when(operatorJobRepository.save(any(OperatorJob.class))).thenAnswer(i -> i.getArgument(0));
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(100L)).thenReturn(Collections.emptyList());
+
+        JobStatusUpdateRequest request = JobStatusUpdateRequest.builder()
+                .status(JobStatus.WORK_PAUSED)
+                .notes("Refueling machinery")
+                .build();
+
+        ResponseEntity<?> response = operatorJobController.updateJobStatus("Bearer " + validToken, 100L, request);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(JobStatus.WORK_PAUSED, testJob.getStatus());
+        assertNotNull(testJob.getWorkPausedAt());
+    }
+
+    @Test
+    @DisplayName("Module 8: WORK_PAUSED -> WORK_RESUMED status update succeeds")
+    void testStatusTransition_WorkPausedToWorkResumed_Success() {
+        testJob.setStatus(JobStatus.WORK_PAUSED);
+        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
+        when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
+        when(operatorJobRepository.save(any(OperatorJob.class))).thenAnswer(i -> i.getArgument(0));
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(100L)).thenReturn(Collections.emptyList());
+
+        JobStatusUpdateRequest request = JobStatusUpdateRequest.builder()
+                .status(JobStatus.WORK_RESUMED)
+                .build();
+
+        ResponseEntity<?> response = operatorJobController.updateJobStatus("Bearer " + validToken, 100L, request);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(JobStatus.WORK_RESUMED, testJob.getStatus());
+        assertNotNull(testJob.getWorkResumedAt());
+    }
+
+    @Test
+    @DisplayName("Module 8: WORK_RESUMED -> WORK_COMPLETED status update succeeds")
+    void testStatusTransition_WorkResumedToWorkCompleted_Success() {
+        testJob.setStatus(JobStatus.WORK_RESUMED);
+        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
+        when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
+        when(operatorJobRepository.save(any(OperatorJob.class))).thenAnswer(i -> i.getArgument(0));
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(100L)).thenReturn(Collections.emptyList());
+
+        JobStatusUpdateRequest request = JobStatusUpdateRequest.builder()
+                .status(JobStatus.WORK_COMPLETED)
+                .notes("Plowing completed for 10 acres")
+                .build();
+
+        ResponseEntity<?> response = operatorJobController.updateJobStatus("Bearer " + validToken, 100L, request);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(JobStatus.WORK_COMPLETED, testJob.getStatus());
+        assertNotNull(testJob.getWorkCompletedAt());
+    }
+
+    @Test
+    @DisplayName("Module 8: Direct WORK_STARTED -> WORK_COMPLETED without pausing succeeds")
+    void testStatusTransition_WorkStartedToWorkCompleted_Success() {
+        testJob.setStatus(JobStatus.WORK_STARTED);
+        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
+        when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
+        when(operatorJobRepository.save(any(OperatorJob.class))).thenAnswer(i -> i.getArgument(0));
+        when(operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(100L)).thenReturn(Collections.emptyList());
+
+        JobStatusUpdateRequest request = JobStatusUpdateRequest.builder()
+                .status(JobStatus.WORK_COMPLETED)
+                .build();
+
+        ResponseEntity<?> response = operatorJobController.updateJobStatus("Bearer " + validToken, 100L, request);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(JobStatus.WORK_COMPLETED, testJob.getStatus());
+        assertNotNull(testJob.getWorkCompletedAt());
+    }
+
+    @Test
+    @DisplayName("Module 8: Invalid status jump is rejected with BadRequestException")
+    void testStatusTransition_InvalidJump_Rejected() {
+        testJob.setStatus(JobStatus.ACCEPTED);
+        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
+        when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
+
+        // Invalid: ACCEPTED -> WORK_STARTED (must go to TRAVELING first)
+        JobStatusUpdateRequest invalidRequest1 = JobStatusUpdateRequest.builder()
+                .status(JobStatus.WORK_STARTED)
+                .build();
+
+        assertThrows(BadRequestException.class, () -> {
+            operatorJobController.updateJobStatus("Bearer " + validToken, 100L, invalidRequest1);
+        });
+
+        // Invalid: ACCEPTED -> WORK_COMPLETED
+        JobStatusUpdateRequest invalidRequest2 = JobStatusUpdateRequest.builder()
+                .status(JobStatus.WORK_COMPLETED)
+                .build();
+
+        assertThrows(BadRequestException.class, () -> {
+            operatorJobController.updateJobStatus("Bearer " + validToken, 100L, invalidRequest2);
+        });
+    }
+
+    @Test
+    @DisplayName("Module 8: WORK_COMPLETED cannot transition to other active states")
+    void testStatusTransition_CompletedCannotTransition() {
+        testJob.setStatus(JobStatus.WORK_COMPLETED);
+        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
+        when(operatorJobRepository.findByIdAndOperatorId(100L, 10L)).thenReturn(Optional.of(testJob));
+
+        JobStatusUpdateRequest invalidRequest = JobStatusUpdateRequest.builder()
+                .status(JobStatus.WORK_STARTED)
+                .build();
+
+        assertThrows(BadRequestException.class, () -> {
+            operatorJobController.updateJobStatus("Bearer " + validToken, 100L, invalidRequest);
+        });
+    }
+
+    @Test
+    @DisplayName("Module 8: Tenant isolation - Operator cannot update another operator's job")
+    void testStatusTransition_ForbiddenForOtherOperator() {
+        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenProvider.getOperatorIdFromToken(validToken)).thenReturn(10L);
+        // Job 999 does not belong to operator 10
+        when(operatorJobRepository.findByIdAndOperatorId(999L, 10L)).thenReturn(Optional.empty());
+
+        JobStatusUpdateRequest request = JobStatusUpdateRequest.builder()
+                .status(JobStatus.TRAVELING)
+                .build();
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            operatorJobController.updateJobStatus("Bearer " + validToken, 999L, request);
+        });
     }
 }

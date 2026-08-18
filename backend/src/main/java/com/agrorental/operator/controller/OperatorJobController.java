@@ -96,6 +96,20 @@ public class OperatorJobController {
         return ResponseEntity.ok(ApiResponse.success("Job rejected successfully", response));
     }
 
+    @PutMapping("/{id}/status")
+    public ResponseEntity<ApiResponse<OperatorJobResponse>> updateJobStatus(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @PathVariable("id") Long id,
+            @Valid @RequestBody com.agrorental.operator.dto.JobStatusUpdateRequest request) {
+
+        Long operatorId = extractOperatorIdFromHeader(authHeader);
+        OperatorJobResponse response = operatorJobService.updateJobStatus(
+                operatorId, id, request.getStatus(), request.getNotes());
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Job status updated to " + response.getStatus(), response));
+    }
+
     private Long extractOperatorIdFromHeader(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new BadRequestException("Unauthorized: Missing or invalid Bearer authentication token");

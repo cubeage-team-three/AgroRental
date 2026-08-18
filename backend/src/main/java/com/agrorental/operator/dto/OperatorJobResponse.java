@@ -59,6 +59,17 @@ public class OperatorJobResponse {
     private String assignedBy;
     private String notes;
 
+    // Milestone Timestamps
+    private LocalDateTime travelingAt;
+    private LocalDateTime reachedLocationAt;
+    private LocalDateTime workStartedAt;
+    private LocalDateTime workPausedAt;
+    private LocalDateTime workResumedAt;
+    private LocalDateTime workCompletedAt;
+
+    // Milestone History Audit Trail
+    private java.util.List<OperatorWorkMilestoneResponse> milestones;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

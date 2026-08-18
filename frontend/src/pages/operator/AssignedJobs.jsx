@@ -131,19 +131,55 @@ function AssignedJobs() {
             ✓ Accepted
           </span>
         );
+      case "TRAVELING":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+            🚜 Traveling
+          </span>
+        );
+      case "REACHED_LOCATION":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-lime-100 text-lime-950 border border-lime-400 text-xs font-bold rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-lime-600"></span>
+            📍 Reached Location
+          </span>
+        );
+      case "WORK_STARTED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-900 text-lime-300 border border-emerald-800 text-xs font-bold rounded-full shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse"></span>
+            ⚡ Work In Progress
+          </span>
+        );
+      case "WORK_PAUSED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-200 text-amber-950 border border-amber-400 text-xs font-bold rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-800"></span>
+            ⏸️ Work Paused
+          </span>
+        );
+      case "WORK_RESUMED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-900 text-lime-300 border border-emerald-800 text-xs font-bold rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse"></span>
+            🔄 Work Resumed
+          </span>
+        );
+      case "WORK_COMPLETED":
+      case "COMPLETED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-900 border border-blue-300 text-xs font-bold rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+            🎉 Completed
+          </span>
+        );
       case "PENDING_RESPONSE":
       case "ASSIGNED":
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
             ⏳ Pending Response
-          </span>
-        );
-      case "COMPLETED":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-900 border border-blue-300 text-xs font-bold rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-            🎉 Completed
           </span>
         );
       case "REJECTED":
@@ -474,6 +510,17 @@ function AssignedJobs() {
                         ✕ Decline
                       </button>
                     </>
+                  )}
+
+                  {/* Module 8 Track Duty Button for Active Jobs */}
+                  {["ACCEPTED", "TRAVELING", "REACHED_LOCATION", "WORK_STARTED", "WORK_PAUSED", "WORK_RESUMED"].includes(job.status) && (
+                    <Link
+                      to={`/operator/work?jobId=${job.id}`}
+                      className="bg-lime-400 hover:bg-lime-300 text-emerald-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-1.5"
+                    >
+                      <span>⚡</span>
+                      <span>Duty Tracker</span>
+                    </Link>
                   )}
 
                   <Link

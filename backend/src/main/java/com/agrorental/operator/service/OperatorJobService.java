@@ -7,17 +7,21 @@ import com.agrorental.equipment.repository.EquipmentRepository;
 import com.agrorental.operator.dto.JobAssignRequest;
 import com.agrorental.operator.dto.OperatorJobResponse;
 import com.agrorental.operator.dto.OperatorJobSummaryResponse;
+import com.agrorental.operator.dto.OperatorWorkMilestoneResponse;
 import com.agrorental.operator.entity.JobStatus;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorJob;
+import com.agrorental.operator.entity.OperatorWorkMilestone;
 import com.agrorental.operator.repository.OperatorJobRepository;
 import com.agrorental.operator.repository.OperatorRepository;
+import com.agrorental.operator.repository.OperatorWorkMilestoneRepository;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,16 +33,19 @@ public class OperatorJobService {
     private final OperatorRepository operatorRepository;
     private final EquipmentRepository equipmentRepository;
     private final PartnerRepository partnerRepository;
+    private final OperatorWorkMilestoneRepository operatorWorkMilestoneRepository;
 
     public OperatorJobService(
             OperatorJobRepository operatorJobRepository,
             OperatorRepository operatorRepository,
             EquipmentRepository equipmentRepository,
-            PartnerRepository partnerRepository) {
+            PartnerRepository partnerRepository,
+            OperatorWorkMilestoneRepository operatorWorkMilestoneRepository) {
         this.operatorJobRepository = operatorJobRepository;
         this.operatorRepository = operatorRepository;
         this.equipmentRepository = equipmentRepository;
         this.partnerRepository = partnerRepository;
+        this.operatorWorkMilestoneRepository = operatorWorkMilestoneRepository;
     }
 
     @Transactional(readOnly = true)
@@ -76,7 +83,8 @@ public class OperatorJobService {
         long total = operatorJobRepository.countByOperatorId(operatorId);
         long pending = operatorJobRepository.countByOperatorIdAndStatus(operatorId, JobStatus.PENDING_RESPONSE);
         long accepted = operatorJobRepository.countByOperatorIdAndStatus(operatorId, JobStatus.ACCEPTED);
-        long completed = operatorJobRepository.countByOperatorIdAndStatus(operatorId, JobStatus.COMPLETED);
+        long completed = operatorJobRepository.countByOperatorIdAndStatus(operatorId, JobStatus.COMPLETED)
+                + operatorJobRepository.countByOperatorIdAndStatus(operatorId, JobStatus.WORK_COMPLETED);
         long rejected = operatorJobRepository.countByOperatorIdAndStatus(operatorId, JobStatus.REJECTED);
         long cancelled = operatorJobRepository.countByOperatorIdAndStatus(operatorId, JobStatus.CANCELLED);
 
@@ -150,6 +158,17 @@ public class OperatorJobService {
 
         job.setStatus(JobStatus.ACCEPTED);
         OperatorJob updated = operatorJobRepository.save(job);
+
+        // Record initial milestone in history
+        OperatorWorkMilestone milestone = OperatorWorkMilestone.builder()
+                .job(updated)
+                .operator(updated.getOperator())
+                .status(JobStatus.ACCEPTED)
+                .startedAt(LocalDateTime.now())
+                .notes("Job assignment accepted by operator")
+                .build();
+        operatorWorkMilestoneRepository.save(milestone);
+
         log.info("Job ID {} accepted by operator ID {}", jobId, operatorId);
         return mapToResponse(updated);
     }
@@ -172,10 +191,88 @@ public class OperatorJobService {
         return mapToResponse(updated);
     }
 
+    @Transactional
+    public OperatorJobResponse updateJobStatus(Long operatorId, Long jobId, JobStatus requestedStatus, String notes) {
+        OperatorJob job = operatorJobRepository.findByIdAndOperatorId(jobId, operatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job assignment not found or access denied for ID: " + jobId));
+
+        JobStatus currentStatus = job.getStatus();
+        JobStatus targetStatus = (requestedStatus == JobStatus.COMPLETED) ? JobStatus.WORK_COMPLETED : requestedStatus;
+
+        if (!isValidTransition(currentStatus, targetStatus)) {
+            throw new BadRequestException(
+                    String.format("Invalid job status transition: %s -> %s", currentStatus, targetStatus)
+            );
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        switch (targetStatus) {
+            case TRAVELING -> job.setTravelingAt(now);
+            case REACHED_LOCATION -> job.setReachedLocationAt(now);
+            case WORK_STARTED -> job.setWorkStartedAt(now);
+            case WORK_PAUSED -> job.setWorkPausedAt(now);
+            case WORK_RESUMED -> job.setWorkResumedAt(now);
+            case WORK_COMPLETED -> job.setWorkCompletedAt(now);
+            default -> {}
+        }
+
+        job.setStatus(targetStatus);
+        if (notes != null && !notes.trim().isEmpty()) {
+            job.setNotes(job.getNotes() != null ? job.getNotes() + " | " + notes.trim() : notes.trim());
+        }
+
+        OperatorJob updatedJob = operatorJobRepository.save(job);
+
+        // Persist status transition audit milestone
+        OperatorWorkMilestone milestone = OperatorWorkMilestone.builder()
+                .job(updatedJob)
+                .operator(updatedJob.getOperator())
+                .status(targetStatus)
+                .startedAt(now)
+                .notes(notes != null ? notes.trim() : null)
+                .build();
+        operatorWorkMilestoneRepository.save(milestone);
+
+        log.info("Job ID {} status transitioned from {} to {} by operator ID {}", jobId, currentStatus, targetStatus, operatorId);
+
+        return mapToResponse(updatedJob);
+    }
+
+    public boolean isValidTransition(JobStatus currentStatus, JobStatus requestedStatus) {
+        if (currentStatus == null || requestedStatus == null) {
+            return false;
+        }
+
+        JobStatus target = (requestedStatus == JobStatus.COMPLETED) ? JobStatus.WORK_COMPLETED : requestedStatus;
+
+        return switch (currentStatus) {
+            case ACCEPTED -> target == JobStatus.TRAVELING;
+            case TRAVELING -> target == JobStatus.REACHED_LOCATION;
+            case REACHED_LOCATION -> target == JobStatus.WORK_STARTED;
+            case WORK_STARTED -> target == JobStatus.WORK_PAUSED || target == JobStatus.WORK_COMPLETED;
+            case WORK_PAUSED -> target == JobStatus.WORK_RESUMED;
+            case WORK_RESUMED -> target == JobStatus.WORK_PAUSED || target == JobStatus.WORK_COMPLETED;
+            default -> false;
+        };
+    }
+
     private OperatorJobResponse mapToResponse(OperatorJob job) {
         Operator operator = job.getOperator();
         Equipment equipment = job.getEquipment();
         Partner partner = job.getPartner();
+
+        List<OperatorWorkMilestone> milestones =
+                operatorWorkMilestoneRepository.findAllByJobIdOrderByCreatedAtAsc(job.getId());
+
+        List<OperatorWorkMilestoneResponse> milestoneResponses = milestones.stream()
+                .map(m -> OperatorWorkMilestoneResponse.builder()
+                        .id(m.getId())
+                        .status(m.getStatus())
+                        .timestamp(m.getStartedAt() != null ? m.getStartedAt() : m.getCreatedAt())
+                        .notes(m.getNotes())
+                        .build())
+                .collect(Collectors.toList());
 
         return OperatorJobResponse.builder()
                 .id(job.getId())
@@ -205,6 +302,13 @@ public class OperatorJobService {
                 .longitude(job.getLongitude())
                 .operatorPayout(job.getOperatorPayout())
                 .status(job.getStatus())
+                .travelingAt(job.getTravelingAt())
+                .reachedLocationAt(job.getReachedLocationAt())
+                .workStartedAt(job.getWorkStartedAt())
+                .workPausedAt(job.getWorkPausedAt())
+                .workResumedAt(job.getWorkResumedAt())
+                .workCompletedAt(job.getWorkCompletedAt())
+                .milestones(milestoneResponses)
                 .assignedBy(job.getAssignedBy())
                 .notes(job.getNotes())
                 .createdAt(job.getCreatedAt())

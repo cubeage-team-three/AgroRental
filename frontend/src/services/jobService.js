@@ -63,3 +63,16 @@ export async function rejectJob(jobId, reason = '') {
   });
 }
 
+/**
+ * Update job work status (Module 8: TRAVELING, REACHED_LOCATION, WORK_STARTED, WORK_PAUSED, WORK_RESUMED, WORK_COMPLETED).
+ */
+export async function updateJobStatus(jobId, status, notes = '') {
+  return request(`/operators/jobs/${jobId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      status,
+      notes,
+    }),
+  });
+}
+

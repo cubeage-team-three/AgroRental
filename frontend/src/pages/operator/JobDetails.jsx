@@ -77,19 +77,55 @@ function JobDetails() {
             ✓ Accepted Assignment
           </span>
         );
+      case "TRAVELING":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+            🚜 Traveling to Field
+          </span>
+        );
+      case "REACHED_LOCATION":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-lime-100 text-lime-950 border border-lime-400 text-xs font-bold rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-lime-600"></span>
+            📍 Reached Location
+          </span>
+        );
+      case "WORK_STARTED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-emerald-900 text-lime-300 border border-emerald-800 text-xs font-bold rounded-full shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse"></span>
+            ⚡ Work In Progress
+          </span>
+        );
+      case "WORK_PAUSED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-amber-200 text-amber-950 border border-amber-400 text-xs font-bold rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-800"></span>
+            ⏸️ Work Paused
+          </span>
+        );
+      case "WORK_RESUMED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-emerald-900 text-lime-300 border border-emerald-800 text-xs font-bold rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse"></span>
+            🔄 Work Resumed
+          </span>
+        );
+      case "WORK_COMPLETED":
+      case "COMPLETED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-blue-100 text-blue-900 border border-blue-300 text-xs font-bold rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+            🎉 Completed Duty
+          </span>
+        );
       case "PENDING_RESPONSE":
       case "ASSIGNED":
         return (
           <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
             ⏳ Pending Response
-          </span>
-        );
-      case "COMPLETED":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-blue-100 text-blue-900 border border-blue-300 text-xs font-bold rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-            🎉 Completed Duty
           </span>
         );
       case "REJECTED":
@@ -371,23 +407,23 @@ function JobDetails() {
             </div>
           )}
 
-          {/* If already accepted, shortcut to Active Duty Tracker */}
-          {job.status === "ACCEPTED" && (
+          {/* If already accepted or in-progress, shortcut to Active Duty Tracker */}
+          {["ACCEPTED", "TRAVELING", "REACHED_LOCATION", "WORK_STARTED", "WORK_PAUSED", "WORK_RESUMED", "WORK_COMPLETED"].includes(job.status) && (
             <div className="bg-emerald-900 text-white rounded-3xl p-6 shadow-md space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-xl">✅</span>
+                <span className="text-xl">⚡</span>
                 <h3 className="font-bold text-sm uppercase tracking-wider">
-                  Deployment Confirmed
+                  Active Deployment Tracker
                 </h3>
               </div>
               <p className="text-xs text-emerald-100/90 leading-relaxed">
-                You have accepted this job. Proceed to the active duty tracker when ready to start work on-site.
+                Current Status: <strong className="text-lime-300">{job.status.replace(/_/g, " ")}</strong>. Manage your operational milestones and live duty timestamps.
               </p>
               <Link
-                to="/operator/work"
+                to={`/operator/work?jobId=${job.id}`}
                 className="inline-block w-full bg-lime-400 hover:bg-lime-300 text-emerald-950 font-black text-xs py-3 rounded-xl shadow transition text-center"
               >
-                Go to Active Duty Tracker →
+                Open Work Status Tracker →
               </Link>
             </div>
           )}
