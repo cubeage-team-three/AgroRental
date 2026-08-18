@@ -110,7 +110,6 @@ function Login() {
 
       const userData = response.data;
       saveUserSession(userData);
-
       if (userData && (userData.role === 'PARTNER' || userData.partnerId)) {
         setSuccessMessage('Partner login successful! Redirecting to Partner Portal...');
         setTimeout(() => {

@@ -32,7 +32,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/partners/register", "/api/users/**", "/api/auth/**", "/api/farmers/**", "/api/equipment/**", "/api/**", "/h2-console/**").permitAll()
+                .requestMatchers("/api/**", "/h2-console/**", "/**").permitAll()
                 .anyRequest().permitAll()
             )
             .headers(headers -> headers.frameOptions(frame -> frame.disable()));
