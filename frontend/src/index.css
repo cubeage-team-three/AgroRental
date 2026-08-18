@@ -1,5 +1,24 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap");
 @import "tailwindcss";
+
+@theme {
+  --color-forest-950: #0c1f13;
+  --color-forest-900: #142e1c;
+  --color-forest-800: #1d3d26;
+  --color-forest-700: #2a4f33;
+
+  --color-cream: #fdfbf7;
+  --color-cream-dark: #efe8d6;
+  --color-mint: #eef6ee;
+
+  --color-gold-300: #ecca7f;
+  --color-gold-400: #e0af52;
+  --color-gold-500: #d9a441;
+
+  --font-display: "Playfair Display", ui-serif, Georgia, serif;
+}
 
 body {
   margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }

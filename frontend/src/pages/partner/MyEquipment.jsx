@@ -1,204 +1,270 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { equipmentService } from '../../services/equipmentService';
+import {
+  DEFAULT_EQUIPMENT_IMAGE,
+  formatCategoryLabel,
+  getStatusBadgeInfo,
+} from '../../utils/constants';
 
 function MyEquipment() {
-  const [equipment, setEquipment] = useState([]);
+  const navigate = useNavigate();
+  const partnerId = localStorage.getItem('partnerId') || '1';
+
+  const [equipmentList, setEquipmentList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(null);
 
-  // Testing sathi Ramesh Yadav cha partner ID
-  const partnerId = 1;
+  const fetchPartnerEquipment = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-  useEffect(() => {
-    fetchEquipment();
-  }, []);
-
-  const fetchEquipment = async () => {
     try {
-      setLoading(true);
-      setError('');
-
-      const response = await fetch(
-        `http://localhost:8080/api/equipment/partner/${partnerId}`
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch equipment');
-      }
-
-      const data = await response.json();
-      setEquipment(data);
+      const data = await equipmentService.getPartnerEquipment(partnerId);
+      setEquipmentList(data || []);
     } catch (err) {
-      setError(err.message);
+      console.error('Failed to load partner equipment:', err);
+      setError(err.message || 'Failed to load your machinery listings');
     } finally {
       setLoading(false);
     }
+  }, [partnerId]);
+
+  useEffect(() => {
+    fetchPartnerEquipment();
+  }, [fetchPartnerEquipment]);
+
+  const handleToggleEnable = async (id, currentIsDisabled) => {
+    setActionLoading(id);
+
+    try {
+      if (currentIsDisabled) {
+        await equipmentService.enableEquipment(id, partnerId);
+      } else {
+        await equipmentService.disableEquipment(id, partnerId);
+      }
+
+      await fetchPartnerEquipment();
+    } catch (err) {
+      alert(err.message || 'Failed to update equipment status');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
-  const getCategoryLabel = (category) => {
-    return category
-      ? category
-          .toLowerCase()
-          .replace('_', ' ')
-          .replace(/\b\w/g, (char) => char.toUpperCase())
-      : '-';
+  const handleDelete = async (id, name) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${name}"? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    setActionLoading(id);
+
+    try {
+      await equipmentService.deleteEquipment(id, partnerId);
+      await fetchPartnerEquipment();
+    } catch (err) {
+      alert(err.message || 'Failed to delete equipment');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto max-w-6xl">
-
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">
-              My Equipment
-            </h1>
-            <p className="mt-1 text-gray-500">
-              Manage your listed agricultural equipment.
-            </p>
-          </div>
-
-          <a
-            href="/partner/equipment/add"
-            className="rounded-lg bg-green-700 px-5 py-3 font-medium text-white hover:bg-green-800"
-          >
-            + Add Equipment
-          </a>
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
+        <div>
+          <h1 className="text-3xl font-bold text-green-800 tracking-tight">
+            My Equipment Inventory
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Manage your machinery listings, rental pricing, and availability
+            status.
+          </p>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-            {error}
-          </div>
-        )}
+        <button
+          onClick={() => navigate('/partner/equipment/add')}
+          className="px-5 py-2.5 bg-green-700 text-white font-bold rounded-xl hover:bg-green-800 transition shadow-sm text-sm flex items-center justify-center gap-2"
+        >
+          <span>➕</span> Add New Equipment
+        </button>
+      </div>
 
-        {/* Loading */}
-        {loading && (
-          <div className="rounded-xl bg-white p-10 text-center shadow-sm">
-            <p className="text-gray-500">
-              Loading equipment...
-            </p>
-          </div>
-        )}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm flex items-center justify-between">
+          <span>{error}</span>
 
-        {/* Empty State */}
-        {!loading && !error && equipment.length === 0 && (
-          <div className="rounded-xl border border-gray-100 bg-white p-12 text-center shadow-sm">
-            <div className="text-5xl">🚜</div>
+          <button
+            onClick={fetchPartnerEquipment}
+            className="underline text-red-800 font-semibold"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
-            <h2 className="mt-4 text-xl font-semibold text-gray-700">
-              No Equipment Added
-            </h2>
-
-            <p className="mt-2 text-gray-500">
-              Add your first agricultural equipment to start receiving bookings.
-            </p>
-
-            <a
-              href="/partner/equipment/add"
-              className="mt-5 inline-block rounded-lg bg-green-700 px-5 py-3 font-medium text-white hover:bg-green-800"
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((idx) => (
+            <div
+              key={idx}
+              className="bg-white rounded-xl border border-gray-200 p-4 space-y-3 animate-pulse"
             >
-              Add Equipment
-            </a>
+              <div className="w-full h-44 bg-gray-200 rounded-lg" />
+              <div className="h-5 bg-gray-200 rounded w-3/4" />
+              <div className="h-4 bg-gray-200 rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      ) : equipmentList.length === 0 ? (
+        <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center space-y-4">
+          <div className="w-16 h-16 bg-green-50 text-green-700 rounded-full flex items-center justify-center mx-auto text-2xl">
+            🚜
           </div>
-        )}
 
-        {/* Equipment Cards */}
-        {!loading && equipment.length > 0 && (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {equipment.map((item) => (
+          <h3 className="text-xl font-bold text-gray-800">
+            No Equipment Listed Yet
+          </h3>
+
+          <p className="text-gray-500 max-w-md mx-auto text-sm">
+            You haven't listed any farm machinery for rental. Add your first
+            piece of equipment to start earning.
+          </p>
+
+          <button
+            onClick={() => navigate('/partner/equipment/add')}
+            className="px-5 py-2.5 bg-green-700 text-white font-semibold rounded-xl hover:bg-green-800 transition text-sm"
+          >
+            Add Your First Equipment
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {equipmentList.map((item) => {
+            const badge = getStatusBadgeInfo(item.availabilityStatus);
+            const imageSrc =
+              item.primaryImageUrl || DEFAULT_EQUIPMENT_IMAGE;
+            const isProcessing = actionLoading === item.id;
+
+            return (
               <div
                 key={item.id}
-                className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"
+                className={`bg-white rounded-xl border ${
+                  item.isDisabled
+                    ? 'border-red-200 bg-red-50/20'
+                    : 'border-gray-200'
+                } overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between`}
               >
-                {/* Equipment Image Placeholder */}
-                <div className="flex h-40 items-center justify-center bg-green-50 text-6xl">
-                  🚜
-                </div>
-
-                <div className="p-5">
-
-                  <div className="flex items-start justify-between gap-3">
-                    <h2 className="text-xl font-bold text-gray-800">
-                      {item.name}
-                    </h2>
+                <div>
+                  <div className="relative h-44 w-full bg-gray-100 overflow-hidden">
+                    <img
+                      src={imageSrc}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = DEFAULT_EQUIPMENT_IMAGE;
+                      }}
+                    />
 
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        item.availabilityStatus === 'AVAILABLE'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}
+                      className={`absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full border shadow-sm ${badge.badgeClass}`}
                     >
-                      {item.availabilityStatus || 'AVAILABLE'}
+                      {badge.label}
                     </span>
+
+                    {item.isDisabled && (
+                      <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-md">
+                        DISABLED
+                      </span>
+                    )}
                   </div>
 
-                  <p className="mt-2 text-sm text-gray-500">
-                    {item.brand} {item.model}
-                  </p>
+                  <div className="p-5 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">
+                          {formatCategoryLabel(item.category)}
+                        </span>
 
-                  <div className="mt-4 space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">
-                        Category
-                      </span>
-                      <span className="font-medium text-gray-700">
-                        {getCategoryLabel(item.category)}
-                      </span>
+                        <h3 className="text-lg font-bold text-gray-900 line-clamp-1">
+                          {item.name}
+                        </h3>
+                      </div>
                     </div>
 
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">
-                        Capacity
-                      </span>
-                      <span className="font-medium text-gray-700">
-                        {item.capacity}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">
-                        Fuel
-                      </span>
-                      <span className="font-medium text-gray-700">
-                        {getCategoryLabel(item.fuelType)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">
-                        Rental Price
-                      </span>
-                      <span className="font-bold text-green-700">
-                        ₹{item.rentalPrice}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 border-t border-gray-100 pt-4">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
                       📍 {item.locationAddress}
                     </p>
-                  </div>
 
-                  <div className="mt-5">
+                    <div className="flex items-baseline justify-between pt-2 border-t border-gray-100">
+                      <div>
+                        <span className="text-xl font-extrabold text-green-800">
+                          ₹
+                          {Number(item.rentalPrice).toLocaleString('en-IN')}
+                        </span>
+
+                        <span className="text-xs text-gray-500">
+                          {' '}
+                          / day
+                        </span>
+                      </div>
+
+                      <span className="text-xs text-gray-500 font-medium">
+                        {item.brand} {item.model}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-2 text-xs">
+                  <button
+                    disabled={isProcessing}
+                    onClick={() =>
+                      handleToggleEnable(item.id, item.isDisabled)
+                    }
+                    className={`font-semibold px-3 py-1.5 rounded-lg border transition ${
+                      item.isDisabled
+                        ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                        : 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100'
+                    }`}
+                  >
+                    {isProcessing
+                      ? 'Processing...'
+                      : item.isDisabled
+                        ? 'Re-enable'
+                        : 'Disable'}
+                  </button>
+
+                  <div className="flex items-center gap-2">
                     <button
-                      type="button"
-                      className="w-full rounded-lg border border-green-700 px-4 py-2 font-medium text-green-700 hover:bg-green-50"
+                      onClick={() =>
+                        navigate(`/partner/equipment/add?edit=${item.id}`)
+                      }
+                      className="px-3 py-1.5 font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition"
                     >
-                      View Details
+                      Edit
+                    </button>
+
+                    <button
+                      disabled={isProcessing}
+                      onClick={() => handleDelete(item.id, item.name)}
+                      className="px-3 py-1.5 font-semibold text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition"
+                    >
+                      Delete
                     </button>
                   </div>
-
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

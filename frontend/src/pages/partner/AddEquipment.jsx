@@ -1,26 +1,85 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { equipmentService } from '../../services/equipmentService';
+import { EQUIPMENT_CATEGORIES, FUEL_TYPES } from '../../utils/constants';
 
 function AddEquipment() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const editId = searchParams.get('edit');
+  const partnerId = localStorage.getItem('partnerId') || '1';
+
   const [formData, setFormData] = useState({
     name: '',
-    category: '',
+    category: 'TRACTOR',
     brand: '',
     model: '',
-    manufacturingYear: '',
+    manufacturingYear: new Date().getFullYear(),
     capacity: '',
     rentalPrice: '',
-    fuelType: '',
+    fuelType: 'DIESEL',
     description: '',
     locationAddress: '',
-    latitude: '',
-    longitude: '',
-    maintenanceNotes: '',
-    partnerId: 1,
+    latitude: 18.5204,
+    longitude: 73.8567,
+    imageUrl: '',
   });
 
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [fetchingEditData, setFetchingEditData] = useState(false);
+  const [error, setError] = useState(null);
+  const [conflictWarning, setConflictWarning] = useState(null);
 
+  // Load equipment when editing
+  useEffect(() => {
+    if (!editId) return;
+
+    setFetchingEditData(true);
+
+    equipmentService
+      .getEquipmentById(editId)
+      .then((data) => {
+        if (!data) return;
+
+        const primaryImage =
+          data.images && data.images.length > 0
+            ? (
+                data.images.find((img) => img.isPrimary) ||
+                data.images[0]
+              ).imageUrl
+            : '';
+
+        setFormData({
+          name: data.name || '',
+          category: data.category || 'TRACTOR',
+          brand: data.brand || '',
+          model: data.model || '',
+          manufacturingYear:
+            data.manufacturingYear || new Date().getFullYear(),
+          capacity: data.capacity || '',
+          rentalPrice: data.rentalPrice || '',
+          fuelType: data.fuelType || 'DIESEL',
+          description: data.description || '',
+          locationAddress: data.locationAddress || '',
+          latitude: data.latitude || 18.5204,
+          longitude: data.longitude || 73.8567,
+          imageUrl: primaryImage,
+        });
+      })
+      .catch((err) => {
+        console.error(
+          'Failed to fetch equipment for editing:',
+          err
+        );
+        setError('Failed to load existing equipment details.');
+      })
+      .finally(() => {
+        setFetchingEditData(false);
+      });
+  }, [editId]);
+
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -30,308 +89,445 @@ function AddEquipment() {
     }));
   };
 
+  // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setMessage('');
-    setError('');
+    setLoading(true);
+    setError(null);
+    setConflictWarning(null);
+
+    // Validation
+    if (
+      !formData.name.trim() ||
+      !formData.brand.trim() ||
+      !formData.model.trim()
+    ) {
+      setError(
+        'Please fill in all required machinery identification fields.'
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (Number(formData.rentalPrice) <= 0) {
+      setError('Daily rental price must be greater than zero.');
+      setLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch('http://localhost:8080/api/equipment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          manufacturingYear: Number(formData.manufacturingYear),
-          rentalPrice: Number(formData.rentalPrice),
-          latitude: Number(formData.latitude),
-          longitude: Number(formData.longitude),
-          partnerId: Number(formData.partnerId),
-        }),
-      });
+      const payload = {
+        partnerId: Number(partnerId),
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(
-          errorData?.message || 'Failed to add equipment'
+        name: formData.name.trim(),
+        category: formData.category,
+        brand: formData.brand.trim(),
+        model: formData.model.trim(),
+
+        manufacturingYear: Number(
+          formData.manufacturingYear
+        ),
+
+        capacity: formData.capacity.trim(),
+        rentalPrice: Number(formData.rentalPrice),
+        fuelType: formData.fuelType,
+
+        description: formData.description.trim(),
+        locationAddress: formData.locationAddress.trim(),
+
+        latitude: Number(formData.latitude),
+        longitude: Number(formData.longitude),
+
+        images: formData.imageUrl.trim()
+          ? [
+              {
+                imageUrl: formData.imageUrl.trim(),
+                isPrimary: true,
+                displayOrder: 1,
+              },
+            ]
+          : [],
+      };
+
+      if (editId) {
+        await equipmentService.updateEquipment(
+          editId,
+          payload,
+          partnerId
+        );
+      } else {
+        await equipmentService.createEquipment(
+          payload,
+          partnerId
         );
       }
 
-      await response.json();
-
-      setMessage('Equipment added successfully!');
-
-      setFormData({
-        name: '',
-        category: '',
-        brand: '',
-        model: '',
-        manufacturingYear: '',
-        capacity: '',
-        rentalPrice: '',
-        fuelType: '',
-        description: '',
-        locationAddress: '',
-        latitude: '',
-        longitude: '',
-        maintenanceNotes: '',
-        partnerId: 1,
-      });
+      navigate('/partner/equipment');
     } catch (err) {
-      setError(err.message);
+      console.error('Equipment submit error:', err);
+
+      if (err.status === 409) {
+        setConflictWarning(
+          err.message ||
+            'This equipment was updated by another session. Please refresh and try again.'
+        );
+      } else {
+        setError(
+          err.message ||
+            'Failed to save equipment. Please check all fields.'
+        );
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Loading screen while editing
+  if (fetchingEditData) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 space-y-4 animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-1/3" />
+        <div className="h-64 bg-gray-200 rounded-xl" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Add Equipment
+    <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6">
+
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+        <div>
+          <h1 className="text-3xl font-bold text-green-800 tracking-tight">
+            {editId
+              ? 'Edit Machinery Listing'
+              : 'Add New Equipment'}
           </h1>
-          <p className="mt-1 text-gray-500">
-            Add your agricultural equipment for rental.
+
+          <p className="text-gray-600 mt-1">
+            {editId
+              ? 'Update specifications, rental rates, and location details.'
+              : 'List new farm machinery to make it available for regional rental.'}
           </p>
         </div>
 
-        {message && (
-          <div className="mb-5 rounded-lg border border-green-200 bg-green-50 p-4 text-green-700">
-            {message}
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-            {error}
-          </div>
-        )}
-
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm"
+        <button
+          type="button"
+          onClick={() => navigate('/partner/equipment')}
+          className="text-sm font-semibold text-gray-600 hover:text-gray-800 transition"
         >
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          Cancel
+        </button>
+      </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Equipment Name
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Conflict warning */}
+      {conflictWarning && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 text-amber-800 text-sm flex items-center justify-between">
+          <span>⚠️ {conflictWarning}</span>
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="px-3 py-1 bg-amber-700 text-white font-semibold rounded-lg hover:bg-amber-800 text-xs"
+          >
+            Refresh Latest Data
+          </button>
+        </div>
+      )}
+
+      {/* Form */}
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-6 shadow-sm"
+      >
+
+        {/* Section 1 */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide border-b border-gray-100 pb-2">
+            1. Machinery Identification
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Name */}
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                Equipment Title / Name{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
+                type="text"
                 name="name"
+                required
+                placeholder="e.g. John Deere 5050D Tractor"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="e.g. John Deere Tractor"
-                required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
 
+            {/* Category */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Category
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                Category{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <select
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
                 required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               >
-                <option value="">Select Category</option>
-                <option value="TRACTOR">Tractor</option>
-                <option value="HARVESTER">Harvester</option>
-                <option value="TILLER">Tiller</option>
-                <option value="IRRIGATION">Irrigation</option>
-                <option value="SEEDER">Seeder</option>
-                <option value="SPRAYER">Sprayer</option>
-                <option value="OTHER">Other</option>
+                {EQUIPMENT_CATEGORIES.map((cat) => (
+                  <option
+                    key={cat.value}
+                    value={cat.value}
+                  >
+                    {cat.label}
+                  </option>
+                ))}
               </select>
             </div>
 
+            {/* Brand */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Brand
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                Brand / Manufacturer{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
+                type="text"
                 name="brand"
+                required
+                placeholder="e.g. Mahindra, John Deere"
                 value={formData.brand}
                 onChange={handleChange}
-                placeholder="e.g. John Deere"
-                required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
 
+            {/* Model */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Model
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                Model Number{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
+                type="text"
                 name="model"
+                required
+                placeholder="e.g. 5050D"
                 value={formData.model}
                 onChange={handleChange}
-                placeholder="e.g. 5310"
-                required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
 
+            {/* Manufacturing Year */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Manufacturing Year
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                Manufacturing Year{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
                 type="number"
                 name="manufacturingYear"
+                required
+                min="1990"
+                max={new Date().getFullYear()}
                 value={formData.manufacturingYear}
                 onChange={handleChange}
-                placeholder="2024"
-                required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
 
+            {/* Capacity */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Capacity
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                Power / Capacity Specs{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
+                type="text"
                 name="capacity"
+                required
+                placeholder="e.g. 50 HP, 5 Tonnes"
                 value={formData.capacity}
                 onChange={handleChange}
-                placeholder="e.g. 50 HP"
-                required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
 
+          </div>
+        </div>
+
+        {/* Section 2 */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide border-b border-gray-100 pb-2">
+            2. Pricing & Operational Location
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Rental Price */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Rental Price
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                Daily Rental Price (₹/day){' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
                 type="number"
-                step="0.01"
                 name="rentalPrice"
+                required
+                min="1"
+                step="0.01"
+                placeholder="e.g. 2500"
                 value={formData.rentalPrice}
                 onChange={handleChange}
-                placeholder="e.g. 1500"
-                required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-green-800 focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
 
+            {/* Location */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Fuel Type
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                Location Address / Hub{' '}
+                <span className="text-red-500">*</span>
               </label>
-              <select
-                name="fuelType"
-                value={formData.fuelType}
-                onChange={handleChange}
-                required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              >
-                <option value="">Select Fuel Type</option>
-                <option value="DIESEL">Diesel</option>
-                <option value="PETROL">Petrol</option>
-                <option value="ELECTRIC">Electric</option>
-                <option value="HYBRID">Hybrid</option>
-                <option value="MANUAL_HUMAN_POWERED">
-                  Manual / Human Powered
-                </option>
-                <option value="OTHER">Other</option>
-              </select>
-            </div>
 
-            <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Describe your equipment..."
-                required
-                rows="4"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Location Address
-              </label>
               <input
+                type="text"
                 name="locationAddress"
+                required
+                placeholder="e.g. Talegaon, Pune, MH"
                 value={formData.locationAddress}
                 onChange={handleChange}
-                placeholder="e.g. Pune, Maharashtra"
-                required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
 
+            {/* Latitude */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                 Latitude
               </label>
+
               <input
                 type="number"
                 step="any"
                 name="latitude"
                 value={formData.latitude}
                 onChange={handleChange}
-                placeholder="18.5204"
-                required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
 
+            {/* Longitude */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                 Longitude
               </label>
+
               <input
                 type="number"
                 step="any"
                 name="longitude"
                 value={formData.longitude}
                 onChange={handleChange}
-                placeholder="73.8567"
-                required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Maintenance Notes
-              </label>
-              <textarea
-                name="maintenanceNotes"
-                value={formData.maintenanceNotes}
-                onChange={handleChange}
-                placeholder="Optional maintenance information"
-                rows="3"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              />
-            </div>
+          </div>
+        </div>
+
+        {/* Section 3 */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide border-b border-gray-100 pb-2">
+            3. Media & Operational Description
+          </h2>
+
+          {/* Image */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+              Primary Image URL
+            </label>
+
+            <input
+              type="url"
+              name="imageUrl"
+              placeholder="https://images.unsplash.com/photo-..."
+              value={formData.imageUrl}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+            />
+
+            <p className="text-[11px] text-gray-500 mt-1">
+              Provide a valid HTTP/HTTPS image URL.
+              If left empty, a default fallback image will be rendered.
+            </p>
           </div>
 
-          <div className="mt-6 flex justify-end">
-            <button
-              type="submit"
-              className="rounded-lg bg-green-700 px-6 py-3 font-medium text-white hover:bg-green-800"
-            >
-              Add Equipment
-            </button>
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+              Detailed Description{' '}
+              <span className="text-red-500">*</span>
+            </label>
+
+            <textarea
+              name="description"
+              required
+              rows={4}
+              placeholder="Describe machine condition, attachments included, and operational instructions..."
+              value={formData.description}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+            />
           </div>
-        </form>
-      </div>
+        </div>
+
+        {/* Submit */}
+        <div className="flex justify-end gap-4 border-t border-gray-100 pt-4">
+
+          <button
+            type="button"
+            onClick={() => navigate('/partner/equipment')}
+            className="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2.5 text-sm font-bold text-white bg-green-700 rounded-xl hover:bg-green-800 disabled:opacity-50 transition shadow-md flex items-center gap-2"
+          >
+            {loading
+              ? 'Saving Machinery...'
+              : editId
+              ? 'Update Machinery'
+              : 'Publish Listing'}
+          </button>
+
+        </div>
+      </form>
     </div>
   );
 }

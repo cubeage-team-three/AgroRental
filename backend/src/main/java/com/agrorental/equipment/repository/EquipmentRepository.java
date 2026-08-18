@@ -4,7 +4,6 @@ import com.agrorental.equipment.entity.Equipment;
 import com.agrorental.equipment.enums.AvailabilityStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
@@ -12,7 +11,7 @@ import java.util.List;
  * Spring Data JPA Repository interface for Equipment entity persistence and retrieval.
  * Provides standard CRUD, partner lookup, availability discovery queries, and dynamic specification execution.
  */
-@Repository
+
 public interface EquipmentRepository extends JpaRepository<Equipment, Long>, JpaSpecificationExecutor<Equipment> {
 
     /**
