@@ -6,51 +6,107 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-/**
- * Central Spring Security configuration for AgroRental backend.
- * Configures HTTP security authorization rules, stateless session management, and public vs protected endpoints.
- */
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http) throws Exception {
+
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Public Farmer discovery & registration routes
-                .requestMatchers(HttpMethod.GET, "/api/equipment/available/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/equipment/search/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/equipment/{id:[0-9]+}").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/partners/register").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/operators/register").permitAll()
-                // Protected equipment management routes
-                .requestMatchers("/api/equipment/**").authenticated()
-                .anyRequest().authenticated()
+            .cors(cors ->
+                cors.configurationSource(corsConfigurationSource())
             )
-            .httpBasic(httpBasic -> {});
+
+           .csrf(csrf -> csrf.disable())
+
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(
+                    SessionCreationPolicy.STATELESS
+                )
+            )
+
+            .authorizeHttpRequests(auth -> auth
+
+                .requestMatchers(HttpMethod.OPTIONS, "/**")
+                .permitAll()
+
+                .requestMatchers(
+                    "/api/partners/register",
+                    "/api/users/**",
+                    "/api/auth/**",
+                    "/api/farmers/**"
+                )
+                .permitAll()
+
+                .requestMatchers("/api/equipment/**")
+                .permitAll()
+
+                .requestMatchers("/api/**")
+                .permitAll()
+
+                .requestMatchers("/h2-console/**")
+                .permitAll()
+
+                .anyRequest()
+                .permitAll()
+            )
+
+            .headers(headers ->
+                headers.frameOptions(frame ->
+                    frame.disable()
+                )
+            );
 
         return http.build();
     }
 
     @Bean
-    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
-        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.List.of("*"));
-        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(java.util.List.of("*"));
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration configuration =
+                new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of(
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:5175",
+            "http://localhost:5176",
+            "http://localhost:5177",
+            "http://localhost:5178"
+        ));
+
+        configuration.setAllowedMethods(List.of(
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS"
+        ));
+
+        configuration.setAllowedHeaders(List.of("*"));
+
         configuration.setAllowCredentials(true);
 
-        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration(
+            "/**",
+            configuration
+        );
+
         return source;
     }
 }

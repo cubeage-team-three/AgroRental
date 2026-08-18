@@ -52,25 +52,25 @@ function PlatformCapabilities() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(132,204,22,0.14),transparent_55%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_100%,rgba(16,185,129,0.18),transparent_55%)]" />
 
-      <div className="relative mx-auto max-w-7xl px-6 py-24">
+      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:py-24">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center rounded-full border border-lime-300/30 bg-lime-400/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-lime-300 backdrop-blur-md">
+          <span className="inline-flex items-center rounded-full border border-lime-300/30 bg-lime-400/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest sm:px-4 sm:text-xs text-lime-300 backdrop-blur-md">
             Platform Capabilities
           </span>
-          <h2 className="mt-5 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          <h2 className="mt-4 font-display sm:mt-5 text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
             Built for Real Agricultural Workflows
           </h2>
-          <p className="mt-4 text-lg leading-relaxed text-white/60">
+          <p className="mt-3 text-base leading-relaxed text-white/60 sm:mt-4 sm:text-lg">
             Not a generic marketplace — every capability is shaped by how
             fieldwork actually happens.
           </p>
         </div>
 
-        <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:mt-14 lg:grid-cols-3">
           {capabilities.map(({ icon: Icon, title, description }) => (
             <div
               key={title}
-              className="group relative isolate overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-7 shadow-2xl shadow-emerald-950/40 backdrop-blur-xl transition-all duration-300 ease-out hover:-translate-y-2 hover:border-lime-300/40 hover:bg-white/10 hover:shadow-lime-400/10"
+              className="group relative isolate overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl sm:p-7 shadow-emerald-950/40 backdrop-blur-xl transition-all duration-300 ease-out hover:-translate-y-2 hover:border-lime-300/40 hover:bg-white/10 hover:shadow-lime-400/10"
             >
               <span
                 aria-hidden="true"

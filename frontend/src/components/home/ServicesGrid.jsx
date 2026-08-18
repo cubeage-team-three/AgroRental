@@ -1,4 +1,6 @@
 import { Star } from "lucide-react";
+import TiltCard from "../ui/TiltCard";
+import { RevealGroup, RevealItem } from "../motion/Reveal";
 import tractorPloughingImage from "../../assets/images/services Image/Tractor Ploughing.jpeg";
 import rotavatorWorkImage from "../../assets/images/services Image/Rotavator Work.jpeg";
 import seederSowingImage from "../../assets/images/services Image/Seeder & Sowing.jpeg";
@@ -126,13 +128,10 @@ const servicesData = [
 ];
 
 function ServiceCard({ service }) {
-  const { name, description, price, rating, image, badge, span, featured } =
-    service;
+  const { name, description, price, rating, image, badge, featured } = service;
 
   return (
-    <article
-      className={`group relative isolate overflow-hidden rounded-3xl bg-emerald-950 shadow-2xl shadow-emerald-900/10 ring-1 ring-slate-900/5 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-900/25 ${span}`}
-    >
+    <article className="group relative isolate h-full min-h-[44px] overflow-hidden rounded-2xl bg-emerald-950 shadow-xl shadow-emerald-900/10 ring-1 ring-slate-900/5 transition-shadow duration-300 ease-out hover:shadow-2xl hover:shadow-emerald-900/25 sm:rounded-3xl sm:shadow-2xl">
       <img
         src={image}
         alt={name}
@@ -149,27 +148,29 @@ function ServiceCard({ service }) {
         </span>
       )}
 
-      <div className="relative flex h-full flex-col justify-end p-6">
+      <div className="relative flex h-full flex-col justify-end p-5 sm:p-6">
         <h3
           className={`font-semibold text-white ${
-            featured ? "font-display text-3xl" : "text-lg"
+            featured
+              ? "font-display text-2xl sm:text-3xl"
+              : "text-base sm:text-lg"
           }`}
         >
           {name}
         </h3>
         <p
-          className={`mt-2 text-sm leading-relaxed text-white/70 ${
+          className={`mt-2 text-xs leading-relaxed text-white/70 sm:text-sm ${
             featured ? "max-w-md" : "line-clamp-2"
           }`}
         >
           {description}
         </p>
 
-        <div className="mt-5 flex items-center justify-between border-t border-white/15 pt-4">
-          <span className="bg-gradient-to-r from-lime-300 to-emerald-300 bg-clip-text text-lg font-bold text-transparent">
+        <div className="mt-4 flex items-center justify-between border-t border-white/15 pt-3 sm:mt-5 sm:pt-4">
+          <span className="bg-gradient-to-r from-lime-300 to-emerald-300 bg-clip-text text-base font-bold text-transparent sm:text-lg">
             {price}
           </span>
-          <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-medium text-white backdrop-blur-md">
+          <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md sm:px-3 sm:text-sm">
             <Star className="h-4 w-4 text-amber-300" fill="currentColor" />
             {rating}
           </span>
@@ -182,25 +183,33 @@ function ServiceCard({ service }) {
 function ServicesGrid() {
   return (
     <section id="services" className="scroll-mt-24 bg-slate-50">
-      <div className="mx-auto max-w-7xl px-6 py-24">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:py-24">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-700">
+          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-emerald-700 sm:px-4 sm:text-xs">
             Agriculture Service Scope
           </span>
-          <h2 className="mt-5 font-display text-4xl font-bold tracking-tight text-emerald-950 sm:text-5xl">
+          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-emerald-950 sm:mt-5 sm:text-4xl lg:text-5xl">
             10 Services. One Platform.
           </h2>
-          <p className="mt-4 text-lg leading-relaxed text-slate-600">
+          <p className="mt-3 text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
             Book by the acre, hour, or job. Every service priced transparently
             before you confirm.
           </p>
         </div>
 
-        <div className="mt-14 grid auto-rows-[260px] grid-cols-1 gap-5 sm:grid-cols-2 lg:auto-rows-[240px] lg:grid-cols-4">
+        <RevealGroup
+          className="mt-10 grid auto-rows-[240px] grid-cols-1 gap-4 [perspective:1200px] sm:auto-rows-[220px] sm:grid-cols-2 sm:gap-5 lg:mt-14 lg:auto-rows-[240px] lg:grid-cols-4"
+          stagger={0.07}
+          amount={0.1}
+        >
           {servicesData.map((service) => (
-            <ServiceCard key={service.id} service={service} />
+            <RevealItem key={service.id} className={service.span}>
+              <TiltCard className="h-full transition-transform duration-300 ease-out hover:-translate-y-2">
+                <ServiceCard service={service} />
+              </TiltCard>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       </div>
     </section>
   );

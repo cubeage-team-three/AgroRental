@@ -60,6 +60,8 @@ import AdminNotifications from '../pages/admin/Notifications';
 import SystemSettings from '../pages/admin/SystemSettings';
 import AuditLogs from '../pages/admin/AuditLogs';
 
+import Register from '../pages/auth/Register';
+
 function AppRoutes() {
   return (
     <Routes>
@@ -67,7 +69,7 @@ function AppRoutes() {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
         <Route path="login" element={<Login />} />
-        <Route path="register" element={<SelectRole />} />
+        <Route path="register" element={<Register />} />
         <Route path="register/farmer" element={<RegisterFarmer />} />
         <Route path="register/partner" element={<RegisterPartner />} />
         <Route path="register/operator" element={<RegisterOperator />} />

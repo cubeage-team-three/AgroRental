@@ -57,25 +57,25 @@ function PricingCards() {
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(132,204,22,0.10),transparent_55%)]" />
 
-      <div className="relative mx-auto max-w-7xl px-6 py-24">
+      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:py-24">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-700">
+          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest sm:px-4 sm:text-xs text-emerald-700">
             Flexible Pricing
           </span>
-          <h2 className="mt-5 font-display text-4xl font-bold tracking-tight text-emerald-950 sm:text-5xl">
+          <h2 className="mt-4 font-display sm:mt-5 text-3xl font-bold tracking-tight text-emerald-950 sm:text-4xl lg:text-5xl">
             Pricing That Fits Every Job
           </h2>
-          <p className="mt-4 text-lg leading-relaxed text-slate-600">
+          <p className="mt-3 text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
             Six ways to price a job — you always see the full breakdown before
             confirming.
           </p>
         </div>
 
-        <div className="mx-auto mt-14 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:mt-14 lg:grid-cols-3">
           {pricingModels.map(({ icon: Icon, title, description }) => (
             <div
               key={title}
-              className="group relative isolate overflow-hidden rounded-3xl border border-slate-200/70 bg-white p-7 shadow-xl shadow-emerald-900/5 transition-all duration-300 ease-out hover:-translate-y-2 hover:border-emerald-300 hover:shadow-2xl hover:shadow-emerald-900/15"
+              className="group relative isolate overflow-hidden rounded-3xl border border-slate-200/70 bg-white p-6 shadow-xl sm:p-7 shadow-emerald-900/5 transition-all duration-300 ease-out hover:-translate-y-2 hover:border-emerald-300 hover:shadow-2xl hover:shadow-emerald-900/15"
             >
               {/* Hover wash */}
               <span
@@ -98,7 +98,7 @@ function PricingCards() {
         </div>
 
         {/* Trust strip */}
-        <div className="mx-auto mt-12 flex max-w-5xl flex-wrap items-center justify-center gap-x-10 gap-y-4 rounded-2xl border border-slate-200/70 bg-white/70 px-8 py-5 shadow-sm backdrop-blur-md">
+        <div className="mx-auto mt-10 flex max-w-5xl flex-wrap items-center justify-center gap-x-6 gap-y-3 rounded-2xl border border-slate-200/70 bg-white/70 px-5 py-5 sm:gap-x-10 sm:px-8 lg:mt-12 shadow-sm backdrop-blur-md">
           {trustPoints.map(({ icon: Icon, label }) => (
             <span
               key={label}

@@ -6,6 +6,7 @@ import { EQUIPMENT_CATEGORIES, FUEL_TYPES } from '../../utils/constants';
 function AddEquipment() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
   const editId = searchParams.get('edit');
   const partnerId = localStorage.getItem('partnerId') || '1';
 
@@ -30,56 +31,81 @@ function AddEquipment() {
   const [error, setError] = useState(null);
   const [conflictWarning, setConflictWarning] = useState(null);
 
+  // Load equipment when editing
   useEffect(() => {
-    if (editId) {
-      setFetchingEditData(true);
-      equipmentService
-        .getEquipmentById(editId)
-        .then((data) => {
-          if (data) {
-            const primaryImg = data.images && data.images.length > 0
-              ? (data.images.find((img) => img.isPrimary) || data.images[0]).imageUrl
-              : '';
+    if (!editId) return;
 
-            setFormData({
-              name: data.name || '',
-              category: data.category || 'TRACTOR',
-              brand: data.brand || '',
-              model: data.model || '',
-              manufacturingYear: data.manufacturingYear || new Date().getFullYear(),
-              capacity: data.capacity || '',
-              rentalPrice: data.rentalPrice || '',
-              fuelType: data.fuelType || 'DIESEL',
-              description: data.description || '',
-              locationAddress: data.locationAddress || '',
-              latitude: data.latitude || 18.5204,
-              longitude: data.longitude || 73.8567,
-              imageUrl: primaryImg,
-            });
-          }
-        })
-        .catch((err) => {
-          console.error('Failed to fetch equipment for editing:', err);
-          setError('Failed to load existing equipment details');
-        })
-        .finally(() => setFetchingEditData(false));
-    }
+    setFetchingEditData(true);
+
+    equipmentService
+      .getEquipmentById(editId)
+      .then((data) => {
+        if (!data) return;
+
+        const primaryImage =
+          data.images && data.images.length > 0
+            ? (
+                data.images.find((img) => img.isPrimary) ||
+                data.images[0]
+              ).imageUrl
+            : '';
+
+        setFormData({
+          name: data.name || '',
+          category: data.category || 'TRACTOR',
+          brand: data.brand || '',
+          model: data.model || '',
+          manufacturingYear:
+            data.manufacturingYear || new Date().getFullYear(),
+          capacity: data.capacity || '',
+          rentalPrice: data.rentalPrice || '',
+          fuelType: data.fuelType || 'DIESEL',
+          description: data.description || '',
+          locationAddress: data.locationAddress || '',
+          latitude: data.latitude || 18.5204,
+          longitude: data.longitude || 73.8567,
+          imageUrl: primaryImage,
+        });
+      })
+      .catch((err) => {
+        console.error(
+          'Failed to fetch equipment for editing:',
+          err
+        );
+        setError('Failed to load existing equipment details.');
+      })
+      .finally(() => {
+        setFetchingEditData(false);
+      });
   }, [editId]);
 
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
+  // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setLoading(true);
     setError(null);
     setConflictWarning(null);
 
-    // Form Client Validation
-    if (!formData.name.trim() || !formData.brand.trim() || !formData.model.trim()) {
-      setError('Please fill in all required machinery identification fields.');
+    // Validation
+    if (
+      !formData.name.trim() ||
+      !formData.brand.trim() ||
+      !formData.model.trim()
+    ) {
+      setError(
+        'Please fill in all required machinery identification fields.'
+      );
       setLoading(false);
       return;
     }
@@ -93,18 +119,26 @@ function AddEquipment() {
     try {
       const payload = {
         partnerId: Number(partnerId),
+
         name: formData.name.trim(),
         category: formData.category,
         brand: formData.brand.trim(),
         model: formData.model.trim(),
-        manufacturingYear: Number(formData.manufacturingYear),
+
+        manufacturingYear: Number(
+          formData.manufacturingYear
+        ),
+
         capacity: formData.capacity.trim(),
         rentalPrice: Number(formData.rentalPrice),
         fuelType: formData.fuelType,
+
         description: formData.description.trim(),
         locationAddress: formData.locationAddress.trim(),
+
         latitude: Number(formData.latitude),
         longitude: Number(formData.longitude),
+
         images: formData.imageUrl.trim()
           ? [
               {
@@ -117,24 +151,39 @@ function AddEquipment() {
       };
 
       if (editId) {
-        await equipmentService.updateEquipment(editId, payload, partnerId);
+        await equipmentService.updateEquipment(
+          editId,
+          payload,
+          partnerId
+        );
       } else {
-        await equipmentService.createEquipment(payload, partnerId);
+        await equipmentService.createEquipment(
+          payload,
+          partnerId
+        );
       }
 
       navigate('/partner/equipment');
     } catch (err) {
       console.error('Equipment submit error:', err);
+
       if (err.status === 409) {
-        setConflictWarning(err.message || 'This equipment was updated by another session. Please refresh and try again.');
+        setConflictWarning(
+          err.message ||
+            'This equipment was updated by another session. Please refresh and try again.'
+        );
       } else {
-        setError(err.message || 'Failed to save equipment. Please check all fields.');
+        setError(
+          err.message ||
+            'Failed to save equipment. Please check all fields.'
+        );
       }
     } finally {
       setLoading(false);
     }
   };
 
+  // Loading screen while editing
   if (fetchingEditData) {
     return (
       <div className="max-w-3xl mx-auto p-6 space-y-4 animate-pulse">
@@ -146,19 +195,25 @@ function AddEquipment() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6">
+
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div>
           <h1 className="text-3xl font-bold text-green-800 tracking-tight">
-            {editId ? 'Edit Machinery Listing' : 'Add New Equipment'}
+            {editId
+              ? 'Edit Machinery Listing'
+              : 'Add New Equipment'}
           </h1>
+
           <p className="text-gray-600 mt-1">
             {editId
               ? 'Update specifications, rental rates, and location details.'
               : 'List new farm machinery to make it available for regional rental.'}
           </p>
         </div>
+
         <button
+          type="button"
           onClick={() => navigate('/partner/equipment')}
           className="text-sm font-semibold text-gray-600 hover:text-gray-800 transition"
         >
@@ -166,17 +221,20 @@ function AddEquipment() {
         </button>
       </div>
 
-      {/* Warnings & Alerts */}
+      {/* Error */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
           ⚠️ {error}
         </div>
       )}
 
+      {/* Conflict warning */}
       {conflictWarning && (
         <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 text-amber-800 text-sm flex items-center justify-between">
           <span>⚠️ {conflictWarning}</span>
+
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="px-3 py-1 bg-amber-700 text-white font-semibold rounded-lg hover:bg-amber-800 text-xs"
           >
@@ -186,18 +244,26 @@ function AddEquipment() {
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-6 shadow-sm">
-        {/* Basic Details */}
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-6 shadow-sm"
+      >
+
+        {/* Section 1 */}
         <div className="space-y-4">
           <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide border-b border-gray-100 pb-2">
             1. Machinery Identification
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Name */}
             <div className="md:col-span-2">
               <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
-                Equipment Title / Name <span className="text-red-500">*</span>
+                Equipment Title / Name{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
                 type="text"
                 name="name"
@@ -209,46 +275,38 @@ function AddEquipment() {
               />
             </div>
 
+            {/* Category */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
-                Category <span className="text-red-500">*</span>
+                Category{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <select
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
+                required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               >
                 {EQUIPMENT_CATEGORIES.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
+                  <option
+                    key={cat.value}
+                    value={cat.value}
+                  >
                     {cat.label}
                   </option>
                 ))}
               </select>
             </div>
 
+            {/* Brand */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
-                Fuel Type <span className="text-red-500">*</span>
+                Brand / Manufacturer{' '}
+                <span className="text-red-500">*</span>
               </label>
-              <select
-                name="fuelType"
-                value={formData.fuelType}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-              >
-                {FUEL_TYPES.map((fuel) => (
-                  <option key={fuel.value} value={fuel.value}>
-                    {fuel.label}
-                  </option>
-                ))}
-              </select>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
-                Brand / Manufacturer <span className="text-red-500">*</span>
-              </label>
               <input
                 type="text"
                 name="brand"
@@ -260,10 +318,13 @@ function AddEquipment() {
               />
             </div>
 
+            {/* Model */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
-                Model Number <span className="text-red-500">*</span>
+                Model Number{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
                 type="text"
                 name="model"
@@ -275,10 +336,13 @@ function AddEquipment() {
               />
             </div>
 
+            {/* Manufacturing Year */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
-                Manufacturing Year <span className="text-red-500">*</span>
+                Manufacturing Year{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
                 type="number"
                 name="manufacturingYear"
@@ -291,10 +355,13 @@ function AddEquipment() {
               />
             </div>
 
+            {/* Capacity */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
-                Power / Capacity Specs <span className="text-red-500">*</span>
+                Power / Capacity Specs{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
                 type="text"
                 name="capacity"
@@ -305,20 +372,25 @@ function AddEquipment() {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
+
           </div>
         </div>
 
-        {/* Pricing & Location */}
+        {/* Section 2 */}
         <div className="space-y-4">
           <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide border-b border-gray-100 pb-2">
             2. Pricing & Operational Location
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Rental Price */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
-                Daily Rental Price (₹/day) <span className="text-red-500">*</span>
+                Daily Rental Price (₹/day){' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
                 type="number"
                 name="rentalPrice"
@@ -332,10 +404,13 @@ function AddEquipment() {
               />
             </div>
 
+            {/* Location */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
-                Location Address / Hub <span className="text-red-500">*</span>
+                Location Address / Hub{' '}
+                <span className="text-red-500">*</span>
               </label>
+
               <input
                 type="text"
                 name="locationAddress"
@@ -347,8 +422,12 @@ function AddEquipment() {
               />
             </div>
 
+            {/* Latitude */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Latitude</label>
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                Latitude
+              </label>
+
               <input
                 type="number"
                 step="any"
@@ -359,8 +438,12 @@ function AddEquipment() {
               />
             </div>
 
+            {/* Longitude */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Longitude</label>
+              <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                Longitude
+              </label>
+
               <input
                 type="number"
                 step="any"
@@ -370,17 +453,22 @@ function AddEquipment() {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
+
           </div>
         </div>
 
-        {/* Media & Description */}
+        {/* Section 3 */}
         <div className="space-y-4">
           <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide border-b border-gray-100 pb-2">
             3. Media & Operational Description
           </h2>
 
+          {/* Image */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Primary Image URL</label>
+            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+              Primary Image URL
+            </label>
+
             <input
               type="url"
               name="imageUrl"
@@ -389,15 +477,20 @@ function AddEquipment() {
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
+
             <p className="text-[11px] text-gray-500 mt-1">
-              Provide a valid HTTP/HTTPS image URL. If left empty, a default fallback image will be rendered.
+              Provide a valid HTTP/HTTPS image URL.
+              If left empty, a default fallback image will be rendered.
             </p>
           </div>
 
+          {/* Description */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
-              Detailed Description <span className="text-red-500">*</span>
+              Detailed Description{' '}
+              <span className="text-red-500">*</span>
             </label>
+
             <textarea
               name="description"
               required
@@ -412,6 +505,7 @@ function AddEquipment() {
 
         {/* Submit */}
         <div className="flex justify-end gap-4 border-t border-gray-100 pt-4">
+
           <button
             type="button"
             onClick={() => navigate('/partner/equipment')}
@@ -419,13 +513,19 @@ function AddEquipment() {
           >
             Cancel
           </button>
+
           <button
             type="submit"
             disabled={loading}
             className="px-6 py-2.5 text-sm font-bold text-white bg-green-700 rounded-xl hover:bg-green-800 disabled:opacity-50 transition shadow-md flex items-center gap-2"
           >
-            {loading ? 'Saving Machinery...' : editId ? 'Update Machinery' : 'Publish Listing'}
+            {loading
+              ? 'Saving Machinery...'
+              : editId
+              ? 'Update Machinery'
+              : 'Publish Listing'}
           </button>
+
         </div>
       </form>
     </div>

@@ -36,20 +36,20 @@ function FAQSection() {
     <section className="relative isolate overflow-hidden bg-slate-50">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.10),transparent_55%)]" />
 
-      <div className="relative mx-auto max-w-3xl px-6 py-24">
+      <div className="relative mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-20 lg:py-24">
         <div className="text-center">
-          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-700">
+          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest sm:px-4 sm:text-xs text-emerald-700">
             FAQ
           </span>
-          <h2 className="mt-5 font-display text-4xl font-bold tracking-tight text-emerald-950 sm:text-5xl">
+          <h2 className="mt-4 font-display sm:mt-5 text-3xl font-bold tracking-tight text-emerald-950 sm:text-4xl lg:text-5xl">
             Common Questions
           </h2>
-          <p className="mt-4 text-lg leading-relaxed text-slate-600">
+          <p className="mt-3 text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
             Everything farmers ask us before their first booking.
           </p>
         </div>
 
-        <div className="mt-12 space-y-4">
+        <div className="mt-10 space-y-3 sm:space-y-4 lg:mt-12">
           {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
             return (
@@ -65,7 +65,7 @@ function FAQSection() {
                   type="button"
                   onClick={() => toggle(index)}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition-all duration-300 ease-out"
+                  className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left sm:px-6 transition-all duration-300 ease-out"
                 >
                   <span
                     className={`font-semibold transition-colors duration-300 ease-out ${
@@ -95,7 +95,7 @@ function FAQSection() {
                       transition={{ duration: 0.3, ease: "easeOut" }}
                       className="overflow-hidden"
                     >
-                      <p className="border-t border-slate-100 px-6 py-5 text-sm leading-relaxed text-slate-600">
+                      <p className="border-t border-slate-100 px-5 py-5 text-sm leading-relaxed text-slate-600 sm:px-6">
                         {faq.answer}
                       </p>
                     </motion.div>
@@ -107,7 +107,7 @@ function FAQSection() {
         </div>
 
         {/* Closing support prompt */}
-        <div className="mt-10 flex flex-col items-center gap-4 rounded-2xl border border-slate-200/70 bg-white/70 px-8 py-6 text-center shadow-sm backdrop-blur-md sm:flex-row sm:justify-between sm:text-left">
+        <div className="mt-10 flex flex-col items-center gap-4 rounded-2xl border border-slate-200/70 bg-white/70 px-6 py-6 sm:px-8 text-center shadow-sm backdrop-blur-md sm:flex-row sm:justify-between sm:text-left">
           <div>
             <p className="font-semibold text-emerald-950">
               Still have questions?
@@ -120,7 +120,7 @@ function FAQSection() {
             href="https://wa.me/919876543210"
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex shrink-0 items-center gap-2 rounded-xl bg-lime-400 px-6 py-3 font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-lime-300 hover:shadow-[0_0_30px_rgba(132,204,22,0.7)]"
+            className="group inline-flex min-h-[48px] w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-lime-400 px-6 py-3 sm:w-auto font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-lime-300 hover:shadow-[0_0_30px_rgba(132,204,22,0.7)]"
           >
             <MessageCircle className="h-5 w-5" />
             Chat on WhatsApp
