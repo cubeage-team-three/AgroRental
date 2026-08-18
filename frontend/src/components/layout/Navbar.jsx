@@ -74,6 +74,7 @@ function Navbar() {
 
         {/* Actions */}
         <div className="hidden shrink-0 items-center gap-3 md:flex">
+                
           <Link
             to="/login"
             className="inline-flex min-h-[44px] items-center rounded-xl border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-800 hover:shadow-md"

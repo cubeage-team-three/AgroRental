@@ -7,11 +7,14 @@ import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.farmer.repository.FarmerRepository;
 import com.agrorental.farmer.service.FarmerOtpService;
 import com.agrorental.farmer.dto.VerifyOtpRequest;
+import com.agrorental.partner.entity.Partner;
+import com.agrorental.partner.repository.PartnerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -20,6 +23,7 @@ import java.util.UUID;
 public class AuthService {
 
     private final FarmerRepository farmerRepository;
+    private final PartnerRepository partnerRepository;
     private final FarmerOtpService farmerOtpService;
     private final PasswordEncoder passwordEncoder;
 
@@ -27,10 +31,26 @@ public class AuthService {
         String input = request.getMobileOrEmail().trim();
         log.info("Processing login request for user: {}", input);
 
-        // Find farmer by mobile number or email using DB query
-        Farmer farmer = farmerRepository.findByMobileNumberOrEmail(input, input)
-                .orElseThrow(() -> new BadRequestException("Farmer account not found with provided mobile or email: " + input));
+        // 1. Try finding in Farmer repository first
+        Optional<Farmer> farmerOpt = farmerRepository.findByMobileNumberOrEmail(input, input);
+        if (farmerOpt.isPresent()) {
+            return loginFarmer(farmerOpt.get(), request);
+        }
 
+        // 2. Try finding in Partner repository
+        Optional<Partner> partnerOpt = partnerRepository.findByMobileNumber(input);
+        if (partnerOpt.isEmpty()) {
+            partnerOpt = partnerRepository.findByEmail(input);
+        }
+
+        if (partnerOpt.isPresent()) {
+            return loginPartner(partnerOpt.get(), request);
+        }
+
+        throw new BadRequestException("Account not found with provided mobile or email: " + input);
+    }
+
+    private LoginResponse loginFarmer(Farmer farmer, LoginRequest request) {
         // Rule: Check Account Status
         if ("PENDING_OTP".equalsIgnoreCase(farmer.getAccountStatus())) {
             log.warn("Login blocked for farmer ID {}: Account is pending OTP verification", farmer.getFarmerId());
@@ -82,5 +102,32 @@ public class AuthService {
                 .message("Login successful. Welcome back, " + farmer.getFullName() + "!")
                 .build();
     }
-}
 
+    private LoginResponse loginPartner(Partner partner, LoginRequest request) {
+        if (!partner.isActive()) {
+            log.warn("Login blocked for partner ID {}: Account is deactivated", partner.getId());
+            throw new BadRequestException("Partner account is currently deactivated. Please contact support.");
+        }
+
+        if (request.getPassword() == null || request.getPassword().isEmpty()
+                || !passwordEncoder.matches(request.getPassword(), partner.getPassword())) {
+            log.warn("Login failed for partner ID {}: Invalid password provided", partner.getId());
+            throw new BadRequestException("Invalid mobile/email or password.");
+        }
+
+        String token = "agro-token-partner-" + partner.getId() + "-" + UUID.randomUUID().toString().substring(0, 8);
+        log.info("Partner login successful for partner ID: {} ({})", partner.getId(), partner.getFullName());
+
+        return LoginResponse.builder()
+                .token(token)
+                .partnerId(partner.getId())
+                .fullName(partner.getFullName())
+                .businessName(partner.getBusinessName())
+                .mobileNumber(partner.getMobileNumber())
+                .email(partner.getEmail())
+                .role("PARTNER")
+                .accountStatus(partner.getVerificationStatus() != null ? partner.getVerificationStatus().name() : "PENDING")
+                .message("Partner login successful. Welcome back, " + partner.getFullName() + "!")
+                .build();
+    }
+}
