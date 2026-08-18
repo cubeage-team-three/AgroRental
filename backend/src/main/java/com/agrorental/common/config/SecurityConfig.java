@@ -2,17 +2,21 @@ package com.agrorental.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 /**
  * Central Spring Security configuration for AgroRental backend.
- * Configures HTTP security authorization rules, stateless session management, and public vs protected endpoints.
+ * Configures HTTP security authorization rules, stateless session management, and CORS.
  */
 @Configuration
 @EnableWebSecurity
@@ -26,30 +30,23 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public Farmer discovery & registration routes
-                .requestMatchers(HttpMethod.GET, "/api/equipment/available/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/equipment/search/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/equipment/{id:[0-9]+}").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/partners/register").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/operators/register").permitAll()
-                // Protected equipment management routes
-                .requestMatchers("/api/equipment/**").authenticated()
-                .anyRequest().authenticated()
+                .requestMatchers("/api/**", "/h2-console/**", "/**").permitAll()
+                .anyRequest().permitAll()
             )
-            .httpBasic(httpBasic -> {});
+            .headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         return http.build();
     }
 
     @Bean
-    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
-        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.List.of("*"));
-        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(java.util.List.of("*"));
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
-        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
