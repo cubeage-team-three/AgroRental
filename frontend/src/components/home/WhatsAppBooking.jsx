@@ -56,30 +56,30 @@ function WhatsAppBooking() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(132,204,22,0.16),transparent_55%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_90%,rgba(16,185,129,0.16),transparent_55%)]" />
 
-      <div className="relative mx-auto max-w-7xl px-6 py-24">
-        <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-2">
+      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:py-24">
+        <div className="grid grid-cols-1 items-center gap-10 md:gap-12 lg:grid-cols-2 lg:gap-14">
           {/* Narrative */}
           <div>
-            <span className="inline-flex items-center rounded-full border border-lime-300/30 bg-lime-400/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-lime-300 backdrop-blur-md">
+            <span className="inline-flex items-center rounded-full border border-lime-300/30 bg-lime-400/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest sm:px-4 sm:text-xs text-lime-300 backdrop-blur-md">
               WhatsApp Assisted Booking
             </span>
-            <h2 className="mt-5 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            <h2 className="mt-4 font-display sm:mt-5 text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
               No Smartphone?{" "}
               <span className="bg-gradient-to-r from-lime-300 to-emerald-300 bg-clip-text text-transparent">
                 No Problem.
               </span>
             </h2>
-            <p className="mt-5 max-w-lg text-lg leading-relaxed text-white/65">
+            <p className="mt-4 max-w-lg text-base leading-relaxed text-white/65 sm:mt-5 sm:text-lg">
               Farmers who can&apos;t operate a website can send a WhatsApp
               message. Agents create the booking, confirm via OTP, and send
               live tracking links right to WhatsApp.
             </p>
 
-            <div className="mt-10 space-y-3">
+            <div className="mt-8 space-y-3 lg:mt-10">
               {steps.map(({ icon: Icon, title, description }) => (
                 <div
                   key={title}
-                  className="group flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl transition-all duration-300 ease-out hover:-translate-y-1 hover:border-lime-300/30 hover:bg-white/10"
+                  className="group flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl sm:gap-4 transition-all duration-300 ease-out hover:-translate-y-1 hover:border-lime-300/30 hover:bg-white/10"
                 >
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-emerald-500/30 to-lime-400/20 text-lime-300 transition-all duration-300 ease-out group-hover:scale-110">
                     <Icon className="h-5 w-5" />
@@ -99,7 +99,7 @@ function WhatsAppBooking() {
           <div className="relative">
             <div
               aria-hidden="true"
-              className="absolute -inset-6 rounded-[3rem] bg-gradient-to-tr from-emerald-500/20 to-lime-400/20 blur-3xl"
+              className="absolute -inset-4 rounded-[3rem] bg-gradient-to-tr from-emerald-500/20 to-lime-400/20 blur-3xl sm:-inset-6"
             />
 
             <div className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-white/10 shadow-2xl shadow-emerald-950/60 backdrop-blur-2xl transition-all duration-300 ease-out hover:-translate-y-1">
@@ -119,7 +119,7 @@ function WhatsAppBooking() {
               </div>
 
               {/* Transcript */}
-              <div className="space-y-3 bg-emerald-950/40 p-5">
+              <div className="space-y-3 bg-emerald-950/40 p-4 sm:p-5">
                 {chatMessages.map((message, index) => {
                   const isUser = message.from === "user";
                   return (
