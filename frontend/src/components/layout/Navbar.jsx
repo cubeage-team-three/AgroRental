@@ -1,25 +1,153 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Menu, X, ArrowRight, Globe } from 'lucide-react';
+import agroRentLogo from '../../assets/images/agrorent-logo.png';
 import { useLanguage } from '../../context/LanguageContext';
 
+const navLinks = [
+  { label: 'Services', href: '/#services' },
+  { label: 'How It Works', href: '/#how-it-works' },
+  { label: 'Panels', href: '/#panels' },
+  { label: 'Pricing', href: '/#pricing' },
+];
+
 function Navbar() {
-  const { t } = useLanguage();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  
+  let t = (key, defaultVal) => defaultVal || key;
+  let language = 'English';
+  let setLanguage = () => {};
+  let LANGUAGES = {};
+  
+  try {
+    const langCtx = useLanguage();
+    if (langCtx) {
+      t = (key, defaultVal) => langCtx.t(key) !== key ? langCtx.t(key) : (defaultVal || key);
+      language = langCtx.language;
+      setLanguage = langCtx.setLanguage;
+      LANGUAGES = langCtx.LANGUAGES || {};
+    }
+  } catch (e) {
+    // Fallback if not wrapped in LanguageProvider
+  }
+
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <nav className="bg-green-700 text-white px-6 py-4 flex items-center justify-between">
-      <Link to="/" className="text-xl font-bold">
-        {t('app_title')}
-      </Link>
-      <div className="flex gap-4">
-        <Link to="/" className="hover:text-green-200">
-          {t('home')}
+    <header
+      className={`sticky top-0 z-50 transition-all duration-300 ease-out ${
+        isScrolled
+          ? 'border-b border-slate-200/60 bg-white/75 shadow-lg shadow-emerald-900/5 backdrop-blur-xl'
+          : 'border-b border-transparent bg-white/50 backdrop-blur-md'
+      }`}
+    >
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3">
+        <Link
+          to="/"
+          className="flex shrink-0 items-center transition-transform duration-300 ease-out hover:scale-105"
+          onClick={() => setIsOpen(false)}
+        >
+          <img src={agroRentLogo} alt="AgroRent" className="h-14 w-auto" />
         </Link>
-        <Link to="/login" className="hover:text-green-200">
-          {t('login')}
-        </Link>
-        <Link to="/register" className="hover:text-green-200">
-          {t('register')}
-        </Link>
-      </div>
-    </nav>
+
+        {/* Pill nav */}
+        <div className="hidden items-center gap-1 rounded-full border border-slate-200/70 bg-slate-100/60 p-1.5 backdrop-blur-md lg:flex">
+          {navLinks.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              className="rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition-all duration-300 ease-out hover:bg-white hover:text-emerald-700 hover:shadow-sm"
+            >
+              {t(link.label.toLowerCase().replace(/ /g, '_'), link.label)}
+            </a>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div className="hidden shrink-0 items-center gap-3 md:flex">
+          {Object.keys(LANGUAGES).length > 0 && (
+            <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-xs font-semibold text-slate-700 backdrop-blur-md">
+              <Globe className="h-4 w-4 text-emerald-600" />
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="bg-transparent font-medium focus:outline-none cursor-pointer"
+              >
+                {Object.entries(LANGUAGES).map(([key, val]) => (
+                  <option key={key} value={val}>
+                    {val}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <Link
+            to="/login"
+            className="rounded-xl border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-800 hover:shadow-md"
+          >
+            {t('login', 'Log In')}
+          </Link>
+          <Link
+            to="/register"
+            className="group inline-flex items-center gap-1.5 rounded-xl bg-lime-400 px-5 py-2.5 text-sm font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-lime-300 hover:shadow-[0_0_25px_rgba(132,204,22,0.7)]"
+          >
+            {t('register', 'Sign Up Free')}
+            <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+          </Link>
+        </div>
+
+        {/* Mobile toggle */}
+        <button
+          type="button"
+          onClick={() => setIsOpen((open) => !open)}
+          aria-label={isOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={isOpen}
+          className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white/70 text-slate-700 backdrop-blur-md transition-all duration-300 ease-out hover:border-emerald-300 hover:text-emerald-700 md:hidden"
+        >
+          {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </nav>
+
+      {/* Mobile panel */}
+      {isOpen && (
+        <div className="border-t border-slate-200/60 bg-white/90 backdrop-blur-xl md:hidden">
+          <div className="mx-auto max-w-7xl space-y-1 px-6 py-4">
+            {navLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                className="block rounded-xl px-4 py-3 text-sm font-medium text-slate-600 transition-all duration-300 ease-out hover:bg-emerald-50 hover:text-emerald-800"
+              >
+                {t(link.label.toLowerCase().replace(/ /g, '_'), link.label)}
+              </a>
+            ))}
+            <div className="flex flex-col gap-2 pt-3">
+              <Link
+                to="/login"
+                onClick={() => setIsOpen(false)}
+                className="rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-semibold text-slate-700 transition-all duration-300 ease-out hover:border-emerald-300 hover:text-emerald-800"
+              >
+                {t('login', 'Log In')}
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setIsOpen(false)}
+                className="rounded-xl bg-lime-400 px-4 py-3 text-center text-sm font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:bg-lime-300"
+              >
+                {t('register', 'Sign Up Free')}
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </header>
   );
 }
 

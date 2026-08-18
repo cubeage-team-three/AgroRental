@@ -12,11 +12,12 @@ import lombok.*;
  */
 @Entity
 @Table(name = "equipment_images")
-@Data
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class EquipmentImage extends BaseEntity {
 
     @NotBlank(message = "Image URL is mandatory")
