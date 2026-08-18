@@ -24,6 +24,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -31,7 +33,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("EquipmentController Standalone MockMvc Unit Tests")
@@ -153,21 +154,17 @@ class EquipmentControllerTest {
     @DisplayName("DELETE /api/equipment/{id} - Should delete equipment")
     void shouldDeleteEquipment() throws Exception {
 
-        /*
-         * Current EquipmentServiceTest shows:
-         *
-         * deleteEquipment(Long equipmentId, Long partnerId)
-         *
-         * Therefore partnerId = 1L is supplied here.
-         */
-        org.mockito.Mockito.doNothing()
+        doNothing()
                 .when(equipmentService)
                 .deleteEquipment(10L, 1L);
 
         mockMvc.perform(
                 delete("/api/equipment/10")
-                        .param("partnerId", "1")
+                        .header("X-Partner-Id", "1")
         )
                 .andExpect(status().isNoContent());
+
+        verify(equipmentService)
+                .deleteEquipment(10L, 1L);
     }
 }
