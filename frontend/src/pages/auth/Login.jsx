@@ -110,11 +110,26 @@ function Login() {
 
       const userData = response.data;
       saveUserSession(userData);
+<<<<<<< HEAD
       setSuccessMessage('Login successful! Redirecting to Farmer Dashboard...');
 
       setTimeout(() => {
         navigate('/farmer/dashboard');
       }, 1200);
+=======
+      
+      if (userData && (userData.role === 'PARTNER' || userData.partnerId)) {
+        setSuccessMessage('Partner login successful! Redirecting to Partner Portal...');
+        setTimeout(() => {
+          navigate('/partner/dashboard');
+        }, 1200);
+      } else {
+        setSuccessMessage('Login successful! Redirecting to Farmer Dashboard...');
+        setTimeout(() => {
+          navigate('/farmer/dashboard');
+        }, 1200);
+      }
+>>>>>>> origin/development
 
     } catch (err) {
       console.error('Login error:', err);
@@ -361,11 +376,23 @@ function Login() {
           </form>
 
           {/* Footer Link */}
+<<<<<<< HEAD
           <div className="text-center mt-6">
             <p className="text-xs text-gray-500">
               Don't have a farmer account?{' '}
               <Link to="/register" className="font-bold text-[#3E7B27] hover:underline">
                 Sign Up Free
+=======
+          <div className="text-center mt-6 space-y-1.5">
+            <p className="text-xs text-gray-500">
+              Don't have an account?{' '}
+              <Link to="/register" className="font-bold text-[#3E7B27] hover:underline">
+                Farmer Sign Up
+              </Link>
+              {' • '}
+              <Link to="/register/partner" className="font-bold text-[#3E7B27] hover:underline">
+                Equipment Owner Sign Up
+>>>>>>> origin/development
               </Link>
             </p>
           </div>

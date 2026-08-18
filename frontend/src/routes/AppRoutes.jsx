@@ -1,13 +1,14 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
 import MainLayout from '../layouts/MainLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
+import PartnerLayout from '../layouts/PartnerLayout';
 
 import Home from '../pages/Home';
 import NotFound from '../pages/NotFound';
 
 import Login from '../pages/auth/Login';
-import SelectRole from '../pages/auth/SelectRole';
+import Register from '../pages/auth/Register';
 import RegisterFarmer from '../pages/auth/RegisterFarmer';
 import RegisterPartner from '../pages/auth/RegisterPartner';
 import RegisterOperator from '../pages/auth/RegisterOperator';
@@ -82,9 +83,12 @@ function AppRoutes() {
         <Route path="profile" element={<FarmerProfile />} />
         <Route path="farms" element={<MyFarms />} />
         <Route path="equipment" element={<SearchEquipment />} />
+        <Route path="search-equipment" element={<SearchEquipment />} />
         <Route path="equipment/:id" element={<EquipmentDetails />} />
         <Route path="book/:equipmentId" element={<BookEquipment />} />
+        <Route path="book-equipment" element={<BookEquipment />} />
         <Route path="bookings" element={<MyBookings />} />
+        <Route path="my-bookings" element={<MyBookings />} />
         <Route path="bookings/:id" element={<BookingDetails />} />
         <Route path="bookings/:id/pay" element={<CheckoutPayment />} />
         <Route path="bookings/:id/review" element={<WriteReview />} />
@@ -94,11 +98,13 @@ function AppRoutes() {
       </Route>
 
       {/* Partner routes */}
-      <Route path="/partner" element={<DashboardLayout />}>
+      <Route path="/partner" element={<PartnerLayout />}>
         <Route path="dashboard" element={<PartnerDashboard />} />
         <Route path="profile" element={<PartnerProfile />} />
         <Route path="equipment" element={<MyEquipment />} />
+        <Route path="my-equipment" element={<MyEquipment />} />
         <Route path="equipment/add" element={<AddEquipment />} />
+        <Route path="add-equipment" element={<AddEquipment />} />
         <Route path="equipment/availability" element={<EquipmentAvailability />} />
         <Route path="bookings" element={<BookingRequests />} />
         <Route path="bookings/:id/assign-operator" element={<AssignOperator />} />

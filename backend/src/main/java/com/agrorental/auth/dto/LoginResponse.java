@@ -13,6 +13,11 @@ public class LoginResponse {
 
     private String token;
     private Long farmerId;
+<<<<<<< HEAD
+=======
+    private Long partnerId;
+    private String businessName;
+>>>>>>> origin/development
     private String fullName;
     private String mobileNumber;
     private String email;

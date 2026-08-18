@@ -19,4 +19,7 @@ public interface FarmerRepository extends JpaRepository<Farmer, Long> {
 
     Optional<Farmer> findByMobileNumberOrEmail(String mobileNumber, String email);
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
