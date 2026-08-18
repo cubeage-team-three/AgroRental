@@ -131,9 +131,7 @@ function ServiceCard({ service }) {
   const { name, description, price, rating, image, badge, featured } = service;
 
   return (
-    <article
-      className="group relative isolate h-full min-h-[44px] overflow-hidden rounded-2xl bg-emerald-950 shadow-xl shadow-emerald-900/10 ring-1 ring-slate-900/5 transition-shadow duration-300 ease-out hover:shadow-2xl hover:shadow-emerald-900/25 sm:rounded-3xl sm:shadow-2xl"
-    >
+    <article className="group relative isolate h-full min-h-[44px] overflow-hidden rounded-2xl bg-emerald-950 shadow-xl shadow-emerald-900/10 ring-1 ring-slate-900/5 transition-shadow duration-300 ease-out hover:shadow-2xl hover:shadow-emerald-900/25 sm:rounded-3xl sm:shadow-2xl">
       <img
         src={image}
         alt={name}
