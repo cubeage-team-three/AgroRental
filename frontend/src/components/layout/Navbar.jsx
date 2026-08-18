@@ -1,6 +1,6 @@
+import { ArrowRight, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, ArrowRight } from 'lucide-react';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 const navLinks = [

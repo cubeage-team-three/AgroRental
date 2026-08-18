@@ -48,7 +48,9 @@ public class PartnerService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .profilePhoto(request.getProfilePhoto() != null ? request.getProfilePhoto().trim() : null)
                 .otpVerified(false)
-                .verificationStatus(Partner.VerificationStatus.PENDING)
+                .verificationStatus(
+                        Partner.VerificationStatus.PENDING
+                )
                 .build();
 
         return partnerRepository.save(partner);
