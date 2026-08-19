@@ -1,6 +1,6 @@
-import { ArrowRight, Globe, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight, Globe, Menu, X } from 'lucide-react';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 import { useLanguage } from '../../context/LanguageContext';
 

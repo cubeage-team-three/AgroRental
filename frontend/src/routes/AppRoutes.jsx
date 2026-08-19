@@ -62,6 +62,7 @@ import AdminNotifications from '../pages/admin/Notifications';
 import SystemSettings from '../pages/admin/SystemSettings';
 import AuditLogs from '../pages/admin/AuditLogs';
 
+
 function AppRoutes() {
   return (
     <Routes>
