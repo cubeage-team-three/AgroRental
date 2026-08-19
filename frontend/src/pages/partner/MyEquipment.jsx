@@ -53,7 +53,7 @@ function MyEquipment() {
       setEquipmentList(data || []);
     } catch (err) {
       console.error('Failed to load partner equipment:', err);
-      setError(err.message || 'Failed to load your machinery listings. Please ensure the backend is running.');
+      setError(err.message || 'Failed to load your equipment listings. Please ensure the backend is running.');
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,7 @@ function MyEquipment() {
 
   // Handle Delete Confirmation
   const confirmDelete = async () => {
-    if (!deleteModalItem) return;
+    if (!deleteModalItem || deleting) return;
     setDeleting(true);
 
     try {
@@ -91,7 +91,7 @@ function MyEquipment() {
       setDeleteModalItem(null);
       await fetchPartnerEquipment();
     } catch (err) {
-      alert(err.message || 'Failed to delete machinery listing');
+      alert(err.message || 'Failed to delete equipment listing');
     } finally {
       setDeleting(false);
     }
@@ -118,15 +118,15 @@ function MyEquipment() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 font-sans">
-      
+
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-[#142E1C] tracking-tight">
-            My Equipment Fleet
+            My Equipment Inventory
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            Manage your registered machinery listings, pricing rates, and operational rental states.
+            Manage your registered equipment listings, pricing rates, and operational rental states.
           </p>
         </div>
 
@@ -142,9 +142,9 @@ function MyEquipment() {
 
       {/* Search & Category Filter Bar */}
       <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-gray-100 space-y-3">
-        
+
         <div className="flex flex-col md:flex-row items-center gap-3">
-          
+
           {/* Search Input */}
           <div className="relative flex-1 w-full">
             <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -152,7 +152,7 @@ function MyEquipment() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by machinery title, brand, model or location..."
+              placeholder="Search by equipment title, brand, model or location..."
               className="w-full pl-10 pr-4 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
             />
           </div>
@@ -179,11 +179,10 @@ function MyEquipment() {
           <button
             type="button"
             onClick={() => setSelectedCategory('ALL')}
-            className={`px-3 py-1.5 rounded-lg font-extrabold whitespace-nowrap transition-all ${
-              selectedCategory === 'ALL'
-                ? 'bg-[#142E1C] text-white shadow-xs'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+            className={`px-3 py-1.5 rounded-lg font-extrabold whitespace-nowrap transition-all ${selectedCategory === 'ALL'
+              ? 'bg-[#142E1C] text-white shadow-xs'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
           >
             All Categories ({equipmentList.length})
           </button>
@@ -195,11 +194,10 @@ function MyEquipment() {
                 key={cat.value}
                 type="button"
                 onClick={() => setSelectedCategory(cat.value)}
-                className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition-all ${
-                  selectedCategory === cat.value
-                    ? 'bg-[#3E7B27] text-white shadow-xs'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition-all ${selectedCategory === cat.value
+                  ? 'bg-[#3E7B27] text-white shadow-xs'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
                 {cat.label} {count > 0 ? `(${count})` : ''}
               </button>
@@ -243,11 +241,11 @@ function MyEquipment() {
             <Tractor className="w-8 h-8" />
           </div>
           <div className="space-y-1 max-w-md mx-auto">
-            <h3 className="text-lg font-black text-gray-900">No Machinery Listings Found</h3>
+            <h3 className="text-lg font-black text-gray-900">No Equipment Listings Found</h3>
             <p className="text-xs text-gray-500">
               {searchTerm || selectedCategory !== 'ALL' || selectedStatus !== 'ALL'
-                ? 'No machinery matches your active search filters. Try resetting the filters.'
-                : "You haven't listed any farm machinery for rental yet. Add your first piece of equipment to start earning."}
+                ? 'No equipment matches your active search filters. Try resetting the filters.'
+                : "You haven't listed any farm equipment for rental yet. Add your first piece of equipment to start earning."}
             </p>
           </div>
           <button
@@ -264,6 +262,7 @@ function MyEquipment() {
           </button>
         </div>
       ) : (
+        /* Partner Equipment Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredList.map((item) => {
             const badge = getStatusBadgeInfo(item.availabilityStatus);
@@ -273,12 +272,11 @@ function MyEquipment() {
             return (
               <div
                 key={item.id}
-                className={`bg-white rounded-3xl border ${
-                  item.isDisabled ? 'border-red-200 bg-red-50/10' : 'border-gray-100'
-                } overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group`}
+                className={`bg-white rounded-3xl border ${item.isDisabled ? 'border-red-200 bg-red-50/10' : 'border-gray-100'
+                  } overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group`}
               >
                 <div>
-                  
+
                   {/* Card Thumbnail Hero Image */}
                   <div className="relative h-48 w-full bg-gray-100 overflow-hidden">
                     <img
@@ -308,7 +306,7 @@ function MyEquipment() {
 
                   {/* Card Content Details */}
                   <div className="p-5 space-y-3">
-                    
+
                     <div>
                       <span className="text-[10px] font-black uppercase tracking-wider text-[#3E7B27]">
                         {formatCategoryLabel(item.category)}
@@ -352,16 +350,15 @@ function MyEquipment() {
 
                 {/* Card Action Buttons Footer */}
                 <div className="bg-[#F8FAF8] px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-2 text-xs">
-                  
+
                   {/* Enable / Disable Toggle Button */}
                   <button
                     disabled={isProcessing}
                     onClick={() => handleToggleEnable(item.id, item.isDisabled)}
-                    className={`font-bold px-3 py-1.5 rounded-xl border transition-all ${
-                      item.isDisabled
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
-                        : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                    }`}
+                    className={`font-bold px-3 py-1.5 rounded-xl border transition-all ${item.isDisabled
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
+                      : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                      }`}
                   >
                     {isProcessing ? (
                       <span>Processing...</span>
@@ -373,7 +370,7 @@ function MyEquipment() {
                   </button>
 
                   <div className="flex items-center gap-2">
-                    
+
                     {/* Edit Button */}
                     <button
                       onClick={() => navigate(`/partner/equipment/add?edit=${item.id}`)}
@@ -412,10 +409,10 @@ function MyEquipment() {
             </div>
 
             <div className="text-center space-y-1">
-              <h3 className="text-lg font-black text-gray-900">Delete Machinery Listing?</h3>
+              <h3 className="text-lg font-black text-gray-900">Delete Equipment Listing?</h3>
               <p className="text-xs text-gray-500 leading-relaxed">
                 Are you sure you want to remove <strong className="text-gray-800 font-bold">"{deleteModalItem.name}"</strong>?
-                This will soft-deactivate the machine listing from regional rental searches.
+                This will soft-deactivate the equipment listing from regional rental searches.
               </p>
             </div>
 

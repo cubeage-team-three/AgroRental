@@ -57,14 +57,12 @@ class EquipmentControllerTest {
     @Test
     @DisplayName("GET /api/equipment/{id} - Should return 200 OK")
     void shouldGetEquipmentById() throws Exception {
-
         EquipmentResponse response = EquipmentResponse.builder()
                 .id(10L)
                 .name("Mahindra 575 DI")
                 .build();
 
-        when(equipmentService.getEquipmentById(10L))
-                .thenReturn(response);
+        when(equipmentService.getEquipmentById(10L)).thenReturn(response);
 
         mockMvc.perform(get("/api/equipment/10"))
                 .andExpect(status().isOk())
@@ -76,95 +74,62 @@ class EquipmentControllerTest {
     @Test
     @DisplayName("GET /api/equipment/{id} - Should return 404")
     void shouldReturn404WhenEquipmentNotFound() throws Exception {
-
         when(equipmentService.getEquipmentById(99L))
-                .thenThrow(
-                        new ResourceNotFoundException(
-                                "Equipment not found with ID: 99"
-                        )
-                );
+                .thenThrow(new ResourceNotFoundException("Equipment not found with ID: 99"));
 
         mockMvc.perform(get("/api/equipment/99"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(
-                        jsonPath("$.message")
-                                .value("Equipment not found with ID: 99")
-                );
+                .andExpect(jsonPath("$.message").value("Equipment not found with ID: 99"));
     }
 
     @Test
     @DisplayName("GET /api/equipment/available - Should return equipment")
     void shouldGetDiscoverableEquipment() throws Exception {
+        EquipmentSummaryResponse summary = EquipmentSummaryResponse.builder()
+                .id(10L)
+                .name("Mahindra 575 DI")
+                .availabilityStatus(AvailabilityStatus.AVAILABLE)
+                .build();
 
-        EquipmentSummaryResponse summary =
-                EquipmentSummaryResponse.builder()
-                        .id(10L)
-                        .name("Mahindra 575 DI")
-                        .availabilityStatus(
-                                AvailabilityStatus.AVAILABLE
-                        )
-                        .build();
-
-        when(equipmentService.getDiscoverableEquipment())
-                .thenReturn(List.of(summary));
+        when(equipmentService.getDiscoverableEquipment()).thenReturn(List.of(summary));
 
         mockMvc.perform(get("/api/equipment/available"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(10))
-                .andExpect(
-                        jsonPath("$.data[0].name")
-                                .value("Mahindra 575 DI")
-                );
+                .andExpect(jsonPath("$.data[0].name").value("Mahindra 575 DI"));
     }
 
     @Test
     @DisplayName("GET /api/equipment/search - Should return search results")
     void shouldSearchEquipment() throws Exception {
+        EquipmentSummaryResponse summary = EquipmentSummaryResponse.builder()
+                .id(10L)
+                .name("Mahindra 575 DI")
+                .build();
 
-        EquipmentSummaryResponse summary =
-                EquipmentSummaryResponse.builder()
-                        .id(10L)
-                        .name("Mahindra 575 DI")
-                        .build();
+        when(equipmentService.searchEquipment(any(EquipmentSearchRequest.class))).thenReturn(List.of(summary));
 
-        when(
-                equipmentService.searchEquipment(
-                        any(EquipmentSearchRequest.class)
-                )
-        ).thenReturn(List.of(summary));
-
-        mockMvc.perform(
-                get("/api/equipment/search")
+        mockMvc.perform(get("/api/equipment/search")
                         .param("category", "TRACTOR")
                         .param("minPrice", "500")
-                        .param("maxPrice", "2000")
-        )
+                        .param("maxPrice", "2000"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(10))
-                .andExpect(
-                        jsonPath("$.data[0].name")
-                                .value("Mahindra 575 DI")
-                );
+                .andExpect(jsonPath("$.data[0].name").value("Mahindra 575 DI"));
     }
 
     @Test
     @DisplayName("DELETE /api/equipment/{id} - Should delete equipment")
     void shouldDeleteEquipment() throws Exception {
+        doNothing().when(equipmentService).deleteEquipment(10L, 1L);
 
-        doNothing()
-                .when(equipmentService)
-                .deleteEquipment(10L, 1L);
-
-        mockMvc.perform(
-                delete("/api/equipment/10")
-                        .header("X-Partner-Id", "1")
-        )
+        mockMvc.perform(delete("/api/equipment/10")
+                        .header("X-Partner-Id", "1"))
                 .andExpect(status().isNoContent());
 
-        verify(equipmentService)
-                .deleteEquipment(10L, 1L);
+        verify(equipmentService).deleteEquipment(10L, 1L);
     }
 }
