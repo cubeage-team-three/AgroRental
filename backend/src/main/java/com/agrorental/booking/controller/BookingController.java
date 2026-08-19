@@ -1,76 +1,127 @@
 package com.agrorental.booking.controller;
 
-import com.agrorental.booking.dto.BookingRequestDto;
-import com.agrorental.booking.dto.BookingResponseDto;
-import com.agrorental.booking.entity.constant.BookingStatus;
+import com.agrorental.booking.dto.BookingCreateRequest;
+import com.agrorental.booking.dto.BookingResponse;
+import com.agrorental.booking.dto.BookingStatusUpdateRequest;
 import com.agrorental.booking.service.BookingService;
 import com.agrorental.common.dto.ApiResponse;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * REST Controller exposing HTTP APIs for Equipment Rental Booking module.
+ */
 @RestController
 @RequestMapping("/api/bookings")
-@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
 public class BookingController {
 
     private final BookingService bookingService;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<BookingResponseDto>> createBooking(
-            @Valid @RequestBody BookingRequestDto request) {
-
-        BookingResponseDto booking = bookingService.createBooking(request);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Booking created successfully", booking));
-    }
-
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<BookingResponseDto>>> getAllBookings() {
-        return ResponseEntity.ok(ApiResponse.success(bookingService.getAllBookings()));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<BookingResponseDto>> getBookingById(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(bookingService.getBookingById(id)));
-    }
-
-    @GetMapping("/farmer/{farmerId}")
-    public ResponseEntity<ApiResponse<List<BookingResponseDto>>> getBookingsByFarmer(
-            @PathVariable Long farmerId) {
-        return ResponseEntity.ok(ApiResponse.success(bookingService.getBookingsByFarmer(farmerId)));
+    public BookingController(BookingService bookingService) {
+        this.bookingService = bookingService;
     }
 
     /**
-     * Not explicitly requested, but a direct mirror of the farmer lookup and
-     * backed by the equipment-scoped query you asked for at the repository
-     * layer — a partner viewing one listing's booking history needs exactly
-     * this. Drop it if it's not wanted.
+     * Creates a new machinery rental reservation for a farmer.
+     *
+     * @param request Validated booking creation payload
+     * @return ResponseEntity containing HTTP 201 Created and BookingResponse payload
      */
-    @GetMapping("/equipment/{equipmentId}")
-    public ResponseEntity<ApiResponse<List<BookingResponseDto>>> getBookingsByEquipment(
-            @PathVariable Long equipmentId) {
-        return ResponseEntity.ok(ApiResponse.success(bookingService.getBookingsByEquipment(equipmentId)));
+    @PostMapping
+    public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
+            @Valid @RequestBody BookingCreateRequest request) {
+
+        BookingResponse response = bookingService.createBooking(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Booking reservation created successfully", response));
     }
 
-    @PutMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<BookingResponseDto>> updateBookingStatus(
-            @PathVariable Long id,
-            @RequestParam BookingStatus status) {
+    /**
+     * Retrieves a booking reservation by its primary key.
+     *
+     * @param id Booking identifier
+     * @return ResponseEntity containing HTTP 200 OK and BookingResponse payload
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(
+            @PathVariable Long id) {
 
-        BookingResponseDto booking = bookingService.updateBookingStatus(id, status);
-        return ResponseEntity.ok(ApiResponse.success("Booking status updated successfully", booking));
+        BookingResponse response = bookingService.getBookingById(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Booking retrieved successfully", response));
+    }
+
+    /**
+     * Retrieves all bookings created by a specific farmer.
+     *
+     * @param farmerId Farmer identifier
+     * @return ResponseEntity containing HTTP 200 OK and List of BookingResponse
+     */
+    @GetMapping("/farmer/{farmerId}")
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookingsByFarmer(
+            @PathVariable Long farmerId) {
+
+        List<BookingResponse> response = bookingService.getBookingsByFarmer(farmerId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Farmer bookings retrieved successfully", response));
+    }
+
+    /**
+     * Retrieves all booking requests for equipment owned by a specific partner.
+     *
+     * @param partnerId Partner identifier
+     * @return ResponseEntity containing HTTP 200 OK and List of BookingResponse
+     */
+    @GetMapping("/partner/{partnerId}")
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookingsByPartner(
+            @PathVariable Long partnerId) {
+
+        List<BookingResponse> response = bookingService.getBookingsByPartner(partnerId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Partner bookings retrieved successfully", response));
+    }
+
+    /**
+     * Cancels an existing booking reservation.
+     *
+     * @param id Booking identifier
+     * @return ResponseEntity containing HTTP 200 OK and updated BookingResponse
+     */
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<BookingResponse>> cancelBooking(
+            @PathVariable Long id) {
+
+        BookingResponse response = bookingService.cancelBooking(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Booking cancelled successfully", response));
+    }
+
+    /**
+     * Updates the status of a booking or assigns an operator.
+     *
+     * @param id Booking identifier
+     * @param request Status update payload
+     * @return ResponseEntity containing HTTP 200 OK and updated BookingResponse
+     */
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ApiResponse<BookingResponse>> updateBookingStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody BookingStatusUpdateRequest request) {
+
+        BookingResponse response = bookingService.updateBookingStatus(id, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Booking status updated successfully", response));
     }
 }

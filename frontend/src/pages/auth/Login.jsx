@@ -127,11 +127,18 @@ function Login() {
 
       const userData = response.data;
       saveUserSession(userData);
-      setSuccessMessage('Login successful! Redirecting to Farmer Dashboard...');
 
-      setTimeout(() => {
-        navigate('/farmer/dashboard');
-      }, 1200);
+      if (userData && (userData.role === 'PARTNER' || userData.partnerId)) {
+        setSuccessMessage('Partner login successful! Redirecting to Partner Portal...');
+        setTimeout(() => {
+          navigate('/partner/dashboard');
+        }, 1200);
+      } else {
+        setSuccessMessage('Login successful! Redirecting to Farmer Dashboard...');
+        setTimeout(() => {
+          navigate('/farmer/dashboard');
+        }, 1200);
+      }
 
     } catch (err) {
       console.error('Login error:', err);
@@ -396,7 +403,11 @@ function Login() {
       <RevealItem className="mt-8 text-center text-sm text-slate-500">
         Don&apos;t have an account?{' '}
         <Link to="/register" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
-          Sign up free
+          Farmer Sign Up
+        </Link>
+        {' • '}
+        <Link to="/register/partner" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
+          Equipment Owner Sign Up
         </Link>
       </RevealItem>
     </RevealGroup>

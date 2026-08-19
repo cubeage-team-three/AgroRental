@@ -1,11 +1,7 @@
 package com.agrorental.booking.exception;
 
 /**
- * Thrown when requested equipment is disabled, not marked AVAILABLE, or
- * already booked for an overlapping date range.
- * Handled by GlobalExceptionHandler and mapped to HTTP 409 Conflict — the
- * request itself is well-formed, but it conflicts with the equipment's
- * current state, which is what 409 (rather than 400) signals.
+ * Exception thrown when an equipment reservation is requested for a machine that is unavailable or already booked.
  */
 public class EquipmentNotAvailableException extends RuntimeException {
 

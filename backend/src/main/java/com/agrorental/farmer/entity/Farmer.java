@@ -66,13 +66,6 @@ public class Farmer extends BaseEntity {
     @Column(name = "profile_image", length = 255)
     private String profileImage;
 
-    /**
-     * TODO: promote to a proper enum (e.g. FarmerAccountStatus) — currently
-     * a free-form string ("PENDING_OTP" / "ACTIVE") set in FarmerService and
-     * FarmerOtpService with no compile-time guard against typos or drift.
-     * Left as-is here since retyping it also means retyping two response
-     * DTOs and every call site; not done as a drive-by inside a conflict fix.
-     */
     @Column(name = "account_status", length = 30)
     @Builder.Default
     private String accountStatus = "PENDING_OTP";
