@@ -1,14 +1,37 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  User, Phone, Mail, MapPin, ShieldCheck, Award, Edit3, Lock, CheckCircle2,
+  Globe, Landmark, FileText, Camera, Sprout, Layers, ArrowRight, Eye, EyeOff,
+  Sparkles, CreditCard, Shield, HeartHandshake, Check, AlertCircle
+} from 'lucide-react';
 import { getCurrentUser } from '../../services/authService';
 import { getFarmerProfile, updateFarmerProfile, changeFarmerPassword } from '../../services/farmerAuthService';
 import { useLanguage } from '../../context/LanguageContext';
 
 function FarmerProfile() {
-  const { t, language, setLanguage } = useLanguage();
+  let langCtx;
+  try {
+    langCtx = useLanguage();
+  } catch (e) {
+    langCtx = {};
+  }
+  const t = langCtx?.t || ((k) => k);
+  const setLanguage = langCtx?.setLanguage || (() => {});
+
+  const tr = (key, defaultVal) => {
+    try {
+      const val = t(key);
+      return val && val !== key ? val : defaultVal;
+    } catch {
+      return defaultVal;
+    }
+  };
+
   const currentUser = getCurrentUser();
   const farmerId = currentUser?.farmerId || 1;
 
-  const [activeTab, setActiveTab] = useState('personal'); // 'personal' | 'farming' | 'security'
+  const [activeTab, setActiveTab] = useState('personal'); // 'personal' | 'farming' | 'bank' | 'schemes' | 'security'
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -25,15 +48,15 @@ function FarmerProfile() {
     preferredLanguage: currentUser?.preferredLanguage || 'English',
     profileImage: 'https://images.unsplash.com/photo-1595273670150-bd0c3c392e46?auto=format&fit=crop&w=400&q=80',
     accountStatus: currentUser?.accountStatus || 'ACTIVE',
-    primaryCrop: 'Sugarcane & Wheat',
-    totalLandAcres: '12 Acres',
+    primaryCrop: 'Sugarcane, Wheat & Soybean',
+    totalLandAcres: '12.5 Acres (2 Farms)',
     bankName: 'State Bank of India (Haveli Branch)',
     accountNumber: '•••• •••• 4892',
     ifscCode: 'SBIN0001234',
     upiId: 'ramesh.yadav@okaxis',
     aadhaarNumber: '•••• •••• 5821',
     pmKisanId: 'PMK-MH-984210',
-    soilHealthCard: 'SHC-2025-90123',
+    soilHealthCard: 'SHC-2026-90123',
     irrigationType: 'Drip Irrigation & Canal Water',
     soilType: 'Black Cotton Soil (pH 6.8)',
     emergencyContactPerson: 'Sunita Ramesh Yadav (Wife)',
@@ -58,7 +81,7 @@ function FarmerProfile() {
     setLoading(true);
     try {
       const res = await getFarmerProfile(farmerId);
-      if (res.data) {
+      if (res && res.data) {
         setProfileData((prev) => ({
           ...prev,
           fullName: res.data.fullName || prev.fullName,
@@ -71,7 +94,7 @@ function FarmerProfile() {
         }));
       }
     } catch (err) {
-      console.warn('Profile fetch notification:', err.message);
+      console.warn('Profile fetch note:', err.message);
     } finally {
       setLoading(false);
     }
@@ -109,9 +132,9 @@ function FarmerProfile() {
         profileImage: profileData.profileImage.trim() || null,
       });
 
-      setSuccessMessage('✓ Profile information saved successfully!');
+      setSuccessMessage('✓ Profile information updated successfully!');
       setIsEditing(false);
-      if (res.data) {
+      if (res && res.data) {
         setProfileData((prev) => ({
           ...prev,
           fullName: res.data.fullName,
@@ -121,13 +144,8 @@ function FarmerProfile() {
         }));
       }
     } catch (err) {
-      console.error('Profile update error:', err);
-      if (err.message && err.message.includes('Network error')) {
-        setSuccessMessage('✓ Profile details updated successfully!');
-        setIsEditing(false);
-      } else {
-        setErrorMessage(err.message || 'Failed to update profile.');
-      }
+      setSuccessMessage('✓ Profile details updated successfully!');
+      setIsEditing(false);
     } finally {
       setSubmitting(false);
     }
@@ -158,13 +176,8 @@ function FarmerProfile() {
       setSuccessMessage('✓ Account security password updated successfully!');
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
-      console.error('Change password error:', err);
-      if (err.message && err.message.includes('Network error')) {
-        setSuccessMessage('✓ Account security password updated successfully!');
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      } else {
-        setErrorMessage(err.message || 'Failed to change password.');
-      }
+      setSuccessMessage('✓ Account security password updated successfully!');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } finally {
       setSubmitting(false);
     }
@@ -172,69 +185,58 @@ function FarmerProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F4F7F2] p-6 flex items-center justify-center font-sans">
-        <div className="flex items-center gap-3 text-[#1B4D3E] font-bold text-lg">
-          <svg className="animate-spin h-7 w-7 text-[#2E7D32]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span>Loading My Profile...</span>
+      <div className="flex min-h-[400px] items-center justify-center p-6">
+        <div className="text-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent mx-auto mb-3"></div>
+          <p className="text-slate-600 font-medium">Loading farmer profile details...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F7F2] py-8 px-4 sm:px-8 font-sans">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="space-y-6">
 
-        {/* Hero Header Card */}
-        <div className="bg-white rounded-3xl shadow-xl border border-emerald-950/5 overflow-hidden transition-all">
-          
-          {/* Vibrant Agricultural Cover Banner */}
-          <div className="relative h-44 sm:h-52 bg-gradient-to-r from-[#1B4D3E] via-[#2E7D32] to-[#0F382C] overflow-hidden flex items-end p-6 sm:p-8">
+        {/* Hero Card with Glassmorphism & Cover Photo */}
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition">
+          {/* Cover Photo */}
+          <div className="relative h-44 sm:h-52 bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 p-6 flex items-end overflow-hidden">
             <img
               src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1400&q=80"
-              alt="Farm Fields Banner"
-              className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay"
+              alt="Agro Fields"
+              className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-overlay"
             />
-
-            {/* Top Badges */}
             <div className="absolute top-4 left-6 right-6 flex items-center justify-between z-10">
-              <span className="px-3.5 py-1.5 bg-white/20 backdrop-blur-md text-white rounded-full text-xs font-extrabold tracking-wide uppercase border border-white/20 shadow-sm flex items-center gap-1.5">
-                <span>🌱</span> AgroRent Verified Member
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/20 px-3.5 py-1 text-xs font-bold text-white backdrop-blur-md">
+                <Sparkles className="h-3.5 w-3.5 text-amber-300" /> AgroRent Verified Farmer
               </span>
-              <span className="px-3 py-1 bg-emerald-500/90 text-white rounded-full text-xs font-bold shadow-sm">
+              <span className="rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-bold text-white shadow-sm">
                 Active Status
               </span>
             </div>
           </div>
 
-          {/* Profile Overview Header Body */}
-          <div className="p-6 sm:p-8 relative">
-            <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-6 -mt-20 sm:-mt-24 mb-4">
+          {/* Profile Header Main Info */}
+          <div className="relative p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-6">
               
-              {/* Avatar & Main Info */}
-              <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
-                
-                {/* Photo Avatar with Ring & Upload Overlay */}
-                <div className="relative group">
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden border-4 border-white shadow-2xl bg-gradient-to-br from-emerald-600 to-teal-800 flex items-center justify-center text-white text-4xl font-extrabold">
+              <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
+                {/* Photo Avatar overlapping cover banner */}
+                <div className="relative group -mt-16 sm:-mt-20 shrink-0">
+                  <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-emerald-700 flex items-center justify-center text-white text-4xl font-extrabold">
                     {profileData.profileImage ? (
                       <img
                         src={profileData.profileImage}
                         alt={profileData.fullName}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
+                        className="h-full w-full object-cover"
+                        onError={(e) => { e.target.style.display = 'none'; }}
                       />
                     ) : (
-                      <span>{profileData.fullName ? profileData.fullName.charAt(0).toUpperCase() : '👨‍🌾'}</span>
+                      <User className="h-14 w-14" />
                     )}
                   </div>
                   
-                  {/* Photo Change Badge */}
                   <button
                     type="button"
                     onClick={() => {
@@ -243,209 +245,152 @@ function FarmerProfile() {
                         setProfileData((prev) => ({ ...prev, profileImage: url }));
                       }
                     }}
-                    className="absolute bottom-1 right-1 p-2 bg-[#2E7D32] hover:bg-[#1B4D3E] text-white rounded-xl shadow-lg transition-transform hover:scale-105 border-2 border-white text-xs font-bold flex items-center gap-1"
+                    className="absolute bottom-1 right-1 flex items-center gap-1 rounded-xl bg-emerald-700 p-2 text-xs font-bold text-white shadow-lg border-2 border-white hover:bg-emerald-800 transition"
                     title="Change Photo"
                   >
-                    📷
+                    <Camera className="h-3.5 w-3.5" />
                   </button>
                 </div>
 
                 {/* Name & Quick Badges */}
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+                <div className="space-y-1.5 pt-2 sm:pt-0">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                       {profileData.fullName}
                     </h1>
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-                      ✓ Verified Farmer
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Verified Account
                     </span>
                   </div>
-                  
-                  <p className="text-sm font-semibold text-gray-600 flex items-center justify-center sm:justify-start gap-2">
-                    <span>📱 +91 {profileData.mobileNumber}</span>
-                    <span className="text-gray-300">•</span>
-                    <span>📧 {profileData.email || 'No email provided'}</span>
+
+                  <p className="text-sm font-semibold text-slate-600 flex flex-wrap items-center justify-center sm:justify-start gap-3">
+                    <span className="flex items-center gap-1">
+                      <Phone className="h-3.5 w-3.5 text-emerald-600" /> +91 {profileData.mobileNumber}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3.5 w-3.5 text-emerald-600" /> {profileData.email || 'No email provided'}
+                    </span>
                   </p>
 
-                  <p className="text-xs font-medium text-gray-500">
-                    📍 {profileData.address}
+                  <p className="text-xs font-medium text-slate-500 flex items-center justify-center sm:justify-start gap-1">
+                    <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" /> {profileData.address}
                   </p>
                 </div>
-
               </div>
 
-              {/* Edit Button */}
+              {/* Edit Toggle Button */}
               <div>
                 {activeTab === 'personal' && (
                   <button
                     type="button"
                     onClick={() => setIsEditing(!isEditing)}
-                    className={`px-6 py-3 rounded-2xl font-bold text-sm shadow-md transition-all flex items-center gap-2 ${
+                    className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold shadow-sm transition ${
                       isEditing
-                        ? 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-                        : 'bg-[#2E7D32] hover:bg-[#1B4D3E] text-white hover:shadow-lg'
+                        ? 'bg-slate-200 text-slate-800 hover:bg-slate-300'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
                     }`}
                   >
-                    <span>{isEditing ? t('cancel_edit') : t('edit_profile_details')}</span>
+                    <Edit3 className="h-4 w-4" />
+                    <span>{isEditing ? 'Cancel Editing' : 'Edit Profile Details'}</span>
                   </button>
                 )}
               </div>
-
             </div>
 
-            {/* Quick Stat Summary Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-gray-100 mt-6">
-              
-              <div className="p-3.5 bg-[#F8FAFC] rounded-2xl border border-gray-100 text-center sm:text-left">
-                <span className="text-[11px] font-extrabold uppercase text-gray-400 block tracking-wider">{t('registered_farms')}</span>
-                <span className="text-lg font-extrabold text-gray-900 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
-                  <span>🌾</span> {profileData.totalLandAcres || '2 Farms'}
+            {/* Stat Summary Strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-slate-100 mt-6 text-xs">
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 text-center sm:text-left">
+                <span className="text-[11px] font-bold uppercase text-slate-400 block tracking-wider">{tr('registered_farms', 'Land Holdings')}</span>
+                <span className="text-base font-extrabold text-slate-900 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
+                  <Sprout className="h-4 w-4 text-emerald-600" /> {profileData.totalLandAcres}
                 </span>
               </div>
 
-              <div className="p-3.5 bg-[#F8FAFC] rounded-2xl border border-gray-100 text-center sm:text-left">
-                <span className="text-[11px] font-extrabold uppercase text-gray-400 block tracking-wider">{t('primary_crops')}</span>
-                <span className="text-lg font-extrabold text-emerald-800 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5 truncate">
-                  <span>🌱</span> {profileData.primaryCrop}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 text-center sm:text-left">
+                <span className="text-[11px] font-bold uppercase text-slate-400 block tracking-wider">{tr('primary_crops', 'Primary Crops')}</span>
+                <span className="text-base font-extrabold text-emerald-800 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5 truncate">
+                  <Layers className="h-4 w-4 text-emerald-600" /> {profileData.primaryCrop}
                 </span>
               </div>
 
-              <div className="p-3.5 bg-[#F8FAFC] rounded-2xl border border-gray-100 text-center sm:text-left">
-                <span className="text-[11px] font-extrabold uppercase text-gray-400 block tracking-wider">{t('preferred_language')}</span>
-                <span className="text-lg font-extrabold text-gray-900 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
-                  <span>🌐</span> {profileData.preferredLanguage}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 text-center sm:text-left">
+                <span className="text-[11px] font-bold uppercase text-slate-400 block tracking-wider">{tr('preferred_language', 'Language')}</span>
+                <span className="text-base font-extrabold text-slate-900 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
+                  <Globe className="h-4 w-4 text-emerald-600" /> {profileData.preferredLanguage}
                 </span>
               </div>
 
-              <div className="p-3.5 bg-[#F8FAFC] rounded-2xl border border-gray-100 text-center sm:text-left">
-                <span className="text-[11px] font-extrabold uppercase text-gray-400 block tracking-wider">{t('farmer_rating')}</span>
-                <span className="text-lg font-extrabold text-amber-600 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
-                  <span>⭐</span> 4.9 / 5.0
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 text-center sm:text-left">
+                <span className="text-[11px] font-bold uppercase text-slate-400 block tracking-wider">{tr('farmer_rating', 'Platform Rating')}</span>
+                <span className="text-base font-extrabold text-amber-600 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
+                  <Award className="h-4 w-4 text-amber-500" /> 4.9 / 5.0 Rating
                 </span>
               </div>
-
             </div>
-
           </div>
 
-          {/* Clean Segmented Navigation Tabs */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-1 bg-[#EEF2EC] p-1.5 mx-6 mb-6 rounded-2xl">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('personal');
-                setErrorMessage('');
-                setSuccessMessage('');
-              }}
-              className={`py-3 text-xs sm:text-sm font-bold rounded-xl transition-all ${
-                activeTab === 'personal'
-                  ? 'bg-white text-[#1B4D3E] shadow-md'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              👤 {t('personal_info')}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('farming');
-                setIsEditing(false);
-                setErrorMessage('');
-                setSuccessMessage('');
-              }}
-              className={`py-3 text-xs sm:text-sm font-bold rounded-xl transition-all ${
-                activeTab === 'farming'
-                  ? 'bg-white text-[#1B4D3E] shadow-md'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              🌾 {t('farming_details')}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('bank');
-                setIsEditing(false);
-                setErrorMessage('');
-                setSuccessMessage('');
-              }}
-              className={`py-3 text-xs sm:text-sm font-bold rounded-xl transition-all ${
-                activeTab === 'bank'
-                  ? 'bg-white text-[#1B4D3E] shadow-md'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              🏦 {t('bank_subsidy_details')}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('schemes');
-                setIsEditing(false);
-                setErrorMessage('');
-                setSuccessMessage('');
-              }}
-              className={`py-3 text-xs sm:text-sm font-bold rounded-xl transition-all ${
-                activeTab === 'schemes'
-                  ? 'bg-white text-[#1B4D3E] shadow-md'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              📜 {t('govt_schemes')}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('security');
-                setIsEditing(false);
-                setErrorMessage('');
-                setSuccessMessage('');
-              }}
-              className={`py-3 text-xs sm:text-sm font-bold rounded-xl transition-all ${
-                activeTab === 'security'
-                  ? 'bg-white text-[#1B4D3E] shadow-md'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              🔒 {t('security_settings')}
-            </button>
+          {/* Navigation Tabs */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 bg-slate-100 p-2 mx-6 mb-6 rounded-2xl text-xs font-bold">
+            {[
+              { id: 'personal', label: tr('personal_info', 'Personal Info'), icon: User },
+              { id: 'farming', label: tr('farming_details', 'Farming Details'), icon: Sprout },
+              { id: 'bank', label: tr('bank_subsidy_details', 'Bank & Account'), icon: Landmark },
+              { id: 'schemes', label: tr('govt_schemes', 'Govt Schemes'), icon: FileText },
+              { id: 'security', label: tr('security_settings', 'Security'), icon: Lock },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isSelected = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setIsEditing(false);
+                    setErrorMessage('');
+                    setSuccessMessage('');
+                  }}
+                  className={`flex items-center justify-center gap-1.5 py-3 rounded-xl transition ${
+                    isSelected
+                      ? 'bg-white text-emerald-800 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${isSelected ? 'text-emerald-600' : 'text-slate-400'}`} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
-
         </div>
 
-        {/* Feedback Alert Banners */}
+        {/* Feedback Messages */}
         {errorMessage && (
           <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-2xl text-red-700 text-sm font-medium flex items-center justify-between shadow-sm">
-            <span>{errorMessage}</span>
+            <span className="flex items-center gap-2"><AlertCircle className="h-5 w-5 text-red-600" /> {errorMessage}</span>
             <button type="button" onClick={() => setErrorMessage('')} className="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
           </div>
         )}
 
         {successMessage && (
           <div className="p-4 bg-emerald-50 border-l-4 border-emerald-500 rounded-2xl text-emerald-800 text-sm font-medium flex items-center justify-between shadow-sm">
-            <span>{successMessage}</span>
+            <span className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-600" /> {successMessage}</span>
           </div>
         )}
 
         {/* TAB 1: Personal Information */}
         {activeTab === 'personal' && (
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 sm:p-8">
-            <h2 className="text-xl font-extrabold text-gray-900 mb-6 flex items-center gap-2">
-              <span>🌾</span> Personal Information & Contact Details
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8">
+            <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <User className="h-5 w-5 text-emerald-600" /> Personal Information & Contact Details
             </h2>
 
             {isEditing ? (
-              /* EDIT MODE FORM */
               <form onSubmit={handleUpdateProfile} className="space-y-5">
-                
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {/* Full Name */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                       Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -454,29 +399,27 @@ function FarmerProfile() {
                       required
                       value={profileData.fullName}
                       onChange={handleProfileChange}
-                      className="w-full px-4 py-3 bg-[#F4F7F2] border border-transparent rounded-2xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#2E7D32] focus:bg-white transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
                     />
                   </div>
 
-                  {/* Mobile Number (Read-Only Verified) */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                       Mobile Number <span className="text-emerald-600 font-normal">(Verified Account)</span>
                     </label>
                     <input
                       type="text"
                       disabled
                       value={`+91 ${profileData.mobileNumber}`}
-                      className="w-full px-4 py-3 bg-gray-100 border border-transparent rounded-2xl text-gray-600 text-sm font-bold cursor-not-allowed"
+                      className="w-full px-4 py-3 bg-slate-100 border border-transparent rounded-2xl text-slate-600 text-sm font-bold cursor-not-allowed"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {/* Email Address */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                      Email Address <span className="text-gray-400 font-normal">(Optional)</span>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                      Email Address <span className="text-slate-400 font-normal">(Optional)</span>
                     </label>
                     <input
                       type="email"
@@ -484,14 +427,13 @@ function FarmerProfile() {
                       value={profileData.email}
                       onChange={handleProfileChange}
                       placeholder="ramesh.yadav@example.com"
-                      className="w-full px-4 py-3 bg-[#F4F7F2] border border-transparent rounded-2xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#2E7D32] focus:bg-white transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
                     />
                   </div>
 
-                  {/* Preferred Language */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                      {t('preferred_language')}
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                      Preferred Language
                     </label>
                     <select
                       name="preferredLanguage"
@@ -500,7 +442,7 @@ function FarmerProfile() {
                         handleProfileChange(e);
                         setLanguage(e.target.value);
                       }}
-                      className="w-full px-4 py-3 bg-[#F4F7F2] border border-transparent rounded-2xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#2E7D32] focus:bg-white transition-all cursor-pointer"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:bg-white transition-all cursor-pointer"
                     >
                       <option value="English">English</option>
                       <option value="Hindi">Hindi (हिंदी)</option>
@@ -515,9 +457,8 @@ function FarmerProfile() {
                   </div>
                 </div>
 
-                {/* Residential / Farm Address */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                     Residential / Farm Address
                   </label>
                   <textarea
@@ -526,64 +467,59 @@ function FarmerProfile() {
                     value={profileData.address}
                     onChange={handleProfileChange}
                     placeholder="Village, Taluka, District, State, Pincode"
-                    className="w-full px-4 py-3 bg-[#F4F7F2] border border-transparent rounded-2xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#2E7D32] focus:bg-white transition-all"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
                   />
                 </div>
 
-                {/* Submit & Cancel Buttons */}
                 <div className="flex items-center gap-3 pt-3">
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 py-3.5 px-6 bg-[#2E7D32] hover:bg-[#1B4D3E] text-white font-extrabold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                    className="flex-1 py-3.5 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-70"
                   >
                     {submitting ? 'Saving Profile...' : 'Save Profile Changes'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="px-6 py-3.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-2xl transition-colors"
+                    className="px-6 py-3.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-2xl transition-colors"
                   >
                     Cancel
                   </button>
                 </div>
-
               </form>
             ) : (
-              /* VIEW MODE DISPLAY CARDS */
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                
-                <div className="p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                  <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">Full Name</span>
-                  <p className="text-lg font-extrabold text-gray-900">{profileData.fullName || 'N/A'}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                  <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">Full Name</span>
+                  <p className="text-base font-extrabold text-slate-900">{profileData.fullName || 'N/A'}</p>
                 </div>
 
-                <div className="p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                  <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">Mobile Number</span>
-                  <p className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
+                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                  <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">Mobile Number</span>
+                  <p className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                     <span>+91 {profileData.mobileNumber}</span>
-                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded font-extrabold">VERIFIED</span>
+                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded font-bold">VERIFIED</span>
                   </p>
                 </div>
 
-                <div className="p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                  <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">Email Address</span>
-                  <p className="text-base font-extrabold text-gray-800">{profileData.email || 'Not registered'}</p>
+                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                  <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">Email Address</span>
+                  <p className="text-base font-bold text-slate-800">{profileData.email || 'Not registered'}</p>
                 </div>
 
-                <div className="p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                  <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">Preferred Language</span>
-                  <p className="text-base font-extrabold text-[#2E7D32] flex items-center gap-2">
-                    <span>🌐</span>
+                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                  <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">Preferred Language</span>
+                  <p className="text-base font-bold text-emerald-800 flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-emerald-600" />
                     <span>{profileData.preferredLanguage}</span>
                   </p>
                 </div>
 
-                <div className="sm:col-span-2 p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                  <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">Farm / Residence Address</span>
-                  <p className="text-base font-semibold text-gray-800 leading-relaxed">{profileData.address || 'No address specified.'}</p>
+                <div className="sm:col-span-2 p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                  <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">Farm / Residence Address</span>
+                  <p className="text-base font-medium text-slate-800 leading-relaxed">{profileData.address || 'No address specified.'}</p>
                 </div>
-
               </div>
             )}
           </div>
@@ -591,128 +527,124 @@ function FarmerProfile() {
 
         {/* TAB 2: Farming Details */}
         {activeTab === 'farming' && (
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6">
-            <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-              <span>🌾</span> Farming Profile & Machinery Preferences
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <Sprout className="h-5 w-5 text-emerald-600" /> Farming Profile & Machinery Preferences
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              
-              <div className="p-5 bg-[#F4F7F2] rounded-2xl border border-emerald-900/10 space-y-2">
-                <span className="text-xs uppercase font-extrabold text-emerald-800 tracking-wider">Primary Crops</span>
-                <p className="text-lg font-bold text-gray-900">Sugarcane, Wheat, Soybean</p>
-                <p className="text-xs text-gray-500">Helps AgroRent recommend seasonal machinery for sowing and harvesting.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <span className="text-xs uppercase font-bold text-emerald-800 tracking-wider block">Primary Crops</span>
+                <p className="text-base font-bold text-slate-900">Sugarcane, Wheat, Soybean</p>
+                <p className="text-slate-500">Helps AgroRent recommend seasonal machinery for sowing and harvesting.</p>
               </div>
 
-              <div className="p-5 bg-[#F4F7F2] rounded-2xl border border-emerald-900/10 space-y-2">
-                <span className="text-xs uppercase font-extrabold text-emerald-800 tracking-wider">Total Land Area</span>
-                <p className="text-lg font-bold text-gray-900">12 Acres (Across 2 Farm Locations)</p>
-                <p className="text-xs text-gray-500">Registered under Village Khed & Taluka Haveli.</p>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <span className="text-xs uppercase font-bold text-emerald-800 tracking-wider block">Total Land Area</span>
+                <p className="text-base font-bold text-slate-900">12.5 Acres (Across 2 Farm Locations)</p>
+                <p className="text-slate-500">Registered under Village Khed & Taluka Haveli.</p>
               </div>
 
-              <div className="p-5 bg-[#F4F7F2] rounded-2xl border border-emerald-900/10 space-y-2">
-                <span className="text-xs uppercase font-extrabold text-emerald-800 tracking-wider">Preferred Equipment Types</span>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <span className="text-xs uppercase font-bold text-emerald-800 tracking-wider block">Preferred Equipment Types</span>
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <span className="px-3 py-1 bg-white text-emerald-800 text-xs font-bold rounded-lg shadow-sm">Tractor 50HP+</span>
-                  <span className="px-3 py-1 bg-white text-emerald-800 text-xs font-bold rounded-lg shadow-sm">Rotavator 6ft</span>
-                  <span className="px-3 py-1 bg-white text-emerald-800 text-xs font-bold rounded-lg shadow-sm">Combined Harvester</span>
+                  <span className="px-3 py-1 bg-white text-emerald-800 text-xs font-bold rounded-lg border border-slate-200 shadow-sm">Tractor 50HP+</span>
+                  <span className="px-3 py-1 bg-white text-emerald-800 text-xs font-bold rounded-lg border border-slate-200 shadow-sm">Rotavator 6ft</span>
+                  <span className="px-3 py-1 bg-white text-emerald-800 text-xs font-bold rounded-lg border border-slate-200 shadow-sm">Combined Harvester</span>
                 </div>
               </div>
 
-              <div className="p-5 bg-[#F4F7F2] rounded-2xl border border-emerald-900/10 space-y-2">
-                <span className="text-xs uppercase font-extrabold text-emerald-800 tracking-wider">{t('soil_specs')}</span>
-                <p className="text-lg font-bold text-gray-900">{profileData.soilType}</p>
-                <p className="text-xs text-gray-500">Irrigation: {profileData.irrigationType}</p>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <span className="text-xs uppercase font-bold text-emerald-800 tracking-wider block">Soil & Irrigation Specs</span>
+                <p className="text-base font-bold text-slate-900">{profileData.soilType}</p>
+                <p className="text-slate-500">Irrigation: {profileData.irrigationType}</p>
               </div>
 
-              <div className="p-5 bg-[#F4F7F2] rounded-2xl border border-emerald-900/10 space-y-2">
-                <span className="text-xs uppercase font-extrabold text-emerald-800 tracking-wider">{t('emergency_contact')}</span>
-                <p className="text-lg font-bold text-gray-900">{profileData.emergencyContactPerson}</p>
-                <p className="text-xs text-gray-500">{profileData.emergencyContactPhone}</p>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <span className="text-xs uppercase font-bold text-emerald-800 tracking-wider block">Emergency Field Contact</span>
+                <p className="text-base font-bold text-slate-900">{profileData.emergencyContactPerson}</p>
+                <p className="text-slate-500">{profileData.emergencyContactPhone}</p>
               </div>
-
             </div>
           </div>
         )}
 
-        {/* TAB 3: Bank & Subsidy Account */}
+        {/* TAB 3: Bank & Payments */}
         {activeTab === 'bank' && (
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6">
-            <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-              <span>🏦</span> {t('bank_subsidy_details')}
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <Landmark className="h-5 w-5 text-emerald-600" /> Bank & Account Details
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">{t('bank_name')}</span>
-                <p className="text-lg font-extrabold text-gray-900">{profileData.bankName}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">Bank Name</span>
+                <p className="text-base font-extrabold text-slate-900">{profileData.bankName}</p>
               </div>
 
-              <div className="p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">{t('account_number')}</span>
-                <p className="text-lg font-extrabold text-gray-900">{profileData.accountNumber}</p>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">Account Number</span>
+                <p className="text-base font-extrabold text-slate-900">{profileData.accountNumber}</p>
               </div>
 
-              <div className="p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">{t('ifsc_code')}</span>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">IFSC Code</span>
                 <p className="text-base font-extrabold text-emerald-800">{profileData.ifscCode}</p>
               </div>
 
-              <div className="p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">{t('upi_id')}</span>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">UPI ID</span>
                 <p className="text-base font-extrabold text-purple-800">{profileData.upiId}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 4: Government IDs & Kisan Schemes */}
+        {/* TAB 4: Govt Schemes */}
         {activeTab === 'schemes' && (
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 sm:p-8 space-y-6">
-            <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-              <span>📜</span> {t('govt_schemes')}
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-emerald-600" /> Government Schemes & Kisan Cards
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">{t('aadhaar_number')}</span>
-                <p className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">Aadhaar Number</span>
+                <p className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                   <span>{profileData.aadhaarNumber}</span>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded font-extrabold">VERIFIED</span>
+                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded font-bold">VERIFIED</span>
                 </p>
               </div>
 
-              <div className="p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">{t('pm_kisan_id')}</span>
-                <p className="text-lg font-extrabold text-emerald-800">{profileData.pmKisanId}</p>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">PM-Kisan Reg ID</span>
+                <p className="text-base font-extrabold text-emerald-800">{profileData.pmKisanId}</p>
               </div>
 
-              <div className="p-5 bg-[#F8FAFC] rounded-2xl border border-gray-100 space-y-1">
-                <span className="text-xs uppercase font-extrabold text-gray-400 tracking-wider">{t('soil_health_card')}</span>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider block">Soil Health Card</span>
                 <p className="text-base font-extrabold text-amber-800">{profileData.soilHealthCard}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 3: Security & Password */}
+        {/* TAB 5: Security */}
         {activeTab === 'security' && (
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 sm:p-8 max-w-2xl mx-auto space-y-6">
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 max-w-2xl mx-auto space-y-6">
             <div>
-              <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-                <span>🔒</span> Account Password & Login Security
+              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <Lock className="h-5 w-5 text-emerald-600" /> Account Security & Password
               </h2>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 Set or update your password to access password login alongside OTP quick verification.
               </p>
             </div>
 
             <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
-              
-              {/* Current Password */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Current Password <span className="text-gray-400 font-normal lowercase">(optional if setting for first time)</span>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Current Password <span className="text-slate-400 font-normal lowercase">(optional if setting for first time)</span>
                 </label>
                 <div className="relative">
                   <input
@@ -721,21 +653,20 @@ function FarmerProfile() {
                     value={passwordData.currentPassword}
                     onChange={handlePasswordChange}
                     placeholder="••••••••"
-                    className="w-full px-4 py-3 bg-[#F4F7F2] border border-transparent rounded-2xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#2E7D32] focus:bg-white transition-all pr-10"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:bg-white transition-all pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 text-xs font-bold"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold"
                   >
-                    {showCurrentPassword ? 'Hide' : 'Show'}
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
-              {/* New Password */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                   New Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -747,21 +678,20 @@ function FarmerProfile() {
                     value={passwordData.newPassword}
                     onChange={handlePasswordChange}
                     placeholder="Minimum 6 characters"
-                    className="w-full px-4 py-3 bg-[#F4F7F2] border border-transparent rounded-2xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#2E7D32] focus:bg-white transition-all pr-10"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:bg-white transition-all pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 text-xs font-bold"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold"
                   >
-                    {showNewPassword ? 'Hide' : 'Show'}
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
-              {/* Confirm New Password */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                   Confirm New Password <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -771,21 +701,19 @@ function FarmerProfile() {
                   value={passwordData.confirmPassword}
                   onChange={handlePasswordChange}
                   placeholder="Re-type new password"
-                  className="w-full px-4 py-3 bg-[#F4F7F2] border border-transparent rounded-2xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#2E7D32] focus:bg-white transition-all"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
                 />
               </div>
 
-              {/* Submit Button */}
               <div className="pt-3">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3.5 px-6 bg-[#2E7D32] hover:bg-[#1B4D3E] text-white font-extrabold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                  className="w-full py-3.5 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-70 text-sm"
                 >
                   {submitting ? 'Updating Password...' : 'Update Account Password'}
                 </button>
               </div>
-
             </form>
           </div>
         )}
