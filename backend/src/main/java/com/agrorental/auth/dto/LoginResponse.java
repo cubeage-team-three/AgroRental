@@ -13,6 +13,8 @@ public class LoginResponse {
 
     private String token;
     private Long farmerId;
+    private Long partnerId;
+    private String businessName;
     private String fullName;
     private String mobileNumber;
     private String email;

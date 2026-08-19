@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 import MainLayout from '../layouts/MainLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
+import PartnerLayout from '../layouts/PartnerLayout';
 
 import Home from '../pages/Home';
 import NotFound from '../pages/NotFound';
@@ -58,7 +59,7 @@ import ManageComplaints from '../pages/admin/ManageComplaints';
 import Reports from '../pages/admin/Reports';
 import AdminNotifications from '../pages/admin/Notifications';
 import SystemSettings from '../pages/admin/SystemSettings';
-import AuditLogs from '../pages/admin/AuditLogs';
+
 
 function AppRoutes() {
   return (
@@ -95,7 +96,7 @@ function AppRoutes() {
       </Route>
 
       {/* Partner routes */}
-      <Route path="/partner" element={<DashboardLayout />}>
+      <Route path="/partner" element={<PartnerLayout />}>
         <Route path="dashboard" element={<PartnerDashboard />} />
         <Route path="profile" element={<PartnerProfile />} />
         <Route path="equipment" element={<MyEquipment />} />
