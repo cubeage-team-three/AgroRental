@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 import MainLayout from '../layouts/MainLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
+import AuthLayout from '../layouts/AuthLayout';
 import PartnerLayout from '../layouts/PartnerLayout';
 
 import Home from '../pages/Home';
@@ -59,7 +60,7 @@ import ManageComplaints from '../pages/admin/ManageComplaints';
 import Reports from '../pages/admin/Reports';
 import AdminNotifications from '../pages/admin/Notifications';
 import SystemSettings from '../pages/admin/SystemSettings';
-
+import AuditLogs from '../pages/admin/AuditLogs';
 
 function AppRoutes() {
   return (
@@ -67,12 +68,16 @@ function AppRoutes() {
       {/* Public / Auth routes */}
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
         <Route path="register/farmer" element={<RegisterFarmer />} />
         <Route path="register/partner" element={<RegisterPartner />} />
         <Route path="register/operator" element={<RegisterOperator />} />
         <Route path="verify-otp" element={<VerifyOtp />} />
+      </Route>
+
+      {/* Cinematic split-screen auth pages */}
+      <Route element={<AuthLayout />}>
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
       </Route>
 
       {/* Farmer routes */}

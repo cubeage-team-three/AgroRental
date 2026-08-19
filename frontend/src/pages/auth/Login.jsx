@@ -1,8 +1,24 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowRight, Eye, EyeOff, Loader2, MessageCircle, Smartphone, Lock, X } from 'lucide-react';
 import { loginUser, loginWithOtp, saveUserSession } from '../../services/authService';
 import { sendOtp } from '../../services/farmerAuthService';
 import { useLanguage } from '../../context/LanguageContext';
+import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
+import MagneticButton from '../../components/ui/MagneticButton';
+import AuthField from '../../components/auth/AuthField';
+
+function GoogleIcon() {
+  return (
+    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.57-5.17 3.57-8.81z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.92l-3.88-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.27v3.1C3.25 21.3 7.31 24 12 24z" />
+      <path fill="#FBBC05" d="M5.27 14.27a7.2 7.2 0 010-4.54v-3.1H1.27a12 12 0 000 10.74l4-3.1z" />
+      <path fill="#EA4335" d="M12 4.77c1.76 0 3.34.6 4.59 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.63l4 3.1C6.22 6.88 8.87 4.77 12 4.77z" />
+    </svg>
+  );
+}
 
 function Login() {
   const { t } = useLanguage();
@@ -25,6 +41,7 @@ function Login() {
 
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -158,232 +175,242 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F6F0] flex flex-col items-center justify-start py-6 px-4 sm:px-6 font-sans">
-      
-      {/* Top Navigation Brand Logo */}
-      <div className="w-full max-w-xl flex items-center justify-between py-3 mb-4">
-        <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-[#2E6F22] tracking-tight">
-          <span className="w-9 h-9 rounded-full bg-[#3E7B27] text-white flex items-center justify-center font-bold text-lg shadow-sm">
-            🌱
-          </span>
-          <span>AgroRent</span>
-        </Link>
-      </div>
+    <RevealGroup stagger={0.08} delayChildren={0.05}>
+      <RevealItem>
+        <h1 className="font-display text-[28px] font-bold tracking-tight text-slate-900 sm:text-[32px]">
+          Welcome back
+        </h1>
+        <p className="mt-2 text-[15px] text-slate-500">
+          Sign in to manage your farms, bookings, and machinery.
+        </p>
+      </RevealItem>
 
-      {/* Main Login Card */}
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100/80 transition-all duration-300">
-        
-        {/* Banner Hero Image Header */}
-        <div className="relative h-28 sm:h-32 bg-gradient-to-r from-emerald-800 to-green-900 overflow-hidden flex items-center justify-center">
-          <img
-            src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80"
-            alt="Agro Field Banner"
-            className="absolute inset-0 w-full h-full object-cover opacity-50"
-          />
-          <div className="relative z-10 text-center px-4">
-            <span className="text-xs uppercase tracking-widest font-semibold text-emerald-200 block mb-0.5">Welcome back to</span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-wide drop-shadow-md">AgroRent</h2>
-          </div>
+      <RevealItem className="mt-7">
+        <div className="flex rounded-2xl bg-[#F0EFE9] p-1">
+          <button
+            type="button"
+            onClick={() => {
+              setLoginMode('PASSWORD');
+              setErrorMessage('');
+            }}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ease-out ${
+              loginMode === 'PASSWORD' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Password
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setLoginMode('OTP');
+              setErrorMessage('');
+            }}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ease-out ${
+              loginMode === 'OTP' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            OTP Login
+          </button>
         </div>
+      </RevealItem>
 
-        {/* Form Container */}
-        <div className="p-6 sm:p-8">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Farmer Portal Login</h1>
-            <p className="text-sm text-gray-500 mt-1 font-medium">Access your farms, bookings, and machinery</p>
-          </div>
-
-          {/* Authentication Mode Tabs */}
-          <div className="flex bg-[#F0EFE9] p-1 rounded-2xl mb-6">
+      {devMockOtp && (
+        <RevealItem className="mt-4">
+          <div className="flex items-center justify-between gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800">
+            <span>
+              Verification code: <strong className="text-sm font-bold">{devMockOtp}</strong>
+            </span>
             <button
               type="button"
-              onClick={() => {
-                setLoginMode('PASSWORD');
-                setErrorMessage('');
-              }}
-              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${
-                loginMode === 'PASSWORD'
-                  ? 'bg-white text-[#2E6F22] shadow-sm'
-                  : 'text-gray-500 hover:text-gray-800'
-              }`}
+              onClick={() => setFormData((prev) => ({ ...prev, otp: devMockOtp }))}
+              className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors duration-200 hover:bg-emerald-700"
             >
-              🔑 Password Login
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLoginMode('OTP');
-                setErrorMessage('');
-              }}
-              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${
-                loginMode === 'OTP'
-                  ? 'bg-white text-[#2E6F22] shadow-sm'
-                  : 'text-gray-500 hover:text-gray-800'
-              }`}
-            >
-              📱 OTP Quick Login
+              Auto-fill
             </button>
           </div>
+        </RevealItem>
+      )}
 
-          {/* Quick OTP Helper Badge */}
-          {devMockOtp && (
-            <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center justify-between">
-              <span>Verification OTP Code: <strong className="text-sm font-bold">{devMockOtp}</strong></span>
-              <button
-                type="button"
-                onClick={() => setFormData((prev) => ({ ...prev, otp: devMockOtp }))}
-                className="px-2 py-1 bg-emerald-600 text-white rounded text-xs font-semibold"
-              >
-                Auto-fill
-              </button>
-            </div>
-          )}
+      {errorMessage && (
+        <RevealItem className="mt-4">
+          <div className="flex items-start justify-between gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <span>{errorMessage}</span>
+            <button type="button" onClick={() => setErrorMessage('')} className="shrink-0 text-red-400 transition-colors hover:text-red-600">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </RevealItem>
+      )}
 
-          {/* Feedback Banners */}
-          {errorMessage && (
-            <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 rounded-md text-red-700 text-sm font-medium flex items-center justify-between">
-              <span>{errorMessage}</span>
-              <button type="button" onClick={() => setErrorMessage('')} className="text-red-500 hover:text-red-700 font-bold ml-2">✕</button>
-            </div>
-          )}
+      {successMessage && (
+        <RevealItem className="mt-4">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+            {successMessage}
+          </div>
+        </RevealItem>
+      )}
 
-          {successMessage && (
-            <div className="mb-4 p-3 bg-emerald-50 border-l-4 border-emerald-500 rounded-md text-emerald-800 text-sm font-medium flex items-center justify-between">
-              <span>{successMessage}</span>
-            </div>
-          )}
+      {infoMessage && (
+        <RevealItem className="mt-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600">
+            {infoMessage}
+          </div>
+        </RevealItem>
+      )}
 
-          {/* Main Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {/* Mobile / Email Input */}
+      <RevealItem className="mt-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <AuthField
+            id="mobileOrEmail"
+            name="mobileOrEmail"
+            label="Mobile Number or Email"
+            icon={Smartphone}
+            type="text"
+            value={formData.mobileOrEmail}
+            onChange={handleInputChange}
+          />
+
+          {loginMode === 'PASSWORD' && (
             <div>
-              <label htmlFor="mobileOrEmail" className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Mobile Number or Email Address <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="mobileOrEmail"
-                name="mobileOrEmail"
-                type="text"
-                required
-                value={formData.mobileOrEmail}
+              <AuthField
+                id="password"
+                name="password"
+                label="Password"
+                icon={Lock}
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
                 onChange={handleInputChange}
-                placeholder="9876543210 or farmer@example.com"
-                className="w-full px-4 py-3 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                rightSlot={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="text-slate-400 transition-colors hover:text-slate-600"
+                  >
+                    {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+                  </button>
+                }
+              />
+              <div className="mt-2 text-right">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMode('OTP');
+                    handleSendOtp();
+                  }}
+                  className="text-xs font-semibold text-emerald-700 underline-offset-2 transition-colors duration-200 hover:text-emerald-800 hover:underline"
+                >
+                  Forgot password? Use OTP instead
+                </button>
+              </div>
+            </div>
+          )}
+
+          {loginMode === 'OTP' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-600">6-digit code sent to your phone</span>
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={sendingOtp}
+                  className="text-xs font-bold text-emerald-700 transition-colors hover:underline disabled:opacity-50"
+                >
+                  {sendingOtp ? 'Sending...' : otpSent ? 'Resend OTP' : 'Send OTP'}
+                </button>
+              </div>
+              <AuthField
+                id="otp"
+                name="otp"
+                label="Enter OTP"
+                type="text"
+                maxLength={6}
+                value={formData.otp}
+                onChange={handleInputChange}
+                className="[&_input]:text-center [&_input]:tracking-[0.5em] [&_input]:font-bold"
               />
             </div>
+          )}
 
-            {/* Password Login Mode */}
-            {loginMode === 'PASSWORD' && (
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label htmlFor="password" className="block text-xs font-semibold text-gray-700">
-                    Password <span className="text-red-500">*</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginMode('OTP');
-                      handleSendOtp();
-                    }}
-                    className="text-xs font-semibold text-[#3E7B27] hover:underline"
-                  >
-                    Forgot Password? Login via OTP
-                  </button>
-                </div>
-                <div className="relative">
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-3 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 text-xs font-medium"
-                  >
-                    {showPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-              </div>
-            )}
+          <MagneticButton className="block w-full pt-1">
+            <motion.button
+              type="submit"
+              disabled={loading}
+              animate={
+                loading
+                  ? {}
+                  : {
+                      boxShadow: [
+                        '0 0 20px 0px rgba(163,230,53,0.35)',
+                        '0 0 38px 6px rgba(163,230,53,0.6)',
+                        '0 0 20px 0px rgba(163,230,53,0.35)',
+                      ],
+                    }
+              }
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-800 text-[15px] font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-900 active:scale-[0.98] disabled:opacity-70"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  {t('login')}
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </motion.button>
+          </MagneticButton>
+        </form>
+      </RevealItem>
 
-            {/* OTP Login Mode */}
-            {loginMode === 'OTP' && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="otp" className="block text-xs font-semibold text-gray-700">
-                    6-Digit Security OTP <span className="text-red-500">*</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleSendOtp}
-                    disabled={sendingOtp}
-                    className="text-xs font-bold text-[#3E7B27] hover:underline disabled:opacity-50"
-                  >
-                    {sendingOtp ? 'Sending...' : otpSent ? 'Resend OTP' : 'Send OTP'}
-                  </button>
-                </div>
-                <input
-                  id="otp"
-                  name="otp"
-                  type="text"
-                  maxLength={6}
-                  value={formData.otp}
-                  onChange={handleInputChange}
-                  placeholder="Enter 6-digit OTP"
-                  className="w-full px-4 py-3 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 placeholder-gray-400 text-sm tracking-widest text-center font-bold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
-                />
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 px-6 bg-[#3E7B27] hover:bg-[#32641F] text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Logging in...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>{t('login')}</span>
-                    <span className="group-hover:translate-x-1 transition-transform">→</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-
-          {/* Footer Link */}
-          <div className="text-center mt-6 space-y-1.5">
-            <p className="text-xs text-gray-500">
-              Don't have an account?{' '}
-              <Link to="/register" className="font-bold text-[#3E7B27] hover:underline">
-                Farmer Sign Up
-              </Link>
-              {' • '}
-              <Link to="/register/partner" className="font-bold text-[#3E7B27] hover:underline">
-                Equipment Owner Sign Up
-              </Link>
-            </p>
+      <RevealItem className="mt-6">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
           </div>
-
+          <div className="relative flex justify-center">
+            <span className="bg-white px-3 text-xs font-medium uppercase tracking-wide text-slate-400">
+              or continue with
+            </span>
+          </div>
         </div>
-      </div>
-    </div>
+      </RevealItem>
+
+      <RevealItem className="mt-4 grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={() => setInfoMessage('Google sign-in is coming soon — please use phone or OTP for now.')}
+          className="flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-all duration-200 ease-out hover:border-slate-300 hover:bg-slate-50"
+        >
+          <GoogleIcon />
+          Google
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setLoginMode('OTP');
+            handleSendOtp();
+          }}
+          className="flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-all duration-200 ease-out hover:border-emerald-300 hover:bg-emerald-50"
+        >
+          <MessageCircle className="h-[18px] w-[18px] text-[#25D366]" />
+          WhatsApp
+        </button>
+      </RevealItem>
+
+      <RevealItem className="mt-8 text-center text-sm text-slate-500">
+        Don&apos;t have an account?{' '}
+        <Link to="/register" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
+          Farmer Sign Up
+        </Link>
+        {' • '}
+        <Link to="/register/partner" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
+          Equipment Owner Sign Up
+        </Link>
+      </RevealItem>
+    </RevealGroup>
   );
 }
 
