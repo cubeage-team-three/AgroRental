@@ -86,7 +86,7 @@ function AddEquipment() {
       })
       .catch((err) => {
         console.error('Failed to fetch equipment for editing:', err);
-        setError('Failed to load existing machinery details.');
+        setError('Failed to load existing equipment details.');
       })
       .finally(() => {
         setFetchingEditData(false);
@@ -110,7 +110,7 @@ function AddEquipment() {
 
     // Form Validations
     if (!formData.name.trim() || !formData.brand.trim() || !formData.model.trim()) {
-      setError('Please fill in all required machinery identification fields.');
+      setError('Please fill in all required equipment identification fields.');
       setLoading(false);
       return;
     }
@@ -138,12 +138,12 @@ function AddEquipment() {
         longitude: Number(formData.longitude),
         images: formData.imageUrl.trim()
           ? [
-              {
-                imageUrl: formData.imageUrl.trim(),
-                isPrimary: true,
-                displayOrder: 1,
-              },
-            ]
+            {
+              imageUrl: formData.imageUrl.trim(),
+              isPrimary: true,
+              displayOrder: 1,
+            },
+          ]
           : [],
       };
 
@@ -156,13 +156,12 @@ function AddEquipment() {
       navigate('/partner/equipment');
     } catch (err) {
       console.error('Equipment submit error:', err);
-
       if (err.status === 409) {
         setConflictWarning(
-          err.message || 'This machinery listing was modified in another session. Please refresh.'
+          err.message || 'This equipment was updated by another session. Please refresh and try again.'
         );
       } else {
-        setError(err.message || 'Failed to save machinery listing. Please verify all required fields.');
+        setError(err.message || 'Failed to save equipment. Please check all fields.');
       }
     } finally {
       setLoading(false);
@@ -180,7 +179,7 @@ function AddEquipment() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 font-sans">
-      
+
       {/* Header Bar */}
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div className="space-y-1">
@@ -192,13 +191,13 @@ function AddEquipment() {
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <h1 className="text-2xl sm:text-3xl font-black text-[#142E1C] tracking-tight">
-              {editId ? 'Edit Machinery Listing' : 'List New Farm Equipment'}
+              {editId ? 'Edit Equipment Listing' : 'Add New Equipment'}
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-gray-500">
             {editId
-              ? 'Update technical specifications, rental tariffs, and base location details.'
-              : 'Add your tractor, harvester, tiller, or implement to regional farmer discovery.'}
+              ? 'Update specifications, rental rates, and location details.'
+              : 'List new farm equipment to make it available for regional rental.'}
           </p>
         </div>
 
@@ -239,22 +238,22 @@ function AddEquipment() {
 
       {/* Main Multi-Section Form */}
       <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 shadow-sm space-y-8">
-        
-        {/* Section 1: Machinery Identification */}
+
+        {/* Section 1: Equipment Identification */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
             <Tractor className="w-5 h-5 text-[#3E7B27]" />
             <h2 className="text-base font-black text-[#142E1C] uppercase tracking-wider">
-              1. Machinery Identification & Specs
+              1. Equipment Identification & Specs
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
+
             {/* Title / Name */}
             <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Machinery Title / Listing Name <span className="text-red-500">*</span>
+                Equipment Title / Listing Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -267,10 +266,9 @@ function AddEquipment() {
               />
             </div>
 
-            {/* Category */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Machinery Category <span className="text-red-500">*</span>
+                Equipment Category <span className="text-red-500">*</span>
               </label>
               <select
                 name="category"
@@ -323,7 +321,6 @@ function AddEquipment() {
               />
             </div>
 
-            {/* Model */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                 Model Number / Variant <span className="text-red-500">*</span>
@@ -339,7 +336,6 @@ function AddEquipment() {
               />
             </div>
 
-            {/* Manufacturing Year */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                 Manufacturing Year <span className="text-red-500">*</span>
@@ -371,7 +367,6 @@ function AddEquipment() {
                 className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
               />
             </div>
-
           </div>
         </div>
 
@@ -385,7 +380,7 @@ function AddEquipment() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
+
             {/* Daily Rental Price */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
@@ -423,6 +418,31 @@ function AddEquipment() {
               />
             </div>
 
+            {/* Latitude */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Latitude</label>
+              <input
+                type="number"
+                step="any"
+                name="latitude"
+                value={formData.latitude}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+              />
+            </div>
+
+            {/* Longitude */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Longitude</label>
+              <input
+                type="number"
+                step="any"
+                name="longitude"
+                value={formData.longitude}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+              />
+            </div>
           </div>
         </div>
 
@@ -431,16 +451,16 @@ function AddEquipment() {
           <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
             <ImageIcon className="w-5 h-5 text-[#3E7B27]" />
             <h2 className="text-base font-black text-[#142E1C] uppercase tracking-wider">
-              3. Machinery Photos & Operational Notes
+              3. Equipment Photos & Operational Notes
             </h2>
           </div>
 
           <div className="space-y-4">
-            
+
             {/* Image URL with Live Preview */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Primary Machinery Photo URL
+                Primary Equipment Photo URL
               </label>
               <input
                 type="url"
@@ -496,7 +516,7 @@ function AddEquipment() {
                 name="description"
                 required
                 rows={3}
-                placeholder="Describe operational readiness, tyre condition, implements included (e.g. trolley, rotavator blades), and driver requirement..."
+                placeholder="Describe machine condition, attachments included, and operational instructions..."
                 value={formData.description}
                 onChange={handleChange}
                 className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
@@ -515,7 +535,6 @@ function AddEquipment() {
           >
             Cancel
           </button>
-
           <button
             type="submit"
             disabled={loading}
@@ -524,12 +543,12 @@ function AddEquipment() {
             {loading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Saving Machinery Listing...</span>
+                <span>Saving Equipment...</span>
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>{editId ? 'Update Machinery' : 'Publish Listing'}</span>
+                <span>{editId ? 'Update Equipment' : 'Publish Listing'}</span>
               </>
             )}
           </button>

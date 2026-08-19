@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { getCurrentUser, logoutUser, getPartnerId } from '../services/authService';
 import { partnerService } from '../services/partnerService';
+import { notificationService } from '../services/notificationService';
 import agroRentLogo from '../assets/images/agrorent-logo.jpeg';
 
 function PartnerLayout() {
@@ -30,6 +31,7 @@ function PartnerLayout() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [partner, setPartner] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const currentUser = getCurrentUser();
   const partnerId = getPartnerId();
@@ -44,7 +46,12 @@ function PartnerLayout() {
       .catch((err) => {
         console.warn('Partner profile fetch fallback in layout:', err.message);
       });
-  }, [partnerId]);
+
+    notificationService
+      .getUnreadCount('PARTNER', partnerId)
+      .then((count) => setUnreadCount(count || 0))
+      .catch(() => {});
+  }, [partnerId, location.pathname]);
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -271,7 +278,11 @@ function PartnerLayout() {
               title="Notifications"
             >
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </Link>
 
             {/* Partner Avatar Dropdown Pill */}

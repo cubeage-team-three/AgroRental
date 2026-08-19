@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * REST Controller exposing HTTP APIs for Machine Management (Equipment) module.
+ * Provides endpoints for creating, retrieving, updating, enabling, disabling, and deleting machinery listings.
+ */
 @RestController
 @RequestMapping("/api/equipment")
 @CrossOrigin(origins = {
@@ -35,257 +39,195 @@ public class EquipmentController {
         this.equipmentService = equipmentService;
     }
 
-    // ---------------------------------------------------------
-    // CREATE EQUIPMENT
-    // ---------------------------------------------------------
-
+    /**
+     * Creates a new equipment listing owned by a partner.
+     *
+     * @param request Validated equipment creation payload
+     * @return ResponseEntity containing HTTP 201 Created and ApiResponse wrapper with EquipmentResponse
+     */
     @PostMapping
     public ResponseEntity<ApiResponse<EquipmentResponse>> createEquipment(
             @Valid @RequestBody EquipmentCreateRequest request) {
 
-        EquipmentResponse response =
-                equipmentService.createEquipment(request);
+        EquipmentResponse response = equipmentService.createEquipment(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(
-                        "Equipment created successfully",
-                        response
-                ));
+                .body(ApiResponse.success("Equipment created successfully", response));
     }
 
-    // ---------------------------------------------------------
-    // GET EQUIPMENT BY ID
-    // ---------------------------------------------------------
-
+    /**
+     * Retrieves an equipment listing by its unique identifier.
+     *
+     * @param id Equipment primary key
+     * @return ResponseEntity containing HTTP 200 OK and EquipmentResponse
+     */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<EquipmentResponse>> getEquipmentById(
             @PathVariable Long id) {
 
-        EquipmentResponse response =
-                equipmentService.getEquipmentById(id);
+        EquipmentResponse response = equipmentService.getEquipmentById(id);
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Equipment retrieved successfully",
-                        response
-                )
-        );
+                ApiResponse.success("Equipment retrieved successfully", response));
     }
 
-    // ---------------------------------------------------------
-    // GET PARTNER EQUIPMENT
-    // ---------------------------------------------------------
-
+    /**
+     * Retrieves all equipment listings owned by a specific partner.
+     *
+     * @param partnerId Owning partner ID
+     * @return ResponseEntity containing HTTP 200 OK and List of EquipmentSummaryResponse
+     */
     @GetMapping("/partner/{partnerId}")
-    public ResponseEntity<ApiResponse<List<EquipmentSummaryResponse>>>
-    getEquipmentByPartner(@PathVariable Long partnerId) {
+    public ResponseEntity<ApiResponse<List<EquipmentSummaryResponse>>> getEquipmentByPartner(
+            @PathVariable Long partnerId) {
 
-        List<EquipmentSummaryResponse> response =
-                equipmentService.getEquipmentByPartner(partnerId);
+        List<EquipmentSummaryResponse> response = equipmentService.getEquipmentByPartner(partnerId);
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Partner equipment retrieved successfully",
-                        response
-                )
-        );
+                ApiResponse.success("Partner equipment retrieved successfully", response));
     }
 
-    // ---------------------------------------------------------
-    // GET AVAILABLE EQUIPMENT
-    // ---------------------------------------------------------
-
+    /**
+     * Retrieves currently discoverable equipment listings (AVAILABLE and non-disabled).
+     *
+     * @return ResponseEntity containing HTTP 200 OK and List of EquipmentSummaryResponse
+     */
     @GetMapping("/available")
-    public ResponseEntity<ApiResponse<List<EquipmentSummaryResponse>>>
-    getDiscoverableEquipment() {
+    public ResponseEntity<ApiResponse<List<EquipmentSummaryResponse>>> getDiscoverableEquipment() {
 
-        List<EquipmentSummaryResponse> response =
-                equipmentService.getDiscoverableEquipment();
+        List<EquipmentSummaryResponse> response = equipmentService.getDiscoverableEquipment();
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Discoverable equipment retrieved successfully",
-                        response
-                )
-        );
+                ApiResponse.success("Discoverable equipment retrieved successfully", response));
     }
 
-    // ---------------------------------------------------------
-    // GET AVAILABLE EQUIPMENT - PAGINATED
-    // ---------------------------------------------------------
-
+    /**
+     * Retrieves discoverable equipment listings with database-side pagination.
+     *
+     * @param pageable Spring Data Pageable pagination request
+     * @return ResponseEntity containing HTTP 200 OK and Page of EquipmentSummaryResponse
+     */
     @GetMapping("/available/page")
-    public ResponseEntity<ApiResponse<Page<EquipmentSummaryResponse>>>
-    getDiscoverableEquipmentPaginated(
+    public ResponseEntity<ApiResponse<Page<EquipmentSummaryResponse>>> getDiscoverableEquipmentPaginated(
             @PageableDefault(size = 20) Pageable pageable) {
 
-        Page<EquipmentSummaryResponse> response =
-                equipmentService.getDiscoverableEquipment(pageable);
+        Page<EquipmentSummaryResponse> response = equipmentService.getDiscoverableEquipment(pageable);
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Discoverable equipment retrieved successfully",
-                        response
-                )
-        );
+                ApiResponse.success("Discoverable equipment retrieved successfully", response));
     }
 
-    // ---------------------------------------------------------
-    // SEARCH EQUIPMENT
-    // ---------------------------------------------------------
-
+    /**
+     * Dynamically searches for equipment matching multi-criteria filter parameters.
+     *
+     * @param request Search filter parameters (category, minPrice, maxPrice, availabilityStatus, locationAddress)
+     * @return ResponseEntity containing HTTP 200 OK and List of EquipmentSummaryResponse
+     */
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<EquipmentSummaryResponse>>>
-    searchEquipment(@Valid EquipmentSearchRequest request) {
+    public ResponseEntity<ApiResponse<List<EquipmentSummaryResponse>>> searchEquipment(
+            @Valid EquipmentSearchRequest request) {
 
-        List<EquipmentSummaryResponse> response =
-                equipmentService.searchEquipment(request);
+        List<EquipmentSummaryResponse> response = equipmentService.searchEquipment(request);
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Equipment search completed successfully",
-                        response
-                )
-        );
+                ApiResponse.success("Equipment search completed successfully", response));
     }
 
-    // ---------------------------------------------------------
-    // SEARCH EQUIPMENT - PAGINATED
-    // ---------------------------------------------------------
-
+    /**
+     * Dynamically searches for equipment matching multi-criteria filter parameters with database-side pagination.
+     *
+     * @param request Search filter parameters (category, minPrice, maxPrice, availabilityStatus, locationAddress)
+     * @param pageable Spring Data Pageable pagination request
+     * @return ResponseEntity containing HTTP 200 OK and Page of EquipmentSummaryResponse
+     */
     @GetMapping("/search/page")
-    public ResponseEntity<ApiResponse<Page<EquipmentSummaryResponse>>>
-    searchEquipmentPaginated(
+    public ResponseEntity<ApiResponse<Page<EquipmentSummaryResponse>>> searchEquipmentPaginated(
             @Valid EquipmentSearchRequest request,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        Page<EquipmentSummaryResponse> response =
-                equipmentService.searchEquipment(request, pageable);
+        Page<EquipmentSummaryResponse> response = equipmentService.searchEquipment(request, pageable);
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Equipment search completed successfully",
-                        response
-                )
-        );
+                ApiResponse.success("Equipment search completed successfully", response));
     }
 
-    // ---------------------------------------------------------
-    // UPDATE EQUIPMENT
-    // ---------------------------------------------------------
-
+    /**
+     * Updates mutable fields of an existing equipment listing.
+     *
+     * @param id Equipment primary key
+     * @param requestingPartnerId Optional X-Partner-Id header for partner ownership authorization
+     * @param request Validated equipment update payload
+     * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
+     */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<EquipmentResponse>> updateEquipment(
             @PathVariable Long id,
-            @RequestHeader(
-                    value = "X-Partner-Id",
-                    required = false
-            ) Long requestingPartnerId,
+            @RequestHeader(value = "X-Partner-Id", required = false) Long requestingPartnerId,
             @Valid @RequestBody EquipmentUpdateRequest request) {
 
-        EquipmentResponse response;
-
-        if (requestingPartnerId != null) {
-            response = equipmentService.updateEquipment(
-                    id,
-                    requestingPartnerId,
-                    request
-            );
-        } else {
-            response = equipmentService.updateEquipment(
-                    id,
-                    request
-            );
-        }
+        EquipmentResponse response = (requestingPartnerId != null)
+                ? equipmentService.updateEquipment(id, requestingPartnerId, request)
+                : equipmentService.updateEquipment(id, request);
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Equipment updated successfully",
-                        response
-                )
-        );
+                ApiResponse.success("Equipment updated successfully", response));
     }
 
-    // ---------------------------------------------------------
-    // ENABLE EQUIPMENT
-    // ---------------------------------------------------------
-
+    /**
+     * Enables a previously disabled equipment listing.
+     *
+     * @param id Equipment primary key
+     * @param requestingPartnerId Optional X-Partner-Id header for partner ownership authorization
+     * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
+     */
     @PatchMapping("/{id}/enable")
     public ResponseEntity<ApiResponse<EquipmentResponse>> enableEquipment(
             @PathVariable Long id,
-            @RequestHeader(
-                    value = "X-Partner-Id",
-                    required = false
-            ) Long requestingPartnerId) {
+            @RequestHeader(value = "X-Partner-Id", required = false) Long requestingPartnerId) {
 
-        EquipmentResponse response;
-
-        if (requestingPartnerId != null) {
-            response = equipmentService.enableEquipment(
-                    id,
-                    requestingPartnerId
-            );
-        } else {
-            response = equipmentService.enableEquipment(id);
-        }
+        EquipmentResponse response = (requestingPartnerId != null)
+                ? equipmentService.enableEquipment(id, requestingPartnerId)
+                : equipmentService.enableEquipment(id);
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Equipment enabled successfully",
-                        response
-                )
-        );
+                ApiResponse.success("Equipment enabled successfully", response));
     }
 
-    // ---------------------------------------------------------
-    // DISABLE EQUIPMENT
-    // ---------------------------------------------------------
-
+    /**
+     * Disables an equipment listing for maintenance or administrative lockout.
+     *
+     * @param id Equipment primary key
+     * @param requestingPartnerId Optional X-Partner-Id header for partner ownership authorization
+     * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
+     */
     @PatchMapping("/{id}/disable")
     public ResponseEntity<ApiResponse<EquipmentResponse>> disableEquipment(
             @PathVariable Long id,
-            @RequestHeader(
-                    value = "X-Partner-Id",
-                    required = false
-            ) Long requestingPartnerId) {
+            @RequestHeader(value = "X-Partner-Id", required = false) Long requestingPartnerId) {
 
-        EquipmentResponse response;
-
-        if (requestingPartnerId != null) {
-            response = equipmentService.disableEquipment(
-                    id,
-                    requestingPartnerId
-            );
-        } else {
-            response = equipmentService.disableEquipment(id);
-        }
+        EquipmentResponse response = (requestingPartnerId != null)
+                ? equipmentService.disableEquipment(id, requestingPartnerId)
+                : equipmentService.disableEquipment(id);
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Equipment disabled successfully",
-                        response
-                )
-        );
+                ApiResponse.success("Equipment disabled successfully", response));
     }
 
-    // ---------------------------------------------------------
-    // DELETE EQUIPMENT
-    // ---------------------------------------------------------
-
+    /**
+     * Removes an equipment listing from the system.
+     *
+     * @param id Equipment primary key
+     * @param requestingPartnerId Optional X-Partner-Id header for partner ownership authorization
+     * @return ResponseEntity containing HTTP 204 No Content
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEquipment(
             @PathVariable Long id,
-            @RequestHeader(
-                    value = "X-Partner-Id",
-                    required = false
-            ) Long requestingPartnerId) {
+            @RequestHeader(value = "X-Partner-Id", required = false) Long requestingPartnerId) {
 
         if (requestingPartnerId != null) {
-            equipmentService.deleteEquipment(
-                    id,
-                    requestingPartnerId
-            );
+            equipmentService.deleteEquipment(id, requestingPartnerId);
         } else {
             equipmentService.deleteEquipment(id);
         }
@@ -293,32 +235,23 @@ public class EquipmentController {
         return ResponseEntity.noContent().build();
     }
 
-    // ---------------------------------------------------------
-    // DELETE EQUIPMENT IMAGE
-    // ---------------------------------------------------------
-
+    /**
+     * Removes a specific image asset from an equipment listing.
+     *
+     * @param equipmentId Equipment primary key
+     * @param imageId Image asset primary key
+     * @param requestingPartnerId Optional X-Partner-Id header for partner ownership authorization
+     * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
+     */
     @DeleteMapping("/{equipmentId}/images/{imageId}")
-    public ResponseEntity<ApiResponse<EquipmentResponse>>
-    deleteEquipmentImage(
+    public ResponseEntity<ApiResponse<EquipmentResponse>> deleteEquipmentImage(
             @PathVariable Long equipmentId,
             @PathVariable Long imageId,
-            @RequestHeader(
-                    value = "X-Partner-Id",
-                    required = false
-            ) Long requestingPartnerId) {
+            @RequestHeader(value = "X-Partner-Id", required = false) Long requestingPartnerId) {
 
-        EquipmentResponse response =
-                equipmentService.deleteEquipmentImage(
-                        equipmentId,
-                        imageId,
-                        requestingPartnerId
-                );
+        EquipmentResponse response = equipmentService.deleteEquipmentImage(equipmentId, imageId, requestingPartnerId);
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Equipment image deleted successfully",
-                        response
-                )
-        );
+                ApiResponse.success("Equipment image deleted successfully", response));
     }
 }

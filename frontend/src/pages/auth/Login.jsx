@@ -192,9 +192,8 @@ function Login() {
               setLoginMode('PASSWORD');
               setErrorMessage('');
             }}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ease-out ${
-              loginMode === 'PASSWORD' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ease-out ${loginMode === 'PASSWORD' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
           >
             Password
           </button>
@@ -204,9 +203,8 @@ function Login() {
               setLoginMode('OTP');
               setErrorMessage('');
             }}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ease-out ${
-              loginMode === 'OTP' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ease-out ${loginMode === 'OTP' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
           >
             OTP Login
           </button>
@@ -338,12 +336,12 @@ function Login() {
                 loading
                   ? {}
                   : {
-                      boxShadow: [
-                        '0 0 20px 0px rgba(163,230,53,0.35)',
-                        '0 0 38px 6px rgba(163,230,53,0.6)',
-                        '0 0 20px 0px rgba(163,230,53,0.35)',
-                      ],
-                    }
+                    boxShadow: [
+                      '0 0 20px 0px rgba(163,230,53,0.35)',
+                      '0 0 38px 6px rgba(163,230,53,0.6)',
+                      '0 0 20px 0px rgba(163,230,53,0.35)',
+                    ],
+                  }
               }
               transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
               className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-800 text-[15px] font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-900 active:scale-[0.98] disabled:opacity-70"
