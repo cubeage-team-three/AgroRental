@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, XCircle, Search } from 'lucide-react';
+import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, XCircle, Search, Sprout, CreditCard, Star } from 'lucide-react';
 import { bookingService } from '../../services/bookingService';
+import { getFarmerId } from '../../services/authService';
 
 function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -9,7 +10,7 @@ function MyBookings() {
   const [error, setError] = useState(null);
   const [actionMessage, setActionMessage] = useState(null);
 
-  const farmerId = 1; // Default mock farmer ID
+  const farmerId = getFarmerId();
 
   const fetchBookings = async () => {
     try {
@@ -134,10 +135,16 @@ function MyBookings() {
                     <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-2">{booking.equipmentCategory}</p>
 
                     <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600">
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 font-medium">
                         <Calendar className="h-3.5 w-3.5 text-slate-400" />
                         {booking.startDate} to {booking.endDate}
                       </span>
+                      {booking.farmName && (
+                        <span className="flex items-center gap-1 font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          <Sprout className="h-3.5 w-3.5 text-emerald-600" />
+                          {booking.farmName}
+                        </span>
+                      )}
                       {booking.deliveryAddress && (
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3.5 w-3.5 text-slate-400" />
@@ -148,18 +155,38 @@ function MyBookings() {
                   </div>
                 </div>
 
-                <div className="text-right">
+                <div className="text-right space-y-2">
                   <p className="text-xs text-slate-500">Total Rental Cost</p>
-                  <p className="text-xl font-bold text-emerald-700 mb-3">₹{booking.totalCost}</p>
+                  <p className="text-xl font-bold text-emerald-700">₹{booking.totalCost}</p>
 
-                  {booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
-                    <button
-                      onClick={() => handleCancel(booking.id)}
-                      className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:border-red-300"
-                    >
-                      Cancel Reservation
-                    </button>
-                  )}
+                  <div className="flex flex-col items-end gap-2 pt-1">
+                    {booking.status === 'CONFIRMED' && (
+                      <Link
+                        to={`/farmer/bookings/${booking.id}/pay`}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-xs transition"
+                      >
+                        <CreditCard className="w-4 h-4" /> Pay Now
+                      </Link>
+                    )}
+
+                    {booking.status === 'COMPLETED' && (
+                      <Link
+                        to={`/farmer/bookings/${booking.id}/review`}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-xs transition"
+                      >
+                        <Star className="w-4 h-4 fill-white" /> Rate Experience
+                      </Link>
+                    )}
+
+                    {booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
+                      <button
+                        onClick={() => handleCancel(booking.id)}
+                        className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:border-red-300"
+                      >
+                        Cancel Reservation
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

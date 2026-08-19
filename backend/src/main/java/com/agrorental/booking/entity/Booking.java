@@ -2,6 +2,7 @@ package com.agrorental.booking.entity;
 
 import com.agrorental.common.entity.BaseEntity;
 import com.agrorental.equipment.entity.Equipment;
+import com.agrorental.farmer.entity.Farm;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.partner.entity.Partner;
 import jakarta.persistence.*;
@@ -20,6 +21,10 @@ public class Booking extends BaseEntity {
     @NotNull(message = "Farmer ID is mandatory")
     @Column(name = "farmer_id", nullable = false)
     private Long farmerId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "farm_id")
+    private Farm farm;
 
     @NotNull(message = "Equipment is mandatory")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -60,8 +65,9 @@ public class Booking extends BaseEntity {
 
     public Booking() {}
 
-    public Booking(Long farmerId, Equipment equipment, Partner partner, Operator operator, LocalDate startDate, LocalDate endDate, BigDecimal totalCost, BookingStatus status, String deliveryAddress, String notes) {
+    public Booking(Long farmerId, Farm farm, Equipment equipment, Partner partner, Operator operator, LocalDate startDate, LocalDate endDate, BigDecimal totalCost, BookingStatus status, String deliveryAddress, String notes) {
         this.farmerId = farmerId;
+        this.farm = farm;
         this.equipment = equipment;
         this.partner = partner;
         this.operator = operator;
@@ -73,12 +79,17 @@ public class Booking extends BaseEntity {
         this.notes = notes;
     }
 
+    public Booking(Long farmerId, Equipment equipment, Partner partner, Operator operator, LocalDate startDate, LocalDate endDate, BigDecimal totalCost, BookingStatus status, String deliveryAddress, String notes) {
+        this(farmerId, null, equipment, partner, operator, startDate, endDate, totalCost, status, deliveryAddress, notes);
+    }
+
     public static BookingBuilder builder() {
         return new BookingBuilder();
     }
 
     public static class BookingBuilder {
         private Long farmerId;
+        private Farm farm;
         private Equipment equipment;
         private Partner partner;
         private Operator operator;
@@ -93,6 +104,11 @@ public class Booking extends BaseEntity {
 
         public BookingBuilder farmerId(Long farmerId) {
             this.farmerId = farmerId;
+            return this;
+        }
+
+        public BookingBuilder farm(Farm farm) {
+            this.farm = farm;
             return this;
         }
 
@@ -142,12 +158,15 @@ public class Booking extends BaseEntity {
         }
 
         public Booking build() {
-            return new Booking(farmerId, equipment, partner, operator, startDate, endDate, totalCost, status, deliveryAddress, notes);
+            return new Booking(farmerId, farm, equipment, partner, operator, startDate, endDate, totalCost, status, deliveryAddress, notes);
         }
     }
 
     public Long getFarmerId() { return farmerId; }
     public void setFarmerId(Long farmerId) { this.farmerId = farmerId; }
+
+    public Farm getFarm() { return farm; }
+    public void setFarm(Farm farm) { this.farm = farm; }
 
     public Equipment getEquipment() { return equipment; }
     public void setEquipment(Equipment equipment) { this.equipment = equipment; }

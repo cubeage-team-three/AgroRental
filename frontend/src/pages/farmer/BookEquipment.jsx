@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { Calendar, MapPin, Truck, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import { useSearchParams, useParams, useNavigate, Link } from 'react-router-dom';
+import { Calendar, MapPin, Truck, AlertCircle, CheckCircle, ArrowLeft, Sprout } from 'lucide-react';
 import { equipmentService } from '../../services/equipmentService';
 import { bookingService } from '../../services/bookingService';
+import { farmService } from '../../services/farmService';
+import { getFarmerId } from '../../services/authService';
 
 function BookEquipment() {
   const [searchParams] = useSearchParams();
+  const { equipmentId: pathEquipmentId } = useParams();
   const navigate = useNavigate();
-  const equipmentId = searchParams.get('equipmentId');
+  const equipmentId = searchParams.get('equipmentId') || pathEquipmentId;
 
   const [equipment, setEquipment] = useState(null);
+  const [farms, setFarms] = useState([]);
+  const [selectedFarmId, setSelectedFarmId] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
   // Form state
-  const [farmerId, setFarmerId] = useState(1); // Default mock farmer ID
+  const [farmerId, setFarmerId] = useState(getFarmerId());
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -34,28 +39,43 @@ function BookEquipment() {
   }, []);
 
   useEffect(() => {
-    if (!equipmentId) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchEquipment = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
-        const data = await equipmentService.getEquipmentById(equipmentId);
-        setEquipment(data);
-        if (data.locationAddress) {
-          setDeliveryAddress(data.locationAddress);
+        if (equipmentId) {
+          const data = await equipmentService.getEquipmentById(equipmentId);
+          setEquipment(data);
+          if (data.locationAddress) {
+            setDeliveryAddress(data.locationAddress);
+          }
+        }
+        
+        const farmerFarms = await farmService.getFarmerFarms(farmerId);
+        setFarms(farmerFarms || []);
+        if (farmerFarms && farmerFarms.length > 0) {
+          const defaultFarm = farmerFarms[0];
+          setSelectedFarmId(defaultFarm.id);
+          const farmAddr = `${defaultFarm.farmName}, ${defaultFarm.village}, ${defaultFarm.taluka}, ${defaultFarm.district}`;
+          setDeliveryAddress(farmAddr);
         }
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load equipment details.');
+        setError(err.response?.data?.message || 'Failed to load details.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEquipment();
-  }, [equipmentId]);
+    loadData();
+  }, [equipmentId, farmerId]);
+
+  const handleFarmChange = (farmIdVal) => {
+    setSelectedFarmId(farmIdVal);
+    const foundFarm = farms.find((f) => String(f.id) === String(farmIdVal));
+    if (foundFarm) {
+      const farmAddr = `${foundFarm.farmName}, ${foundFarm.village}, ${foundFarm.taluka}, ${foundFarm.district || foundFarm.state || ''}`;
+      setDeliveryAddress(farmAddr);
+    }
+  };
 
   // Calculate estimated total cost
   const calculateTotal = () => {
@@ -81,6 +101,7 @@ function BookEquipment() {
       const payload = {
         equipmentId: Number(equipmentId),
         farmerId: Number(farmerId),
+        farmId: selectedFarmId ? Number(selectedFarmId) : null,
         startDate,
         endDate,
         deliveryAddress,
@@ -195,6 +216,30 @@ function BookEquipment() {
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
           <form onSubmit={handleSubmit} className="space-y-5">
             <h2 className="text-lg font-bold text-slate-900 mb-2">Reservation Details</h2>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                <Sprout className="h-4 w-4 text-emerald-600" /> Select Target Farm Parcel
+              </label>
+              {farms.length > 0 ? (
+                <select
+                  value={selectedFarmId}
+                  onChange={(e) => handleFarmChange(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm transition focus:border-emerald-500 focus:outline-none"
+                >
+                  {farms.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      🌱 {f.farmName} ({f.village}, {f.taluka}) - {f.farmArea || 'N/A'} Acres ({f.cropType || 'General'})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 flex items-center justify-between">
+                  <span>No registered farms found for your profile.</span>
+                  <Link to="/farmer/farms" className="font-bold underline text-amber-900">Add Farm →</Link>
+                </div>
+              )}
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
