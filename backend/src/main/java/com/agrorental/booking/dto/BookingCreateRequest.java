@@ -16,6 +16,8 @@ public class BookingCreateRequest {
     @NotNull(message = "Farmer ID is mandatory")
     private Long farmerId;
 
+    private Long farmId;
+
     @NotNull(message = "Start date is mandatory")
     @FutureOrPresent(message = "Start date must be today or in the future")
     private LocalDate startDate;
@@ -30,13 +32,18 @@ public class BookingCreateRequest {
 
     public BookingCreateRequest() {}
 
-    public BookingCreateRequest(Long equipmentId, Long farmerId, LocalDate startDate, LocalDate endDate, String deliveryAddress, String notes) {
+    public BookingCreateRequest(Long equipmentId, Long farmerId, Long farmId, LocalDate startDate, LocalDate endDate, String deliveryAddress, String notes) {
         this.equipmentId = equipmentId;
         this.farmerId = farmerId;
+        this.farmId = farmId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.deliveryAddress = deliveryAddress;
         this.notes = notes;
+    }
+
+    public BookingCreateRequest(Long equipmentId, Long farmerId, LocalDate startDate, LocalDate endDate, String deliveryAddress, String notes) {
+        this(equipmentId, farmerId, null, startDate, endDate, deliveryAddress, notes);
     }
 
     public static BookingCreateRequestBuilder builder() {
@@ -46,6 +53,7 @@ public class BookingCreateRequest {
     public static class BookingCreateRequestBuilder {
         private Long equipmentId;
         private Long farmerId;
+        private Long farmId;
         private LocalDate startDate;
         private LocalDate endDate;
         private String deliveryAddress;
@@ -55,13 +63,14 @@ public class BookingCreateRequest {
 
         public BookingCreateRequestBuilder equipmentId(Long equipmentId) { this.equipmentId = equipmentId; return this; }
         public BookingCreateRequestBuilder farmerId(Long farmerId) { this.farmerId = farmerId; return this; }
+        public BookingCreateRequestBuilder farmId(Long farmId) { this.farmId = farmId; return this; }
         public BookingCreateRequestBuilder startDate(LocalDate startDate) { this.startDate = startDate; return this; }
         public BookingCreateRequestBuilder endDate(LocalDate endDate) { this.endDate = endDate; return this; }
         public BookingCreateRequestBuilder deliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; return this; }
         public BookingCreateRequestBuilder notes(String notes) { this.notes = notes; return this; }
 
         public BookingCreateRequest build() {
-            return new BookingCreateRequest(equipmentId, farmerId, startDate, endDate, deliveryAddress, notes);
+            return new BookingCreateRequest(equipmentId, farmerId, farmId, startDate, endDate, deliveryAddress, notes);
         }
     }
 
@@ -70,6 +79,9 @@ public class BookingCreateRequest {
 
     public Long getFarmerId() { return farmerId; }
     public void setFarmerId(Long farmerId) { this.farmerId = farmerId; }
+
+    public Long getFarmId() { return farmId; }
+    public void setFarmId(Long farmId) { this.farmId = farmId; }
 
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }

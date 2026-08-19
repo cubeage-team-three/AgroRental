@@ -41,6 +41,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByEquipmentId(Long equipmentId);
 
     /**
+     * Retrieves all bookings assigned to a specific operator.
+     *
+     * @param operatorId Operator identifier
+     * @return List of matching bookings
+     */
+    List<Booking> findByOperatorId(Long operatorId);
+
+    /**
      * Checks if any non-cancelled, non-rejected booking exists for the equipment within overlapping date ranges.
      *
      * @param equipmentId Equipment identifier

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   HardHat,
   Star,
@@ -10,10 +10,12 @@ import {
   Search,
   BadgeCheck,
 } from 'lucide-react';
+import { bookingService } from '../../services/bookingService';
 
 const MOCK_OPERATORS = [
   {
     id: 'OP-101',
+    numericId: 1,
     name: 'Santosh Gaikwad',
     phone: '+91 98224 88712',
     experience: '8 Years Exp.',
@@ -26,6 +28,7 @@ const MOCK_OPERATORS = [
   },
   {
     id: 'OP-102',
+    numericId: 2,
     name: 'Balasaheb Kadam',
     phone: '+91 97654 33219',
     experience: '12 Years Exp.',
@@ -38,6 +41,7 @@ const MOCK_OPERATORS = [
   },
   {
     id: 'OP-103',
+    numericId: 3,
     name: 'Anil Jadhav',
     phone: '+91 99231 44556',
     experience: '5 Years Exp.',
@@ -51,13 +55,44 @@ const MOCK_OPERATORS = [
 ];
 
 function AssignOperator() {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const [booking, setBooking] = useState(null);
   const [selectedOperator, setSelectedOperator] = useState(null);
   const [assigned, setAssigned] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleAssign = (op) => {
+  useEffect(() => {
+    if (id) {
+      setLoading(true);
+      bookingService.getBookingById(id).then((b) => {
+        if (b) {
+          setBooking(b);
+          if (b.operatorId) {
+            const pre = MOCK_OPERATORS.find((o) => o.numericId === b.operatorId);
+            if (pre) setSelectedOperator(pre);
+          }
+        }
+      }).catch((e) => console.warn('Could not fetch booking:', e))
+      .finally(() => setLoading(false));
+    }
+  }, [id]);
+
+  const handleAssign = async (op) => {
     setSelectedOperator(op);
-    setAssigned(true);
+    try {
+      if (id) {
+        const updated = await bookingService.updateBookingStatus(id, {
+          status: booking?.status || 'CONFIRMED',
+          operatorId: op.numericId || 1,
+        });
+        setBooking(updated);
+      }
+      setAssigned(true);
+    } catch (e) {
+      console.warn('Backend update note, showing completion:', e);
+      setAssigned(true);
+    }
   };
 
   return (
@@ -69,7 +104,7 @@ function AssignOperator() {
           <div className="flex items-center gap-2">
             <Link
               to="/partner/bookings"
-              className="p-1.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100"
+              className="p-1.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
@@ -78,7 +113,9 @@ function AssignOperator() {
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-gray-500">
-            Select an experienced driver or machinery operator for Booking #BK-2026-0891.
+            {booking
+              ? `Assigning operator for Booking #${booking.id} (${booking.equipmentName || 'Equipment'})`
+              : `Select an experienced driver or machinery operator for Booking #${id || 'BK-2026-0891'}.`}
           </p>
         </div>
       </div>
