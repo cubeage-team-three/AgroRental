@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 
 import MainLayout from '../layouts/MainLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
+import AuthLayout from '../layouts/AuthLayout';
 
 import Home from '../pages/Home';
 import NotFound from '../pages/NotFound';
@@ -68,12 +69,16 @@ function AppRoutes() {
       {/* Public / Auth routes */}
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
         <Route path="register/farmer" element={<RegisterFarmer />} />
         <Route path="register/partner" element={<RegisterPartner />} />
         <Route path="register/operator" element={<RegisterOperator />} />
         <Route path="verify-otp" element={<VerifyOtp />} />
+      </Route>
+
+      {/* Cinematic split-screen auth pages */}
+      <Route element={<AuthLayout />}>
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
       </Route>
 
       {/* Farmer routes */}
