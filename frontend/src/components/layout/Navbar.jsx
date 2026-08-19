@@ -33,10 +33,15 @@ function Navbar() {
   }
 
   useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
@@ -98,7 +103,7 @@ function Navbar() {
                 className="bg-transparent font-medium focus:outline-none cursor-pointer"
               >
                 {LANGUAGES.map((lang) => {
-                  const code = typeof lang === 'string' ? lang : lang.code;
+                  const code = typeof lang === 'string' ? lang : (lang.code || lang.label);
                   const label = typeof lang === 'string' ? lang : (lang.native || lang.label);
                   return (
                     <option key={code} value={code}>

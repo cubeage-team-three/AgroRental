@@ -13,8 +13,11 @@ import com.agrorental.common.exception.ResourceNotFoundException;
 import com.agrorental.equipment.entity.Equipment;
 import com.agrorental.equipment.enums.AvailabilityStatus;
 import com.agrorental.equipment.repository.EquipmentRepository;
+import com.agrorental.farmer.entity.Farm;
+import com.agrorental.farmer.repository.FarmRepository;
 import com.agrorental.operator.repository.OperatorRepository;
 import com.agrorental.partner.entity.Partner;
+import com.agrorental.notification.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,6 +48,12 @@ class BookingServiceTest {
     private OperatorRepository operatorRepository;
 
     @Mock
+    private FarmRepository farmRepository;
+
+    @Mock
+    private NotificationService notificationService;
+
+    @Mock
     private BookingMapper bookingMapper;
 
     @InjectMocks
@@ -53,6 +62,7 @@ class BookingServiceTest {
     private Equipment testEquipment;
     private Partner testPartner;
     private Booking testBooking;
+    private Farm testFarm;
     private BookingCreateRequest createRequest;
 
     @BeforeEach
@@ -72,9 +82,21 @@ class BookingServiceTest {
                 .build();
         testEquipment.setId(1L);
 
+        testFarm = Farm.builder()
+                .farmerId(100L)
+                .farmName("Golden Acre Farm")
+                .village("Khed")
+                .taluka("Pune")
+                .district("Pune")
+                .state("Maharashtra")
+                .farmArea(new BigDecimal("5.5"))
+                .build();
+        testFarm.setId(20L);
+
         createRequest = BookingCreateRequest.builder()
                 .equipmentId(1L)
                 .farmerId(100L)
+                .farmId(20L)
                 .startDate(LocalDate.now().plusDays(1))
                 .endDate(LocalDate.now().plusDays(3))
                 .deliveryAddress("Village Farm Plot 4")
@@ -82,6 +104,7 @@ class BookingServiceTest {
 
         testBooking = Booking.builder()
                 .farmerId(100L)
+                .farm(testFarm)
                 .equipment(testEquipment)
                 .partner(testPartner)
                 .startDate(createRequest.getStartDate())
@@ -93,16 +116,19 @@ class BookingServiceTest {
     }
 
     @Test
-    @DisplayName("createBooking: Successfully creates reservation and sets equipment status to BOOKED")
+    @DisplayName("createBooking: Successfully creates reservation with Farm and sets equipment status to BOOKED")
     void createBooking_Success() {
         when(equipmentRepository.findById(1L)).thenReturn(Optional.of(testEquipment));
         when(bookingRepository.existsOverlappingBooking(anyLong(), anyList(), any(), any())).thenReturn(false);
-        when(bookingMapper.toEntity(any(), any(), any(), any())).thenReturn(testBooking);
+        when(farmRepository.findById(20L)).thenReturn(Optional.of(testFarm));
+        when(bookingMapper.toEntity(any(), any(), any(), any(), any())).thenReturn(testBooking);
         when(bookingRepository.save(any(Booking.class))).thenReturn(testBooking);
         when(bookingMapper.toResponse(any(Booking.class))).thenReturn(
                 BookingResponse.builder()
                         .id(500L)
                         .farmerId(100L)
+                        .farmId(20L)
+                        .farmName("Golden Acre Farm")
                         .equipmentId(1L)
                         .partnerId(10L)
                         .totalCost(new BigDecimal("4500.00"))
@@ -114,9 +140,38 @@ class BookingServiceTest {
 
         assertNotNull(response);
         assertEquals(500L, response.getId());
+        assertEquals(20L, response.getFarmId());
+        assertEquals("Golden Acre Farm", response.getFarmName());
         assertEquals(AvailabilityStatus.BOOKED, testEquipment.getAvailabilityStatus());
         verify(equipmentRepository).save(testEquipment);
         verify(bookingRepository).save(any(Booking.class));
+    }
+
+    @Test
+    @DisplayName("createBooking: Throws ResourceNotFoundException when provided farmId does not exist")
+    void createBooking_FarmNotFound_ThrowsException() {
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(testEquipment));
+        when(bookingRepository.existsOverlappingBooking(anyLong(), anyList(), any(), any())).thenReturn(false);
+        when(farmRepository.findById(20L)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                () -> bookingService.createBooking(createRequest));
+
+        assertTrue(exception.getMessage().contains("Farm not found with ID: 20"));
+    }
+
+    @Test
+    @DisplayName("createBooking: Throws BadRequestException when farm belongs to a different farmer")
+    void createBooking_FarmOwnershipMismatch_ThrowsException() {
+        testFarm.setFarmerId(999L); // Different farmer
+        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(testEquipment));
+        when(bookingRepository.existsOverlappingBooking(anyLong(), anyList(), any(), any())).thenReturn(false);
+        when(farmRepository.findById(20L)).thenReturn(Optional.of(testFarm));
+
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> bookingService.createBooking(createRequest));
+
+        assertTrue(exception.getMessage().contains("Farmer is not authorized to use this farm"));
     }
 
     @Test

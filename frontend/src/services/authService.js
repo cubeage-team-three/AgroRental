@@ -37,6 +37,24 @@ export const getPartnerId = () => {
   return storedId ? Number(storedId) : 1;
 };
 
+export const getFarmerId = () => {
+  const user = getCurrentUser();
+  if (user && user.farmerId) {
+    return user.farmerId;
+  }
+  const storedId = localStorage.getItem('farmerId');
+  return storedId ? Number(storedId) : 1;
+};
+
+export const getOperatorId = () => {
+  const user = getCurrentUser();
+  if (user && user.operatorId) {
+    return user.operatorId;
+  }
+  const storedId = localStorage.getItem('operatorId');
+  return storedId ? Number(storedId) : 1;
+};
+
 export const logoutUser = () => {
   localStorage.removeItem('agro_token');
   localStorage.removeItem('agro_user');

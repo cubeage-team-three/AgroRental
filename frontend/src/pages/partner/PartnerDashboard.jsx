@@ -19,6 +19,7 @@ import {
 import { getCurrentUser, getPartnerId } from '../../services/authService';
 import { partnerService } from '../../services/partnerService';
 import { equipmentService } from '../../services/equipmentService';
+import { bookingService } from '../../services/bookingService';
 import {
   DEFAULT_EQUIPMENT_IMAGE,
   formatCategoryLabel,
@@ -32,6 +33,7 @@ function PartnerDashboard() {
 
   const [partner, setPartner] = useState(null);
   const [equipmentList, setEquipmentList] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -51,6 +53,12 @@ function PartnerDashboard() {
         const eqData = await equipmentService.getPartnerEquipment(partnerId);
         if (Array.isArray(eqData)) {
           setEquipmentList(eqData);
+        }
+
+        // 3. Fetch Partner Bookings
+        const bkData = await bookingService.getBookingsByPartner(partnerId);
+        if (Array.isArray(bkData)) {
+          setBookings(bkData);
         }
       } catch (err) {
         console.warn('Dashboard load note:', err.message);
@@ -80,7 +88,12 @@ function PartnerDashboard() {
 
   const totalEquipmentCount = equipmentList.length;
   const availableCount = equipmentList.filter((e) => e.availabilityStatus === 'AVAILABLE' && !e.isDisabled).length;
-  const disabledCount = equipmentList.filter((e) => e.isDisabled).length;
+  
+  const activeBookingsCount = bookings.filter((b) => b.status === 'CONFIRMED' || b.status === 'PENDING').length;
+  const pendingRequestsCount = bookings.filter((b) => b.status === 'PENDING').length;
+  const totalEarningsAmount = bookings
+    .filter((b) => b.status === 'CONFIRMED' || b.status === 'COMPLETED')
+    .reduce((sum, b) => sum + Number(b.totalCost || 0), 0);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 font-sans">
@@ -170,7 +183,7 @@ function PartnerDashboard() {
             </span>
           </div>
           <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Active Bookings</span>
-          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">2</p>
+          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">{activeBookingsCount}</p>
           <span className="text-[11px] text-blue-600 font-semibold mt-1 block">
             In field operations
           </span>
@@ -190,9 +203,11 @@ function PartnerDashboard() {
             </span>
           </div>
           <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Total Earnings</span>
-          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">₹48,500</p>
+          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">
+            ₹{totalEarningsAmount.toLocaleString('en-IN')}
+          </p>
           <span className="text-[11px] text-amber-600 font-semibold mt-1 block flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5" /> +18% this month
+            <TrendingUp className="w-3.5 h-3.5" /> Fleet Revenue
           </span>
         </Link>
 
@@ -210,7 +225,7 @@ function PartnerDashboard() {
             </span>
           </div>
           <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Pending Requests</span>
-          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">1</p>
+          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">{pendingRequestsCount}</p>
           <span className="text-[11px] text-purple-600 font-semibold mt-1 block">
             Needs confirmation
           </span>

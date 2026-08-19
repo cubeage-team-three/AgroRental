@@ -1,46 +1,76 @@
-import { request } from './apiClient';
+import { apiClient } from './apiClient';
 
 /**
- * Service for interacting with backend Online Payment & Invoice REST APIs.
+ * Service managing client-side payment, invoice, and revenue transaction API communication.
  */
 export const paymentService = {
   /**
    * Processes a payment transaction for a booking.
-   * @param {Object} paymentData - { bookingId, farmerId, amount, paymentMethod }
-   * @returns {Promise<Object>} PaymentResponse payload
    */
-  processPayment: async (paymentData) => {
-    return await request('/farmers/payments', {
-      method: 'POST',
-      body: JSON.stringify(paymentData),
-    });
+  async processPayment(paymentData) {
+    try {
+      return await apiClient.post('/farmers/payments', paymentData);
+    } catch {
+      return await apiClient.post('/payments', paymentData);
+    }
+  },
+
+  async createPayment(payload) {
+    return await apiClient.post('/payments', payload);
   },
 
   /**
-   * Retrieves payment by ID.
-   * @param {number} id - Payment ID
-   * @returns {Promise<Object>} PaymentResponse payload
+   * Fetches payment details by primary key.
    */
-  getPaymentById: async (id) => {
-    return await request(`/farmers/payments/${id}`);
+  async getPaymentById(id) {
+    try {
+      return await apiClient.get(`/farmers/payments/${id}`);
+    } catch {
+      return await apiClient.get(`/payments/${id}`);
+    }
   },
 
   /**
-   * Retrieves all payments for a specific farmer.
-   * @param {number} farmerId - Farmer ID
-   * @returns {Promise<Array>} Array of PaymentResponse objects
+   * Fetches payment details for a specific booking ID.
    */
-  getFarmerPayments: async (farmerId) => {
-    return await request(`/farmers/payments/farmer/${farmerId}`);
+  async getPaymentByBookingId(bookingId) {
+    return await apiClient.get(`/payments/booking/${bookingId}`);
+  },
+
+  /**
+   * Retrieves transaction ledger for a farmer.
+   */
+  async getFarmerPayments(farmerId) {
+    try {
+      const res = await apiClient.get(`/farmers/payments/farmer/${farmerId}`);
+      return res?.data || res || [];
+    } catch {
+      const data = await apiClient.get(`/payments/farmer/${farmerId}`);
+      return data || [];
+    }
   },
 
   /**
    * Generates and retrieves itemized tax invoice for a booking.
-   * @param {number} bookingId - Booking ID
-   * @returns {Promise<Object>} InvoiceResponse payload
    */
-  getInvoice: async (bookingId) => {
-    return await request(`/farmers/bookings/${bookingId}/invoice`);
+  async getInvoice(bookingId) {
+    return await apiClient.get(`/farmers/bookings/${bookingId}/invoice`);
+  },
+
+  /**
+   * Retrieves revenue transactions for a partner.
+   */
+  async getPartnerPayments(partnerId) {
+    const data = await apiClient.get(`/payments/partner/${partnerId}`);
+    return data || [];
+  },
+
+  /**
+   * Retrieves realized financial summary for a partner.
+   */
+  async getPartnerEarnings(partnerId) {
+    const data = await apiClient.get(`/payments/partner/${partnerId}/earnings`);
+    return data;
   },
 };
 

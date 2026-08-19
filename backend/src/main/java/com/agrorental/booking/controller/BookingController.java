@@ -92,6 +92,22 @@ public class BookingController {
     }
 
     /**
+     * Retrieves all booking reservations assigned to a specific operator.
+     *
+     * @param operatorId Operator identifier
+     * @return ResponseEntity containing HTTP 200 OK and List of BookingResponse
+     */
+    @GetMapping("/operator/{operatorId}")
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookingsByOperator(
+            @PathVariable Long operatorId) {
+
+        List<BookingResponse> response = bookingService.getBookingsByOperator(operatorId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Operator bookings retrieved successfully", response));
+    }
+
+    /**
      * Cancels an existing booking reservation.
      *
      * @param id Booking identifier

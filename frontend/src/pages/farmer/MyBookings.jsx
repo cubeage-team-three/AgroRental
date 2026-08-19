@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, XCircle, Search, CreditCard, FileText, ArrowRight, Eye } from 'lucide-react';
+import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, XCircle, Search, Sprout, CreditCard, FileText, Star, Eye } from 'lucide-react';
 import { bookingService } from '../../services/bookingService';
+import { getFarmerId } from '../../services/authService';
 
 function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -13,7 +14,7 @@ function MyBookings() {
   const [activeTab, setActiveTab] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const farmerId = 1; // Default mock farmer ID
+  const farmerId = getFarmerId() || 1;
 
   const fetchBookings = async () => {
     try {
@@ -68,13 +69,13 @@ function MyBookings() {
     switch (status) {
       case 'CONFIRMED':
       case 'ACCEPTED':
-        return <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800"><CheckCircle className="h-3.5 w-3.5" /> Confirmed</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800"><CheckCircle className="h-3.5 w-3.5 text-emerald-600" /> Confirmed</span>;
       case 'PENDING':
-        return <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"><Clock className="h-3.5 w-3.5" /> Pending Owner</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"><Clock className="h-3.5 w-3.5 text-amber-600" /> Pending Owner</span>;
       case 'CANCELLED':
-        return <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800"><XCircle className="h-3.5 w-3.5" /> Cancelled</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800"><XCircle className="h-3.5 w-3.5 text-red-600" /> Cancelled</span>;
       case 'COMPLETED':
-        return <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800"><CheckCircle className="h-3.5 w-3.5" /> Completed</span>;
+        return <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800"><CheckCircle className="h-3.5 w-3.5 text-blue-600" /> Completed</span>;
       default:
         return <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">{status}</span>;
     }
@@ -96,11 +97,11 @@ function MyBookings() {
       {/* Page Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Module 11 — Booking History</h1>
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Booking History</h1>
           <p className="text-sm text-slate-600">Track current and past agricultural machinery rental requests</p>
         </div>
         <Link
-          to="/farmer/search-equipment"
+          to="/farmer/equipment"
           className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
         >
           <Search className="h-4 w-4" /> Rent New Machine
@@ -131,7 +132,7 @@ function MyBookings() {
               onClick={() => setActiveTab(tab)}
               className={`rounded-lg px-3 py-2 transition ${
                 activeTab === tab
-                  ? 'bg-white text-emerald-800 shadow-sm'
+                  ? 'bg-white text-emerald-800 shadow-sm font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -159,7 +160,7 @@ function MyBookings() {
           <h3 className="text-lg font-bold text-slate-900 mb-1">No Reservations Found</h3>
           <p className="text-sm text-slate-500 mb-4">No equipment bookings match your search or filter settings.</p>
           <Link
-            to="/farmer/search-equipment"
+            to="/farmer/equipment"
             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
           >
             Explore Equipment Marketplace
@@ -178,8 +179,8 @@ function MyBookings() {
                       className="h-24 w-28 rounded-xl object-cover"
                     />
                   ) : (
-                    <div className="flex h-24 w-28 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
-                      No Image
+                    <div className="flex h-24 w-28 items-center justify-center rounded-xl bg-slate-100 text-xs font-bold text-slate-400">
+                      🚜 Machinery
                     </div>
                   )}
 
@@ -188,14 +189,20 @@ function MyBookings() {
                       <span className="text-xs font-bold text-slate-400">#{booking.id}</span>
                       {getStatusBadge(booking.status)}
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900">{booking.equipmentName}</h3>
-                    <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-2">{booking.equipmentCategory}</p>
+                    <h3 className="text-lg font-bold text-slate-900">{booking.equipmentName || `Equipment #${booking.equipmentId}`}</h3>
+                    <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-2">{booking.equipmentCategory || 'AGRICULTURAL'}</p>
 
                     <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600">
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 font-medium">
                         <Calendar className="h-3.5 w-3.5 text-slate-400" />
                         {booking.startDate} to {booking.endDate}
                       </span>
+                      {booking.farmName && (
+                        <span className="flex items-center gap-1 font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          <Sprout className="h-3.5 w-3.5 text-emerald-600" />
+                          {booking.farmName}
+                        </span>
+                      )}
                       {booking.deliveryAddress && (
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3.5 w-3.5 text-slate-400" />
@@ -236,10 +243,19 @@ function MyBookings() {
                       <FileText className="h-3.5 w-3.5 text-emerald-600" /> Invoice
                     </Link>
 
+                    {booking.status === 'COMPLETED' && (
+                      <Link
+                        to={`/farmer/bookings/${booking.id}/review`}
+                        className="inline-flex items-center gap-1 rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-600"
+                      >
+                        <Star className="h-3.5 w-3.5 fill-white" /> Review
+                      </Link>
+                    )}
+
                     {booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
                       <button
                         onClick={() => handleCancel(booking.id)}
-                        className="rounded-xl border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:border-red-300"
+                        className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:border-red-300"
                       >
                         Cancel
                       </button>

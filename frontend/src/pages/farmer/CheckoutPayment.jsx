@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { CreditCard, ShieldCheck, CheckCircle, AlertCircle, ArrowLeft, Lock, Smartphone, Building, Wallet, FileText } from 'lucide-react';
+import {
+  CreditCard, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft,
+  Lock, Smartphone, Building, Wallet, FileText, RefreshCw
+} from 'lucide-react';
+import { getFarmerId } from '../../services/authService';
 import { bookingService } from '../../services/bookingService';
 import { paymentService } from '../../services/paymentService';
 
 function CheckoutPayment() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const farmerId = getFarmerId() || 1;
 
   const [booking, setBooking] = useState(null);
+  const [existingPayment, setExistingPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -20,25 +26,30 @@ function CheckoutPayment() {
   const [expiry, setExpiry] = useState('12/28');
   const [cvv, setCvv] = useState('123');
 
-  const farmerId = 1; // Default mock farmer ID
-
   useEffect(() => {
-    const fetchBookingDetails = async () => {
+    async function loadCheckoutData() {
+      if (!id) return;
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        setError(null);
-        if (id) {
-          const data = await bookingService.getBookingById(id);
-          setBooking(data);
+        const bookingData = await bookingService.getBookingById(id);
+        setBooking(bookingData);
+
+        try {
+          const paymentData = await paymentService.getPaymentByBookingId(id);
+          setExistingPayment(paymentData);
+        } catch {
+          // Payment not created yet
         }
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load booking details for payment.');
+        console.error('Failed to load checkout details:', err);
+        setError(err.message || 'Booking reservation not found.');
       } finally {
         setLoading(false);
       }
-    };
+    }
 
-    fetchBookingDetails();
+    loadCheckoutData();
   }, [id]);
 
   const calculateSubtotal = () => {
@@ -76,9 +87,9 @@ function CheckoutPayment() {
 
       setTimeout(() => {
         navigate(`/farmer/bookings/${id}/invoice`);
-      }, 2500);
+      }, 2000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to process online payment. Please try again.');
+      setError(err.response?.data?.message || err.message || 'Failed to process online payment. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -95,17 +106,38 @@ function CheckoutPayment() {
     );
   }
 
+  if (error && !booking) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-3xl text-center space-y-4 font-sans">
+        <AlertCircle className="w-12 h-12 text-amber-500 mx-auto" />
+        <h2 className="text-xl font-extrabold text-slate-900">Checkout Error</h2>
+        <p className="text-xs text-slate-500">{error}</p>
+        <Link
+          to="/farmer/bookings"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700"
+        >
+          <ArrowLeft className="w-4 h-4" /> Return to My Bookings
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between border-b border-slate-200 pb-4">
         <div>
-          <Link to={`/farmer/bookings/${id}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-2">
-            <ArrowLeft className="h-4 w-4" /> Back to Booking Details
+          <Link to={`/farmer/bookings`} className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-2">
+            <ArrowLeft className="h-4 w-4" /> Back to My Bookings
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Module 10 — Checkout & Online Payment</h1>
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Checkout & Online Payment</h1>
           <p className="text-sm text-slate-600">Complete secure payment for Equipment Booking #{id}</p>
         </div>
+
+        <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-xs font-bold">
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          256-Bit SSL Encrypted
+        </span>
       </div>
 
       {error && (
@@ -115,9 +147,32 @@ function CheckoutPayment() {
         </div>
       )}
 
-      {paymentSuccess ? (
+      {existingPayment && (existingPayment.paymentStatus === 'SUCCESS' || existingPayment.status === 'SUCCESS') ? (
+        <div className="bg-white rounded-3xl border border-emerald-200 p-8 text-center space-y-4 shadow-sm">
+          <CheckCircle2 className="w-16 h-16 text-emerald-600 mx-auto" />
+          <h2 className="text-2xl font-black text-slate-900">Payment Already Completed!</h2>
+          <p className="text-xs text-slate-600 max-w-md mx-auto">
+            Payment for Reservation #{booking?.id || id} was successfully processed.
+          </p>
+
+          <div className="pt-2 flex justify-center gap-3">
+            <Link
+              to={`/farmer/bookings/${id}/invoice`}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition"
+            >
+              <FileText className="w-4 h-4" /> View Tax Invoice
+            </Link>
+            <Link
+              to="/farmer/bookings"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to My Bookings
+            </Link>
+          </div>
+        </div>
+      ) : paymentSuccess ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-8 text-center shadow-sm">
-          <CheckCircle className="mx-auto h-16 w-16 text-emerald-600 mb-4 animate-bounce" />
+          <CheckCircle2 className="mx-auto h-16 w-16 text-emerald-600 mb-4 animate-bounce" />
           <h2 className="text-2xl font-extrabold text-emerald-950 mb-2">Payment Successful!</h2>
           <p className="text-sm text-emerald-800 mb-6">Your transaction has been verified and confirmed by AgroRental Payment Gateway.</p>
 
@@ -154,7 +209,7 @@ function CheckoutPayment() {
               <div className="space-y-3 text-xs text-slate-600 border-b border-slate-100 pb-4 mb-4">
                 <div className="flex justify-between">
                   <span>Equipment:</span>
-                  <span className="font-bold text-slate-800">{booking.equipmentName}</span>
+                  <span className="font-bold text-slate-800">{booking.equipmentName || `Equipment #${booking.equipmentId}`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Dates:</span>
@@ -214,7 +269,7 @@ function CheckoutPayment() {
                       onClick={() => setPaymentMethod(method.id)}
                       className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-3.5 text-xs font-semibold transition ${
                         isSelected
-                          ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm'
+                          ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm font-extrabold'
                           : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                       }`}
                     >
@@ -235,7 +290,7 @@ function CheckoutPayment() {
                     placeholder="e.g. farmer@upi or 9876543210@ybl"
                     value={upiId}
                     onChange={(e) => setUpiId(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none bg-white"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none bg-white font-semibold"
                   />
                   <p className="text-[11px] text-slate-500">You will receive a payment request notification on your UPI app.</p>
                 </div>
@@ -250,7 +305,7 @@ function CheckoutPayment() {
                       required
                       value={cardNumber}
                       onChange={(e) => setCardNumber(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none bg-white"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none bg-white font-semibold"
                     />
                   </div>
 
@@ -263,7 +318,7 @@ function CheckoutPayment() {
                         placeholder="MM/YY"
                         value={expiry}
                         onChange={(e) => setExpiry(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none bg-white"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none bg-white font-semibold"
                       />
                     </div>
 
@@ -276,7 +331,7 @@ function CheckoutPayment() {
                         placeholder="123"
                         value={cvv}
                         onChange={(e) => setCvv(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none bg-white"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none bg-white font-semibold"
                       />
                     </div>
                   </div>
@@ -286,7 +341,7 @@ function CheckoutPayment() {
               {paymentMethod === 'NET_BANKING' && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
                   <label className="block text-xs font-bold text-slate-700">Select Bank</label>
-                  <select className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none bg-white">
+                  <select className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none bg-white font-semibold">
                     <option>State Bank of India (SBI)</option>
                     <option>HDFC Bank</option>
                     <option>ICICI Bank</option>
@@ -304,8 +359,8 @@ function CheckoutPayment() {
               >
                 {submitting ? (
                   <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    <span>Processing Payment...</span>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span>Processing Secure Payment...</span>
                   </>
                 ) : (
                   <>

@@ -5,12 +5,13 @@ import com.agrorental.booking.service.BookingService;
 import com.agrorental.common.exception.ResourceNotFoundException;
 import com.agrorental.farmer.dto.FarmerProfileResponse;
 import com.agrorental.farmer.service.FarmerProfileService;
-import com.agrorental.payment.dto.InvoiceResponse;
-import com.agrorental.payment.dto.PaymentRequest;
-import com.agrorental.payment.dto.PaymentResponse;
+import com.agrorental.notification.service.NotificationService;
+import com.agrorental.payment.dto.*;
 import com.agrorental.payment.entity.Payment;
+import com.agrorental.payment.entity.PaymentMethod;
 import com.agrorental.payment.entity.PaymentStatus;
 import com.agrorental.payment.repository.PaymentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,11 +24,15 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final BookingService bookingService;
     private final FarmerProfileService farmerProfileService;
+    
+    @Autowired(required = false)
+    private NotificationService notificationService;
 
     public PaymentService(PaymentRepository paymentRepository,
                           BookingService bookingService,
@@ -47,8 +52,10 @@ public class PaymentService {
         Payment payment = Payment.builder()
                 .bookingId(request.getBookingId())
                 .farmerId(request.getFarmerId())
+                .partnerId(booking != null ? booking.getPartnerId() : 1L)
                 .amount(request.getAmount())
-                .paymentMethod(request.getPaymentMethod())
+                .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : PaymentMethod.UPI)
+                .paymentReference(transactionId)
                 .transactionId(transactionId)
                 .paymentStatus(PaymentStatus.SUCCESS)
                 .paymentDate(LocalDateTime.now())
@@ -57,15 +64,48 @@ public class PaymentService {
 
         Payment saved = paymentRepository.save(payment);
 
+        if (notificationService != null && booking != null) {
+            try {
+                notificationService.sendNotification(
+                        "FARMER",
+                        booking.getFarmerId(),
+                        "Payment Successful",
+                        "Payment of ₹" + saved.getAmount() + " for booking #" + booking.getId() + " was successful.",
+                        "PAYMENT_SUCCESS",
+                        booking.getId()
+                );
+            } catch (Exception ignored) {}
+        }
+
         return mapToResponse(saved);
     }
 
+    @Transactional
+    public PaymentResponse createPayment(PaymentCreateRequest request) {
+        PaymentRequest req = PaymentRequest.builder()
+                .bookingId(request.getBookingId())
+                .farmerId(request.getFarmerId())
+                .amount(request.getAmount())
+                .paymentMethod(PaymentMethod.UPI)
+                .build();
+        return processPayment(req);
+    }
+
+    @Transactional(readOnly = true)
     public PaymentResponse getPaymentById(Long id) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found with ID: " + id));
         return mapToResponse(payment);
     }
 
+    @Transactional(readOnly = true)
+    public PaymentResponse getPaymentByBookingId(Long bookingId) {
+        Payment payment = paymentRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("No payment transaction found for booking ID: " + bookingId));
+        return mapToResponse(payment);
+    }
+
+    @Transactional(readOnly = true)
     public List<PaymentResponse> getFarmerPayments(Long farmerId) {
         return paymentRepository.findByFarmerIdOrderByPaymentDateDesc(farmerId)
                 .stream()
@@ -73,6 +113,31 @@ public class PaymentService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<PaymentResponse> getPaymentsByFarmer(Long farmerId) {
+        return getFarmerPayments(farmerId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentResponse> getPaymentsByPartner(Long partnerId) {
+        return paymentRepository.findByPartnerIdOrderByCreatedAtDesc(partnerId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public PartnerEarningsSummary getPartnerEarningsSummary(Long partnerId) {
+        BigDecimal total = paymentRepository.sumAmountByPartnerIdAndStatus(partnerId, PaymentStatus.SUCCESS);
+        long count = paymentRepository.countByPartnerIdAndStatus(partnerId, PaymentStatus.SUCCESS);
+        return PartnerEarningsSummary.builder()
+                .partnerId(partnerId)
+                .totalRealizedEarnings(total != null ? total : BigDecimal.ZERO)
+                .completedTransactionCount(count)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public InvoiceResponse generateInvoice(Long bookingId) {
         BookingResponse booking = bookingService.getBookingById(bookingId);
         Payment payment = paymentRepository.findByBookingId(bookingId)
@@ -82,9 +147,11 @@ public class PaymentService {
                     return Payment.builder()
                             .bookingId(bookingId)
                             .farmerId(booking.getFarmerId())
+                            .partnerId(booking.getPartnerId() != null ? booking.getPartnerId() : 1L)
                             .amount(booking.getTotalCost() != null ? booking.getTotalCost() : BigDecimal.valueOf(1500))
-                            .paymentMethod(com.agrorental.payment.entity.PaymentMethod.UPI)
+                            .paymentMethod(PaymentMethod.UPI)
                             .transactionId(txn)
+                            .paymentReference(txn)
                             .paymentStatus(PaymentStatus.SUCCESS)
                             .paymentDate(LocalDateTime.now())
                             .invoiceReference(inv)
@@ -95,7 +162,7 @@ public class PaymentService {
         try {
             farmer = farmerProfileService.getProfile(booking.getFarmerId());
         } catch (Exception e) {
-            // Fallback if profile not found
+            // Fallback
         }
 
         long days = 1;
@@ -136,11 +203,15 @@ public class PaymentService {
                 .id(payment.getId())
                 .bookingId(payment.getBookingId())
                 .farmerId(payment.getFarmerId())
+                .partnerId(payment.getPartnerId())
                 .amount(payment.getAmount())
                 .paymentMethod(payment.getPaymentMethod())
+                .paymentReference(payment.getPaymentReference() != null ? payment.getPaymentReference() : payment.getTransactionId())
                 .transactionId(payment.getTransactionId())
                 .paymentStatus(payment.getPaymentStatus())
                 .paymentDate(payment.getPaymentDate())
+                .createdAt(payment.getCreatedAt() != null ? payment.getCreatedAt() : payment.getPaymentDate())
+                .updatedAt(payment.getUpdatedAt() != null ? payment.getUpdatedAt() : payment.getPaymentDate())
                 .invoiceReference(payment.getInvoiceReference())
                 .build();
     }

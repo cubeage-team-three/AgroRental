@@ -32,8 +32,8 @@ function Home() {
       <HeroSection />
       <StatsBanner />
 
-      {belowTheFold.map((Section) => (
-        <Reveal key={Section.name} amount={0.12} duration={0.8}>
+      {belowTheFold.map((Section, idx) => (
+        <Reveal key={Section.displayName || Section.name || idx} amount={0.12} duration={0.8}>
           <Section />
         </Reveal>
       ))}

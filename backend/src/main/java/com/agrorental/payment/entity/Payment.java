@@ -22,12 +22,18 @@ public class Payment extends BaseEntity {
     @Column(name = "farmer_id", nullable = false)
     private Long farmerId;
 
+    @Column(name = "partner_id")
+    private Long partnerId;
+
     @Column(name = "amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false)
     private PaymentMethod paymentMethod;
+
+    @Column(name = "payment_reference")
+    private String paymentReference;
 
     @Column(name = "transaction_id", nullable = false, unique = true)
     private String transactionId;

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { Calendar, MapPin, Truck, AlertCircle, CheckCircle, ArrowLeft, ShieldCheck, Clock, Layers } from 'lucide-react';
+import { useSearchParams, useParams, useNavigate, Link } from 'react-router-dom';
+import { Calendar, MapPin, Truck, AlertCircle, CheckCircle, ArrowLeft, ShieldCheck, Clock, Layers, Sprout } from 'lucide-react';
 import { equipmentService } from '../../services/equipmentService';
 import { bookingService } from '../../services/bookingService';
 import { farmService } from '../../services/farmService';
+import { getFarmerId } from '../../services/authService';
 
 const WORK_TYPES = [
   'Ploughing & Tilling',
@@ -18,8 +19,9 @@ const WORK_TYPES = [
 
 function BookEquipment() {
   const [searchParams] = useSearchParams();
+  const { equipmentId: pathEquipmentId } = useParams();
   const navigate = useNavigate();
-  const equipmentId = searchParams.get('equipmentId');
+  const equipmentId = searchParams.get('equipmentId') || pathEquipmentId;
 
   const [equipment, setEquipment] = useState(null);
   const [farms, setFarms] = useState([]);
@@ -30,7 +32,7 @@ function BookEquipment() {
   const [success, setSuccess] = useState(null);
 
   // Form state
-  const farmerId = 1; // Default mock farmer ID
+  const farmerId = getFarmerId() || 1;
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('08:00 AM - 04:00 PM');
@@ -38,7 +40,7 @@ function BookEquipment() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [notes, setNotes] = useState('');
 
-  // Default dates: tomorrow to day after tomorrow
+  // Default dates: tomorrow to 3 days later
   useEffect(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -50,7 +52,7 @@ function BookEquipment() {
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
         if (equipmentId) {
@@ -60,12 +62,17 @@ function BookEquipment() {
             setDeliveryAddress(data.locationAddress);
           }
         }
-        const farmList = await farmService.getFarms(farmerId);
+        let farmList = [];
+        try {
+          farmList = await farmService.getFarmerFarms(farmerId);
+        } catch {
+          farmList = await farmService.getFarms(farmerId);
+        }
         setFarms(farmList || []);
         if (farmList && farmList.length > 0) {
           setSelectedFarmId(farmList[0].id);
           const defaultFarm = farmList[0];
-          setDeliveryAddress(`${defaultFarm.farmName}, ${defaultFarm.village}, ${defaultFarm.taluka}, ${defaultFarm.district}`);
+          setDeliveryAddress(`${defaultFarm.farmName}, ${defaultFarm.village}, ${defaultFarm.taluka}, ${defaultFarm.district || defaultFarm.state || ''}`);
         }
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load booking details.');
@@ -74,15 +81,15 @@ function BookEquipment() {
       }
     };
 
-    fetchData();
-  }, [equipmentId]);
+    loadData();
+  }, [equipmentId, farmerId]);
 
   const handleFarmSelect = (e) => {
-    const farmId = e.target.value;
-    setSelectedFarmId(farmId);
-    const farm = farms.find((f) => String(f.id) === String(farmId));
+    const farmIdVal = e.target.value;
+    setSelectedFarmId(farmIdVal);
+    const farm = farms.find((f) => String(f.id) === String(farmIdVal));
     if (farm) {
-      setDeliveryAddress(`${farm.farmName}, ${farm.village}, ${farm.taluka}, ${farm.district}`);
+      setDeliveryAddress(`${farm.farmName}, ${farm.village}, ${farm.taluka}, ${farm.district || farm.state || ''}`);
     }
   };
 
@@ -115,6 +122,7 @@ function BookEquipment() {
       const payload = {
         equipmentId: Number(equipmentId),
         farmerId: Number(farmerId),
+        farmId: selectedFarmId ? Number(selectedFarmId) : null,
         startDate,
         endDate,
         deliveryAddress,
@@ -125,7 +133,7 @@ function BookEquipment() {
       setSuccess(`Booking reservation created successfully! Reservation ID: #${booking.id || Date.now()}`);
 
       setTimeout(() => {
-        navigate(`/farmer/my-bookings`);
+        navigate(`/farmer/bookings`);
       }, 1800);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to complete equipment booking.');
@@ -153,7 +161,7 @@ function BookEquipment() {
           <h2 className="text-xl font-bold text-amber-900 mb-2">No Equipment Selected</h2>
           <p className="text-amber-800 mb-4">Please select an available machine from the marketplace before creating a reservation.</p>
           <Link
-            to="/farmer/search-equipment"
+            to="/farmer/equipment"
             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-700"
           >
             <ArrowLeft className="h-4 w-4" /> Browse Available Equipment
@@ -168,10 +176,10 @@ function BookEquipment() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link to="/farmer/search-equipment" className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-2">
+          <Link to="/farmer/equipment" className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-2">
             <ArrowLeft className="h-4 w-4" /> Back to Search
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Module 9 — Reserve Machinery</h1>
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Reserve Farm Machinery</h1>
           <p className="text-sm text-slate-600">Select farm, dates, and work type to request equipment reservation</p>
         </div>
       </div>
@@ -201,8 +209,8 @@ function BookEquipment() {
               className="h-44 w-full rounded-xl object-cover mb-4"
             />
           ) : (
-            <div className="flex h-44 items-center justify-center rounded-xl bg-slate-100 text-slate-400 mb-4">
-              No Image Available
+            <div className="flex h-44 items-center justify-center rounded-xl bg-slate-100 text-slate-400 mb-4 font-bold">
+              🚜 {equipment.name}
             </div>
           )}
 
@@ -244,7 +252,7 @@ function BookEquipment() {
             {/* Farm Selection */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                <MapPin className="h-4 w-4 text-emerald-600" /> Select Registered Farm
+                <Sprout className="h-4 w-4 text-emerald-600" /> Select Target Farm Parcel
               </label>
               {farms.length > 0 ? (
                 <select
@@ -254,14 +262,15 @@ function BookEquipment() {
                 >
                   {farms.map((farm) => (
                     <option key={farm.id} value={farm.id}>
-                      {farm.farmName} ({farm.cropType} — {farm.farmArea} Acres, {farm.village})
+                      🌱 {farm.farmName} ({farm.village}, {farm.taluka}) - {farm.farmArea || 'N/A'} Acres ({farm.cropType || 'General'})
                     </option>
                   ))}
                 </select>
               ) : (
-                <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
-                  No registered farms found. Default location will be used.
-                </p>
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 flex items-center justify-between">
+                  <span>No registered farms found for your profile.</span>
+                  <Link to="/farmer/farms" className="font-bold underline text-amber-900">Add Farm →</Link>
+                </div>
               )}
             </div>
 
