@@ -427,17 +427,23 @@ function PartnerProfile() {
                 </span>
               </div>
             </div>
+<div className="p-4 bg-[#F8FAF8] rounded-2xl border border-emerald-900/5">
+  <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">
+    OTP Verification
+  </span>
 
-            <div className="p-4 bg-[#F8FAF8] rounded-2xl border border-emerald-900/5">
-              <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">OTP Verification</span>
-              <div className="flex items-center gap-1.5 mt-1">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <span className="text-sm font-extrabold text-gray-800">
-                  {partner?.otpVerified ? 'Verified' : 'Verified'}
-                </span>
-              </div>
-            </div>
+  <div className="flex items-center gap-1.5 mt-1">
+    {partner?.otpVerified ? (
+      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+    ) : (
+      <AlertCircle className="w-5 h-5 text-amber-500" />
+    )}
 
+    <span className="text-sm font-extrabold text-gray-800">
+      {partner?.otpVerified ? 'Verified' : 'Not Verified'}
+    </span>
+  </div>
+</div>
             <div className="p-4 bg-[#F8FAF8] rounded-2xl border border-emerald-900/5">
               <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">Partner Rating</span>
               <div className="flex items-center gap-1.5 mt-1">
@@ -776,7 +782,15 @@ function PartnerProfile() {
             <div className="p-5 bg-[#F8FAF8] rounded-2xl border border-emerald-900/10 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase text-gray-500">Aadhaar Verification</span>
-                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded">VERIFIED</span>
+                <span
+  className={`px-2 py-0.5 text-[10px] font-extrabold rounded ${
+    partner?.verificationStatus === 'APPROVED'
+      ? 'bg-emerald-100 text-emerald-800'
+      : 'bg-amber-100 text-amber-800'
+  }`}
+>
+  {partner?.verificationStatus === 'APPROVED' ? 'VERIFIED' : 'PENDING'}
+</span>
               </div>
               <p className="font-mono font-bold text-sm text-gray-900">
                 {partner?.aadhaarNumber ? `•••• •••• ${partner.aadhaarNumber.slice(-4)}` : '•••• •••• 9012'}
@@ -787,7 +801,15 @@ function PartnerProfile() {
             <div className="p-5 bg-[#F8FAF8] rounded-2xl border border-emerald-900/10 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase text-gray-500">PAN Card</span>
-                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded">VERIFIED</span>
+                <span
+  className={`px-2 py-0.5 text-[10px] font-extrabold rounded ${
+    partner?.verificationStatus === 'APPROVED'
+      ? 'bg-emerald-100 text-emerald-800'
+      : 'bg-amber-100 text-amber-800'
+  }`}
+>
+  {partner?.verificationStatus === 'APPROVED' ? 'VERIFIED' : 'PENDING'}
+</span>
               </div>
               <p className="font-mono font-bold text-sm text-gray-900">
                 {partner?.panNumber || 'ABCDE1234F'}

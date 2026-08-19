@@ -1,8 +1,11 @@
 package com.agrorental.partner.entity;
 
+import java.time.LocalDateTime;
+
 import com.agrorental.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+
 
 @Entity
 @Table(
@@ -53,6 +56,12 @@ public class Partner extends BaseEntity {
     @Column(name = "otp_verified", nullable = false)
     @Builder.Default
     private boolean otpVerified = false;
+
+    @Column(name = "otp_code")
+private String otpCode;
+
+@Column(name = "otp_expiry")
+private LocalDateTime otpExpiry;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "verification_status", nullable = false)

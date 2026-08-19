@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
+import java.util.Random;
 
 import java.util.Optional;
 
@@ -134,6 +136,69 @@ public class PartnerService {
                         partner.getVerificationStatus()
                 ));
     }
+    @Transactional
+public String sendOtp(Long partnerId) {
+
+    Partner partner = partnerRepository.findById(partnerId)
+            .orElseThrow(() -> new ResourceNotFoundException(
+                    "Partner not found with ID: " + partnerId));
+
+    if (partner.isOtpVerified()) {
+        throw new BadRequestException("Partner mobile number is already verified.");
+    }
+
+    String otp = String.format("%06d", new Random().nextInt(1000000));
+
+    partner.setOtpCode(otp);
+    partner.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+
+    partnerRepository.save(partner);
+
+    log.info("OTP generated for partner ID: {}. OTP: {}", partnerId, otp);
+
+    return otp;
+}
+
+@Transactional
+public PartnerProfileResponse verifyOtp(Long partnerId, String otp) {
+
+    Partner partner = partnerRepository.findById(partnerId)
+            .orElseThrow(() -> new ResourceNotFoundException(
+                    "Partner not found with ID: " + partnerId));
+
+    if (partner.isOtpVerified()) {
+        throw new BadRequestException("Mobile number is already verified.");
+    }
+
+    if (partner.getOtpCode() == null) {
+        throw new BadRequestException("OTP not generated. Please request a new OTP.");
+    }
+
+    if (partner.getOtpExpiry() == null ||
+            LocalDateTime.now().isAfter(partner.getOtpExpiry())) {
+
+        throw new BadRequestException("OTP has expired. Please request a new OTP.");
+    }
+
+    if (!partner.getOtpCode().equals(otp)) {
+        throw new BadRequestException("Invalid OTP.");
+    }
+
+    partner.setOtpVerified(true);
+    partner.setOtpCode(null);
+    partner.setOtpExpiry(null);
+
+    Partner updatedPartner = partnerRepository.save(partner);
+
+    log.info("Partner OTP verified successfully for ID: {}", partnerId);
+
+    return toProfileResponse(updatedPartner);
+}
+
+@Transactional
+public String resendOtp(Long partnerId) {
+    return sendOtp(partnerId);
+}
 
     public PartnerProfileResponse toProfileResponse(Partner partner) {
         return PartnerProfileResponse.builder()
@@ -154,4 +219,38 @@ public class PartnerService {
                 .updatedAt(partner.getUpdatedAt())
                 .build();
     }
+
+    @Transactional
+public PartnerProfileResponse approvePartnerKyc(Long partnerId) {
+
+    Partner partner = partnerRepository.findById(partnerId)
+            .orElseThrow(() -> new ResourceNotFoundException(
+                    "Partner not found with ID: " + partnerId));
+
+    partner.setVerificationStatus(Partner.VerificationStatus.APPROVED);
+    partner.setActive(true);
+
+    Partner updatedPartner = partnerRepository.save(partner);
+
+    log.info("Partner KYC approved for partner ID: {}", partnerId);
+
+    return toProfileResponse(updatedPartner);
+}
+
+   @Transactional
+public PartnerProfileResponse rejectPartnerKyc(Long partnerId) {
+
+    Partner partner = partnerRepository.findById(partnerId)
+            .orElseThrow(() -> new ResourceNotFoundException(
+                    "Partner not found with ID: " + partnerId));
+
+    partner.setVerificationStatus(Partner.VerificationStatus.REJECTED);
+    partner.setActive(false);
+
+    Partner updatedPartner = partnerRepository.save(partner);
+
+    log.info("Partner KYC rejected for partner ID: {}", partnerId);
+
+    return toProfileResponse(updatedPartner);
+}
 }
