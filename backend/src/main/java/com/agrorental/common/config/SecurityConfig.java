@@ -17,7 +17,8 @@ import java.util.List;
 
 /**
  * Central Spring Security configuration for AgroRental backend.
- * Configures HTTP security authorization rules, stateless session management, and CORS.
+ * Configures HTTP security authorization rules, stateless session management,
+ * and CORS.
  */
 @Configuration
 @EnableWebSecurity
@@ -27,15 +28,33 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/**", "/h2-console/**", "/**").permitAll()
-                .anyRequest().permitAll()
-            )
-            .headers(headers -> headers.frameOptions(frame -> frame.disable()));
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+
+                        .requestMatchers(HttpMethod.OPTIONS, "/**")
+                        .permitAll()
+
+                        .requestMatchers(
+                                "/api/partners/register",
+                                "/api/users/**",
+                                "/api/auth/**",
+                                "/api/farmers/**")
+                        .permitAll()
+
+                        .requestMatchers("/api/equipment/**")
+                        .permitAll()
+
+                        .requestMatchers("/api/**")
+                        .permitAll()
+
+                        .requestMatchers("/h2-console/**")
+                        .permitAll()
+
+                        .anyRequest()
+                        .permitAll())
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         return http.build();
     }
