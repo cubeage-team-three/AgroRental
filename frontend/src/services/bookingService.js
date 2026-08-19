@@ -44,6 +44,15 @@ export const bookingService = {
   },
 
   /**
+   * Retrieves all booking requests assigned to a specific operator.
+   * @param {number} operatorId - Operator ID
+   * @returns {Promise<Array>} Array of BookingResponse objects
+   */
+  getBookingsByOperator: async (operatorId) => {
+    return await request(`/bookings/operator/${operatorId}`);
+  },
+
+  /**
    * Cancels an active booking reservation.
    * @param {number} id - Booking ID
    * @returns {Promise<Object>} Updated BookingResponse payload
