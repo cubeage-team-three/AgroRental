@@ -9,6 +9,7 @@ import Home from '../pages/Home';
 import NotFound from '../pages/NotFound';
 
 import Login from '../pages/auth/Login';
+import OperatorLogin from '../pages/auth/OperatorLogin';
 import Register from '../pages/auth/Register';
 import RegisterFarmer from '../pages/auth/RegisterFarmer';
 import RegisterPartner from '../pages/auth/RegisterPartner';
@@ -80,6 +81,8 @@ function AppRoutes() {
       {/* Cinematic split-screen auth pages */}
       <Route element={<AuthLayout />}>
         <Route path="login" element={<Login />} />
+        <Route path="login/operator" element={<OperatorLogin />} />
+        <Route path="operator/login" element={<OperatorLogin />} />
         <Route path="register" element={<Register />} />
       </Route>
 

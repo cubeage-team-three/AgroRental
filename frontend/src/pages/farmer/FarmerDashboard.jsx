@@ -271,7 +271,7 @@ function FarmerDashboard() {
               👤
             </div>
             <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">My Profile & Preferences</h3>
-            <p className="text-xs text-slate-500 mt-1">Update contact details, preferred language & security settings.</p>
+            <p className="text-xs text-slate-500 mt-1">Update contact details, bank accounts, soil health cards & security.</p>
             <span className="inline-flex items-center text-xs font-bold text-emerald-700 mt-3 group-hover:translate-x-1 transition-transform">Edit Profile →</span>
           </div>
         </div>

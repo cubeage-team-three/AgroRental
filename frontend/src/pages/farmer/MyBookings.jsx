@@ -233,7 +233,6 @@ function MyBookings() {
                     >
                       <MapPin className="h-3.5 w-3.5 text-emerald-400" /> Track
                     </Link>
-
                     {booking.status !== 'CANCELLED' && (
                       <Link
                         to={`/farmer/bookings/${booking.id}/pay`}
