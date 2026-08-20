@@ -15,6 +15,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Sprout,
+  Phone,
 } from 'lucide-react';
 import { getPartnerId } from '../../services/authService';
 import { bookingService } from '../../services/bookingService';
@@ -49,21 +50,37 @@ function BookingRequests() {
   }, [fetchBookings]);
 
   const handleAction = async (id, action) => {
+    let rejectionReason = '';
+    if (action === 'reject') {
+      rejectionReason = window.prompt("Please provide a reason for declining this booking:");
+      if (!rejectionReason || !rejectionReason.trim()) {
+        alert("Rejection reason is mandatory.");
+        return;
+      }
+    } else if (action === 'cancel') {
+      if (!window.confirm("Are you sure you want to cancel this booking?")) {
+        return;
+      }
+    }
+
     setActionLoading(id);
     setSuccessToast('');
     try {
-      const newStatus = action === 'accept' ? 'CONFIRMED' : 'REJECTED';
-      await bookingService.updateBookingStatus(id, {
-        status: newStatus,
-      });
-      setSuccessToast(
-        action === 'accept'
-          ? `✓ Booking #${id} Accepted & Confirmed!`
-          : `✓ Booking #${id} Declined.`
-      );
+      if (action === 'accept') {
+        await bookingService.acceptBooking(id);
+        setSuccessToast(`✓ Booking #${id} Accepted & Confirmed!`);
+      } else if (action === 'reject') {
+        await bookingService.rejectBooking(id, rejectionReason.trim());
+        setSuccessToast(`✓ Booking #${id} Declined.`);
+      } else if (action === 'cancel') {
+        await bookingService.cancelBooking(id);
+        setSuccessToast(`✓ Booking #${id} Cancelled.`);
+      }
+      
       await fetchBookings();
     } catch (err) {
-      alert(err.message || 'Failed to update booking status');
+      // Show backend validation/errors clearly
+      alert(err.response?.data?.message || err.message || `Failed to ${action} booking`);
     } finally {
       setActionLoading(null);
     }
@@ -125,7 +142,7 @@ function BookingRequests() {
 
       {/* Filter Tabs */}
       <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 flex items-center gap-2 overflow-x-auto text-xs">
-        {['ALL', 'PENDING', 'CONFIRMED', 'COMPLETED', 'REJECTED', 'CANCELLED'].map((st) => (
+        {['ALL', 'PENDING', 'CONFIRMED', 'OPERATOR_ASSIGNED', 'WORK_STARTED', 'COMPLETED', 'REJECTED', 'CANCELLED'].map((st) => (
           <button
             key={st}
             type="button"
@@ -197,6 +214,8 @@ function BookingRequests() {
                           ? 'bg-blue-100 text-blue-800 border-blue-300'
                           : b.status === 'CANCELLED' || b.status === 'REJECTED'
                           ? 'bg-red-100 text-red-800 border-red-300'
+                          : b.status === 'OPERATOR_ASSIGNED' || b.status === 'WORK_STARTED'
+                          ? 'bg-purple-100 text-purple-800 border-purple-300'
                           : 'bg-amber-100 text-amber-800 border-amber-300'
                       }`}
                     >
@@ -217,8 +236,14 @@ function BookingRequests() {
                     <div className="space-y-1.5 text-xs text-gray-600 pt-2 border-t border-gray-100 font-medium">
                       <p className="flex items-center gap-1.5 truncate">
                         <User className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Farmer #{b.farmerId}</span>
+                        <span>{b.farmerName || `Farmer #${b.farmerId}`}</span>
                       </p>
+                      {b.farmerMobile && (
+                        <p className="flex items-center gap-1.5 truncate">
+                          <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          <a href={`tel:${b.farmerMobile}`} className="text-blue-600 hover:underline">{b.farmerMobile}</a>
+                        </p>
+                      )}
                       {b.farmName && (
                         <p className="flex items-center gap-1.5 font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 truncate">
                           <Sprout className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -229,14 +254,19 @@ function BookingRequests() {
                         <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                         <span>{b.startDate} → {b.endDate}</span>
                       </p>
-                      <p className="flex items-center gap-1.5 truncate">
+                      <p className="flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>{b.deliveryAddress || 'Field Address Specified'}</span>
+                        <span className="truncate">{b.deliveryAddress || 'Field Address Specified'}</span>
                       </p>
                       {b.operatorId && (
                         <p className="flex items-center gap-1.5 text-emerald-700 font-bold">
                           <HardHat className="w-3.5 h-3.5 shrink-0" />
-                          <span>Assigned Operator #{b.operatorId}</span>
+                          <span>Assigned Operator: {b.operatorName || `#${b.operatorId}`}</span>
+                        </p>
+                      )}
+                      {b.notes && (
+                        <p className="mt-1 text-[11px] text-gray-500 italic bg-gray-50 p-2 rounded-lg line-clamp-3">
+                          "{b.notes}"
                         </p>
                       )}
                     </div>
@@ -272,13 +302,23 @@ function BookingRequests() {
                       </button>
                     </div>
                   ) : b.status === 'CONFIRMED' ? (
-                    <Link
-                      to={`/partner/bookings/${b.id}/assign-operator`}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
-                    >
-                      <HardHat className="w-3.5 h-3.5" />
-                      <span>{b.operatorId ? 'Reassign Driver / Operator' : 'Assign Driver / Operator'}</span>
-                    </Link>
+                    <div className="flex flex-col gap-2">
+                      <Link
+                        to={`/partner/bookings/${b.id}/assign-operator`}
+                        className="w-full flex items-center justify-center gap-1.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
+                      >
+                        <HardHat className="w-3.5 h-3.5" />
+                        <span>{b.operatorId ? 'Reassign Driver / Operator' : 'Assign Driver / Operator'}</span>
+                      </Link>
+                      <button
+                        type="button"
+                        disabled={isProcessing}
+                        onClick={() => handleAction(b.id, 'cancel')}
+                        className="w-full py-2 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
+                      >
+                        Cancel Booking
+                      </button>
+                    </div>
                   ) : (
                     <div className="text-[11px] text-gray-400 text-center font-semibold py-1">
                       Order status: {b.status}

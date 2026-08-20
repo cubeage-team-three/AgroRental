@@ -178,6 +178,180 @@ public class BookingService {
     }
 
     /**
+     * Partner accepts an eligible booking request.
+     *
+     * @param id Booking identifier
+     * @param partnerId Optional partner identifier for authorization
+     * @return Updated BookingResponse
+     */
+    @Transactional
+    public BookingResponse acceptBooking(Long id, Long partnerId) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + id));
+
+        if (partnerId != null && booking.getPartner() != null && !booking.getPartner().getId().equals(partnerId)) {
+            throw new BadRequestException("Unauthorized: Booking does not belong to the specified partner.");
+        }
+
+        if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.REJECTED || booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new BadRequestException("Cannot accept booking in current status: " + booking.getStatus());
+        }
+
+        // Check double-booking protection for active statuses
+        boolean hasOverlap = bookingRepository.existsOverlappingBooking(
+                booking.getEquipment().getId(),
+                List.of(BookingStatus.CONFIRMED, BookingStatus.ACCEPTED, BookingStatus.OPERATOR_ASSIGNED, BookingStatus.WORK_STARTED),
+                booking.getStartDate(),
+                booking.getEndDate()
+        );
+
+        if (hasOverlap) {
+            throw new BadRequestException("Equipment is already reserved/confirmed for overlapping dates.");
+        }
+
+        booking.setStatus(BookingStatus.CONFIRMED);
+
+        Equipment equipment = booking.getEquipment();
+        if (equipment != null) {
+            equipment.setAvailabilityStatus(AvailabilityStatus.BOOKED);
+            equipmentRepository.save(equipment);
+        }
+
+        Booking saved = bookingRepository.save(booking);
+
+        String equipName = saved.getEquipment() != null ? saved.getEquipment().getName() : "Machinery";
+        notificationService.sendNotification(
+                "FARMER",
+                saved.getFarmerId(),
+                "Booking Confirmed",
+                "Your booking #" + saved.getId() + " for " + equipName + " has been accepted and confirmed.",
+                "BOOKING_CONFIRMED",
+                saved.getId()
+        );
+
+        return bookingMapper.toResponse(saved);
+    }
+
+    /**
+     * Partner rejects an eligible booking request with a mandatory reason.
+     *
+     * @param id Booking identifier
+     * @param partnerId Optional partner identifier for authorization
+     * @param rejectionReason Mandatory reason explanation
+     * @return Updated BookingResponse
+     */
+    @Transactional
+    public BookingResponse rejectBooking(Long id, Long partnerId, String rejectionReason) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + id));
+
+        if (partnerId != null && booking.getPartner() != null && !booking.getPartner().getId().equals(partnerId)) {
+            throw new BadRequestException("Unauthorized: Booking does not belong to the specified partner.");
+        }
+
+        if (rejectionReason == null || rejectionReason.trim().isEmpty()) {
+            throw new BadRequestException("A rejection reason is mandatory when declining a booking.");
+        }
+
+        booking.setStatus(BookingStatus.REJECTED);
+        booking.setRejectionReason(rejectionReason.trim());
+
+        Equipment equipment = booking.getEquipment();
+        if (equipment != null) {
+            equipment.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
+            equipmentRepository.save(equipment);
+        }
+
+        Booking saved = bookingRepository.save(booking);
+
+        String equipName = saved.getEquipment() != null ? saved.getEquipment().getName() : "Machinery";
+        notificationService.sendNotification(
+                "FARMER",
+                saved.getFarmerId(),
+                "Booking Declined",
+                "Your booking #" + saved.getId() + " for " + equipName + " was declined. Reason: " + rejectionReason.trim(),
+                "BOOKING_REJECTED",
+                saved.getId()
+        );
+
+        return bookingMapper.toResponse(saved);
+    }
+
+    /**
+     * Partner assigns a qualified operator to a booking.
+     *
+     * @param bookingId Booking identifier
+     * @param partnerId Optional partner identifier for authorization
+     * @param operatorId Operator identifier
+     * @return Updated BookingResponse
+     */
+    @Transactional
+    public BookingResponse assignOperator(Long bookingId, Long partnerId, Long operatorId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + bookingId));
+
+        if (partnerId != null && booking.getPartner() != null && !booking.getPartner().getId().equals(partnerId)) {
+            throw new BadRequestException("Unauthorized: Booking does not belong to the specified partner.");
+        }
+
+        if (operatorId == null) {
+            throw new BadRequestException("Operator ID is required.");
+        }
+
+        Operator operator = operatorRepository.findById(operatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Operator not found with ID: " + operatorId));
+
+        // Check if operator has conflicting overlapping assignments
+        List<Booking> operatorBookings = bookingRepository.findByOperatorId(operatorId);
+        boolean hasConflict = operatorBookings.stream()
+                .filter(b -> !b.getId().equals(bookingId))
+                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED || b.getStatus() == BookingStatus.ACCEPTED || b.getStatus() == BookingStatus.OPERATOR_ASSIGNED || b.getStatus() == BookingStatus.WORK_STARTED)
+                .anyMatch(b -> !b.getStartDate().isAfter(booking.getEndDate()) && !b.getEndDate().isBefore(booking.getStartDate()));
+
+        if (hasConflict) {
+            throw new BadRequestException("Operator " + operator.getFullName() + " is already assigned to another active booking during these dates.");
+        }
+
+        booking.setOperator(operator);
+        booking.setStatus(BookingStatus.OPERATOR_ASSIGNED);
+
+        Booking saved = bookingRepository.save(booking);
+
+        String equipName = saved.getEquipment() != null ? saved.getEquipment().getName() : "Machinery";
+
+        notificationService.sendNotification(
+                "OPERATOR",
+                operatorId,
+                "New Job Assignment",
+                "You have been assigned to job #" + saved.getId() + " (" + equipName + ") from " + saved.getStartDate() + " to " + saved.getEndDate() + ".",
+                "OPERATOR_ASSIGNED",
+                saved.getId()
+        );
+
+        notificationService.sendNotification(
+                "FARMER",
+                saved.getFarmerId(),
+                "Operator Assigned",
+                "Certified operator " + operator.getFullName() + " has been assigned to your booking #" + saved.getId() + ".",
+                "OPERATOR_ASSIGNED",
+                saved.getId()
+        );
+
+        if (saved.getPartner() != null && saved.getPartner().getId() != null) {
+            notificationService.sendNotification(
+                    "PARTNER",
+                    saved.getPartner().getId(),
+                    "Operator Assigned",
+                    "Operator " + operator.getFullName() + " has been assigned to your booking #" + saved.getId() + ".",
+                    "OPERATOR_ASSIGNED",
+                    saved.getId()
+            );
+        }
+
+        return bookingMapper.toResponse(saved);
+    }
+
+    /**
      * Cancels an existing booking and restores equipment availability to AVAILABLE.
      *
      * @param id Booking identifier
@@ -239,13 +413,17 @@ public class BookingService {
         BookingStatus newStatus = request.getStatus();
         booking.setStatus(newStatus);
 
+        if (request.getRejectionReason() != null && !request.getRejectionReason().isBlank()) {
+            booking.setRejectionReason(request.getRejectionReason().trim());
+        }
+
         if (newStatus == BookingStatus.COMPLETED || newStatus == BookingStatus.CANCELLED || newStatus == BookingStatus.REJECTED) {
             Equipment equipment = booking.getEquipment();
             if (equipment != null) {
                 equipment.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
                 equipmentRepository.save(equipment);
             }
-        } else if (newStatus == BookingStatus.CONFIRMED) {
+        } else if (newStatus == BookingStatus.CONFIRMED || newStatus == BookingStatus.ACCEPTED || newStatus == BookingStatus.OPERATOR_ASSIGNED) {
             Equipment equipment = booking.getEquipment();
             if (equipment != null) {
                 equipment.setAvailabilityStatus(AvailabilityStatus.BOOKED);
@@ -264,10 +442,11 @@ public class BookingService {
         String equipName = saved.getEquipment() != null ? saved.getEquipment().getName() : "Machinery";
         Long partnerId = saved.getPartner() != null ? saved.getPartner().getId() : null;
 
-        if (newStatus == BookingStatus.CONFIRMED) {
+        if (newStatus == BookingStatus.CONFIRMED || newStatus == BookingStatus.ACCEPTED) {
             notificationService.sendNotification("FARMER", saved.getFarmerId(), "Booking Confirmed", "Your booking #" + saved.getId() + " for " + equipName + " has been confirmed.", "BOOKING_CONFIRMED", saved.getId());
         } else if (newStatus == BookingStatus.REJECTED) {
-            notificationService.sendNotification("FARMER", saved.getFarmerId(), "Booking Declined", "Your booking #" + saved.getId() + " for " + equipName + " was declined.", "BOOKING_REJECTED", saved.getId());
+            String reasonText = saved.getRejectionReason() != null ? " Reason: " + saved.getRejectionReason() : "";
+            notificationService.sendNotification("FARMER", saved.getFarmerId(), "Booking Declined", "Your booking #" + saved.getId() + " for " + equipName + " was declined." + reasonText, "BOOKING_REJECTED", saved.getId());
         } else if (newStatus == BookingStatus.COMPLETED) {
             notificationService.sendNotification("FARMER", saved.getFarmerId(), "Job Completed", "Machinery service for booking #" + saved.getId() + " has been marked completed.", "BOOKING_COMPLETED", saved.getId());
             if (partnerId != null) {

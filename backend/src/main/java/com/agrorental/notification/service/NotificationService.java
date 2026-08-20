@@ -84,6 +84,28 @@ public class NotificationService {
         notificationRepository.markAllAsRead(recipientRole.toUpperCase(), recipientId);
     }
 
+    /**
+     * Deletes a specific notification after verifying recipient ownership.
+     */
+    public void deleteNotification(Long id, String recipientRole, Long recipientId) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with ID: " + id));
+
+        if (!notification.getRecipientRole().equalsIgnoreCase(recipientRole) ||
+                !notification.getRecipientId().equals(recipientId)) {
+            throw new BadRequestException("Unauthorized access to delete notification #" + id);
+        }
+
+        notificationRepository.delete(notification);
+    }
+
+    /**
+     * Deletes all notifications for a recipient user.
+     */
+    public void clearAllNotifications(String recipientRole, Long recipientId) {
+        notificationRepository.deleteAllByRecipient(recipientRole.toUpperCase(), recipientId);
+    }
+
     private NotificationResponse mapToResponse(Notification notification) {
         return NotificationResponse.builder()
                 .id(notification.getId())
