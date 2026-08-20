@@ -2,7 +2,7 @@ import { API_BASE_URL } from '../utils/constants';
 
 /**
  * Core HTTP client for executing REST requests against the Spring Boot backend.
- * Extracts payloads from standard ApiResponse wrappers and handles HTTP errors cleanly.
+ * Automatically attaches Authorization Bearer JWT headers and handles errors cleanly.
  */
 export async function request(endpoint, options = {}) {
   const cleanEndpoint = endpoint.startsWith('/api') ? endpoint.substring(4) : endpoint;
@@ -12,7 +12,13 @@ export async function request(endpoint, options = {}) {
     'Content-Type': 'application/json',
   };
 
-  // Include X-Partner-Id header if partner context is present in options or localStorage
+  // Automatically attach Bearer token if present
+  const token = localStorage.getItem('accessToken') || localStorage.getItem('agro_token');
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
+  // Include X-Partner-Id header if partner context is present
   const partnerId = options.partnerId || localStorage.getItem('partnerId') || '1';
   if (partnerId) {
     defaultHeaders['X-Partner-Id'] = partnerId;
@@ -38,6 +44,13 @@ export async function request(endpoint, options = {}) {
     }
 
     if (!response.ok) {
+      // If 401 Unauthorized, clear stored token on protected endpoint failures
+      if (response.status === 401 && !endpoint.includes('/login') && !endpoint.includes('/register')) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('agro_token');
+        localStorage.removeItem('agro_user');
+      }
+
       const errorMessage = (data && data.message) || `HTTP Error ${response.status}`;
       const error = new Error(errorMessage);
       error.status = response.status;
@@ -45,7 +58,7 @@ export async function request(endpoint, options = {}) {
       throw error;
     }
 
-    // Return inner data payload from ApiResponse if present
+    // Return inner data payload from standard ApiResponse if present
     if (data && typeof data === 'object' && 'data' in data) {
       return data.data;
     }
