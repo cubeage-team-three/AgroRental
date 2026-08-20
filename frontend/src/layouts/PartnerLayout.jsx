@@ -47,10 +47,17 @@ function PartnerLayout() {
         console.warn('Partner profile fetch fallback in layout:', err.message);
       });
 
-    notificationService
-      .getUnreadCount('PARTNER', partnerId)
-      .then((count) => setUnreadCount(count || 0))
-      .catch(() => {});
+    const fetchUnreadCount = () => {
+      notificationService
+        .getUnreadCount('PARTNER', partnerId)
+        .then((count) => setUnreadCount(count || 0))
+        .catch(() => {});
+    };
+
+    fetchUnreadCount();
+
+    window.addEventListener('notificationsUpdated', fetchUnreadCount);
+    return () => window.removeEventListener('notificationsUpdated', fetchUnreadCount);
   }, [partnerId, location.pathname]);
 
   // Close mobile drawer on route change
