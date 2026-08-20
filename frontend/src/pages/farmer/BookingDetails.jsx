@@ -265,6 +265,7 @@ function BookingDetails() {
                     Cancel Booking
                   </button>
                 )}
+              </div>
             </div>
           </div>
         </div>

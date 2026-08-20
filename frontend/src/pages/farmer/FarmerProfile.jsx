@@ -5,11 +5,7 @@ import {
   Globe, Landmark, FileText, Camera, Sprout, Layers, ArrowRight, Eye, EyeOff,
   Sparkles, CreditCard, Shield, HeartHandshake, Check, AlertCircle
 } from 'lucide-react';
-<<<<<<< HEAD
 import { getCurrentUser, getFarmerId } from '../../services/authService';
-=======
-import { getCurrentUser } from '../../services/authService';
->>>>>>> origin/development
 import { getFarmerProfile, updateFarmerProfile, changeFarmerPassword } from '../../services/farmerAuthService';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -22,8 +18,6 @@ function FarmerProfile() {
   }
   const t = langCtx?.t || ((k) => k);
   const setLanguage = langCtx?.setLanguage || (() => {});
-<<<<<<< HEAD
-
   const tr = (key, defaultVal) => {
     try {
       const val = t(key);
@@ -35,22 +29,6 @@ function FarmerProfile() {
 
   const currentUser = getCurrentUser();
   const farmerId = getFarmerId() || 1;
-
-=======
-
-  const tr = (key, defaultVal) => {
-    try {
-      const val = t(key);
-      return val && val !== key ? val : defaultVal;
-    } catch {
-      return defaultVal;
-    }
-  };
-
-  const currentUser = getCurrentUser();
-  const farmerId = currentUser?.farmerId || 1;
-
->>>>>>> origin/development
   const [activeTab, setActiveTab] = useState('personal'); // 'personal' | 'farming' | 'bank' | 'schemes' | 'security'
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -68,7 +46,6 @@ function FarmerProfile() {
     preferredLanguage: currentUser?.preferredLanguage || 'English',
     profileImage: currentUser?.profileImage || '',
     accountStatus: currentUser?.accountStatus || 'ACTIVE',
-<<<<<<< HEAD
     primaryCrop: 'Wheat, Rice & Pulses',
     totalLandAcres: '0 Acres',
     bankName: 'Not Linked',
@@ -82,21 +59,6 @@ function FarmerProfile() {
     soilType: 'Alluvial Soil',
     emergencyContactPerson: 'Family Member',
     emergencyContactPhone: '',
-=======
-    primaryCrop: 'Sugarcane, Wheat & Soybean',
-    totalLandAcres: '12.5 Acres (2 Farms)',
-    bankName: 'State Bank of India (Haveli Branch)',
-    accountNumber: '•••• •••• 4892',
-    ifscCode: 'SBIN0001234',
-    upiId: 'ramesh.yadav@okaxis',
-    aadhaarNumber: '•••• •••• 5821',
-    pmKisanId: 'PMK-MH-984210',
-    soilHealthCard: 'SHC-2026-90123',
-    irrigationType: 'Drip Irrigation & Canal Water',
-    soilType: 'Black Cotton Soil (pH 6.8)',
-    emergencyContactPerson: 'Sunita Ramesh Yadav (Wife)',
-    emergencyContactPhone: '+91 98220 12345',
->>>>>>> origin/development
   });
 
   // Password Form State
@@ -118,12 +80,8 @@ function FarmerProfile() {
     setErrorMessage('');
     try {
       const res = await getFarmerProfile(farmerId);
-<<<<<<< HEAD
       if (res && (res.data || res.farmerId || res.fullName)) {
         const data = res.data || res;
-=======
-      if (res && res.data) {
->>>>>>> origin/development
         setProfileData((prev) => ({
           ...prev,
           fullName: data.fullName || prev.fullName,
@@ -176,13 +134,9 @@ function FarmerProfile() {
 
       setSuccessMessage('✓ Profile information updated successfully!');
       setIsEditing(false);
-<<<<<<< HEAD
       
       const data = res?.data || res;
       if (data) {
-=======
-      if (res && res.data) {
->>>>>>> origin/development
         setProfileData((prev) => ({
           ...prev,
           fullName: data.fullName || prev.fullName,
@@ -192,13 +146,8 @@ function FarmerProfile() {
         }));
       }
     } catch (err) {
-<<<<<<< HEAD
       console.error('Update profile error:', err);
       setErrorMessage(err.message || 'Failed to update profile details. Please try again.');
-=======
-      setSuccessMessage('✓ Profile details updated successfully!');
-      setIsEditing(false);
->>>>>>> origin/development
     } finally {
       setSubmitting(false);
     }
@@ -229,13 +178,8 @@ function FarmerProfile() {
       setSuccessMessage('✓ Account security password updated successfully!');
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
-<<<<<<< HEAD
       console.error('Change password error:', err);
       setErrorMessage(err.message || 'Failed to update password. Please check your current password.');
-=======
-      setSuccessMessage('✓ Account security password updated successfully!');
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
->>>>>>> origin/development
     } finally {
       setSubmitting(false);
     }
@@ -270,11 +214,7 @@ function FarmerProfile() {
                 <Sparkles className="h-3.5 w-3.5 text-amber-300" /> AgroRent Verified Farmer
               </span>
               <span className="rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-bold text-white shadow-sm">
-<<<<<<< HEAD
                 {profileData.accountStatus || 'ACTIVE'} Status
-=======
-                Active Status
->>>>>>> origin/development
               </span>
             </div>
           </div>
@@ -327,11 +267,7 @@ function FarmerProfile() {
 
                   <p className="text-sm font-semibold text-slate-600 flex flex-wrap items-center justify-center sm:justify-start gap-3">
                     <span className="flex items-center gap-1">
-<<<<<<< HEAD
                       <Phone className="h-3.5 w-3.5 text-emerald-600" /> {profileData.mobileNumber ? `+91 ${profileData.mobileNumber}` : 'No mobile registered'}
-=======
-                      <Phone className="h-3.5 w-3.5 text-emerald-600" /> +91 {profileData.mobileNumber}
->>>>>>> origin/development
                     </span>
                     <span className="text-slate-300">•</span>
                     <span className="flex items-center gap-1">
@@ -340,11 +276,7 @@ function FarmerProfile() {
                   </p>
 
                   <p className="text-xs font-medium text-slate-500 flex items-center justify-center sm:justify-start gap-1">
-<<<<<<< HEAD
                     <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" /> {profileData.address || 'Address not specified'}
-=======
-                    <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" /> {profileData.address}
->>>>>>> origin/development
                   </p>
                 </div>
               </div>
@@ -394,11 +326,7 @@ function FarmerProfile() {
               <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 text-center sm:text-left">
                 <span className="text-[11px] font-bold uppercase text-slate-400 block tracking-wider">{tr('farmer_rating', 'Platform Rating')}</span>
                 <span className="text-base font-extrabold text-amber-600 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
-<<<<<<< HEAD
                   <Award className="h-4 w-4 text-amber-500" /> 5.0 / 5.0 Rating
-=======
-                  <Award className="h-4 w-4 text-amber-500" /> 4.9 / 5.0 Rating
->>>>>>> origin/development
                 </span>
               </div>
             </div>
@@ -484,11 +412,7 @@ function FarmerProfile() {
                     <input
                       type="text"
                       disabled
-<<<<<<< HEAD
                       value={profileData.mobileNumber ? `+91 ${profileData.mobileNumber}` : 'N/A'}
-=======
-                      value={`+91 ${profileData.mobileNumber}`}
->>>>>>> origin/development
                       className="w-full px-4 py-3 bg-slate-100 border border-transparent rounded-2xl text-slate-600 text-sm font-bold cursor-not-allowed"
                     />
                   </div>
@@ -615,23 +539,14 @@ function FarmerProfile() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
                 <span className="text-xs uppercase font-bold text-emerald-800 tracking-wider block">Primary Crops</span>
-<<<<<<< HEAD
                 <p className="text-base font-bold text-slate-900">{profileData.primaryCrop}</p>
-=======
-                <p className="text-base font-bold text-slate-900">Sugarcane, Wheat, Soybean</p>
->>>>>>> origin/development
                 <p className="text-slate-500">Helps AgroRent recommend seasonal machinery for sowing and harvesting.</p>
               </div>
 
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
                 <span className="text-xs uppercase font-bold text-emerald-800 tracking-wider block">Total Land Area</span>
-<<<<<<< HEAD
                 <p className="text-base font-bold text-slate-900">{profileData.totalLandAcres}</p>
                 <p className="text-slate-500">Managed via My Farms section.</p>
-=======
-                <p className="text-base font-bold text-slate-900">12.5 Acres (Across 2 Farm Locations)</p>
-                <p className="text-slate-500">Registered under Village Khed & Taluka Haveli.</p>
->>>>>>> origin/development
               </div>
 
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
@@ -652,11 +567,7 @@ function FarmerProfile() {
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
                 <span className="text-xs uppercase font-bold text-emerald-800 tracking-wider block">Emergency Field Contact</span>
                 <p className="text-base font-bold text-slate-900">{profileData.emergencyContactPerson}</p>
-<<<<<<< HEAD
                 <p className="text-slate-500">{profileData.emergencyContactPhone || 'Not provided'}</p>
-=======
-                <p className="text-slate-500">{profileData.emergencyContactPhone}</p>
->>>>>>> origin/development
               </div>
             </div>
           </div>

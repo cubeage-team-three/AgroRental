@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { complaintService } from '../../services/complaintService';
 import { bookingService } from '../../services/bookingService';
+import { getFarmerId } from '../../services/authService';
 
 function FarmerComplaints() {
   const [searchParams] = useSearchParams();
@@ -39,7 +40,7 @@ function FarmerComplaints() {
     try {
       const [complaintList, bookingList] = await Promise.all([
         complaintService.getFarmerComplaints(),
-        bookingService.getFarmerBookings().catch(() => [])
+        bookingService.getBookingsByFarmer(getFarmerId()).catch(() => [])
       ]);
       setComplaints(complaintList || []);
       setBookings(bookingList || []);
