@@ -15,7 +15,12 @@ function SearchEquipment() {
     category: '',
     minPrice: '',
     maxPrice: '',
+    minHp: '',
     locationAddress: '',
+    startDate: '',
+    endDate: '',
+    minRating: '',
+    maxDistanceKm: '',
   });
 
   const [equipmentList, setEquipmentList] = useState([]);
@@ -40,7 +45,12 @@ function SearchEquipment() {
         ...(filters.category && { category: filters.category }),
         ...(filters.minPrice && { minPrice: filters.minPrice }),
         ...(filters.maxPrice && { maxPrice: filters.maxPrice }),
+        ...(filters.minHp && { minHp: filters.minHp }),
         ...(filters.locationAddress && { locationAddress: filters.locationAddress }),
+        ...(filters.startDate && { startDate: filters.startDate }),
+        ...(filters.endDate && { endDate: filters.endDate }),
+        ...(filters.minRating && { minRating: filters.minRating }),
+        ...(filters.maxDistanceKm && { maxDistanceKm: filters.maxDistanceKm, userLat: 18.5204, userLng: 73.8567 }),
       };
 
       const pageData = await equipmentService.searchEquipmentPage(activeFilters, page, 9);
@@ -85,7 +95,12 @@ function SearchEquipment() {
       category: '',
       minPrice: '',
       maxPrice: '',
+      minHp: '',
       locationAddress: '',
+      startDate: '',
+      endDate: '',
+      minRating: '',
+      maxDistanceKm: '',
     });
   };
 
@@ -149,6 +164,58 @@ function SearchEquipment() {
               name="maxPrice"
               placeholder="10000"
               value={filters.maxPrice}
+              onChange={handleFilterChange}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 border-t border-gray-100 pt-3">
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Available Start Date</label>
+            <input
+              type="date"
+              name="startDate"
+              value={filters.startDate}
+              onChange={handleFilterChange}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Available End Date</label>
+            <input
+              type="date"
+              name="endDate"
+              value={filters.endDate}
+              onChange={handleFilterChange}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Min Rating (Stars)</label>
+            <select
+              name="minRating"
+              value={filters.minRating}
+              onChange={handleFilterChange}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+            >
+              <option value="">Any Rating</option>
+              <option value="4.5">★ 4.5 & above</option>
+              <option value="4.0">★ 4.0 & above</option>
+              <option value="3.5">★ 3.5 & above</option>
+              <option value="3.0">★ 3.0 & above</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Max Distance Radius (km)</label>
+            <input
+              type="number"
+              name="maxDistanceKm"
+              placeholder="e.g. 50"
+              value={filters.maxDistanceKm}
               onChange={handleFilterChange}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
