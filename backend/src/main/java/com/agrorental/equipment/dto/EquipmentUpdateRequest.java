@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -63,6 +64,10 @@ public class EquipmentUpdateRequest {
 
     @NotNull(message = "Availability status is mandatory")
     private AvailabilityStatus availabilityStatus;
+
+    private LocalDate availableFromDate;
+
+    private LocalDate availableToDate;
 
     private String maintenanceNotes;
 

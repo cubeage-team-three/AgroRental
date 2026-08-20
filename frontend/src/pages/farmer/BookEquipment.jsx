@@ -6,6 +6,8 @@ import { bookingService } from '../../services/bookingService';
 import { farmService } from '../../services/farmService';
 import { getFarmerId } from '../../services/authService';
 
+import { reviewService } from '../../services/reviewService';
+
 function BookEquipment() {
   const [searchParams] = useSearchParams();
   const { equipmentId: pathEquipmentId } = useParams();
@@ -15,6 +17,7 @@ function BookEquipment() {
   const [equipment, setEquipment] = useState(null);
   const [farms, setFarms] = useState([]);
   const [selectedFarmId, setSelectedFarmId] = useState('');
+  const [ratingSummary, setRatingSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -47,6 +50,12 @@ function BookEquipment() {
           setEquipment(data);
           if (data.locationAddress) {
             setDeliveryAddress(data.locationAddress);
+          }
+          try {
+            const rating = await reviewService.getEquipmentRatingSummary(equipmentId);
+            if (rating) setRatingSummary(rating);
+          } catch (rErr) {
+            console.warn('Live equipment rating summary unavailable (using fallback UI):', rErr);
           }
         }
         
@@ -194,7 +203,14 @@ function BookEquipment() {
           )}
 
           <h3 className="text-lg font-bold text-slate-900">{equipment.name}</h3>
-          <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-2">{equipment.category}</p>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">{equipment.category}</span>
+            {ratingSummary && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-bold border border-amber-200">
+                ★ {ratingSummary.averageRating ? Number(ratingSummary.averageRating).toFixed(1) : '5.0'} ({ratingSummary.totalReviews || 0})
+              </span>
+            )}
+          </div>
 
           <div className="space-y-2 text-sm text-slate-600 border-t border-slate-100 pt-3">
             <div className="flex justify-between">

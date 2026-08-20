@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -62,6 +63,10 @@ public class EquipmentCreateRequest {
 
     @NotNull(message = "Longitude is mandatory")
     private Double longitude;
+
+    private LocalDate availableFromDate;
+
+    private LocalDate availableToDate;
 
     @NotEmpty(message = "At least one equipment image is required")
     @Valid

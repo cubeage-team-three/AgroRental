@@ -178,6 +178,13 @@ export const equipmentService = {
     if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
     if (filters.availabilityStatus) params.append('availabilityStatus', filters.availabilityStatus);
     if (filters.locationAddress) params.append('locationAddress', filters.locationAddress);
+    if (filters.minHp) params.append('minHp', filters.minHp);
+    if (filters.startDate) params.append('startDate', filters.startDate);
+    if (filters.endDate) params.append('endDate', filters.endDate);
+    if (filters.minRating) params.append('minRating', filters.minRating);
+    if (filters.userLat) params.append('userLat', filters.userLat);
+    if (filters.userLng) params.append('userLng', filters.userLng);
+    if (filters.maxDistanceKm) params.append('maxDistanceKm', filters.maxDistanceKm);
     params.append('page', page);
     params.append('size', size);
 
@@ -201,9 +208,18 @@ export const equipmentService = {
     if (filters.maxPrice) {
       filtered = filtered.filter((item) => item.rentalPrice <= Number(filters.maxPrice));
     }
+    if (filters.minHp) {
+      filtered = filtered.filter((item) => {
+        const hpVal = parseInt(item.capacity || item.hp || '0', 10);
+        return hpVal >= Number(filters.minHp);
+      });
+    }
     if (filters.locationAddress) {
       const loc = filters.locationAddress.toLowerCase();
       filtered = filtered.filter((item) => item.locationAddress.toLowerCase().includes(loc) || item.name.toLowerCase().includes(loc));
+    }
+    if (filters.minRating) {
+      filtered = filtered.filter((item) => (item.rating || 5.0) >= Number(filters.minRating));
     }
 
     return {
@@ -273,6 +289,26 @@ export const equipmentService = {
   async deleteEquipment(id, partnerId = 1) {
     return request(`/api/equipment/${id}`, {
       method: 'DELETE',
+      partnerId,
+    });
+  },
+
+  /**
+   * Enables a previously disabled equipment listing.
+   */
+  async enableEquipment(id, partnerId = 1) {
+    return request(`/api/equipment/${id}/enable`, {
+      method: 'PATCH',
+      partnerId,
+    });
+  },
+
+  /**
+   * Disables an equipment listing for administrative lockout or maintenance.
+   */
+  async disableEquipment(id, partnerId = 1) {
+    return request(`/api/equipment/${id}/disable`, {
+      method: 'PATCH',
       partnerId,
     });
   },
