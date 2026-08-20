@@ -116,7 +116,7 @@ function JobDetails() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 font-sans">
-      
+
       {/* Navigation Header */}
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div className="space-y-1">
@@ -137,22 +137,21 @@ function JobDetails() {
         </div>
 
         <span
-          className={`text-xs font-black uppercase px-3 py-1.5 rounded-full border shadow-xs ${
-            booking.status === 'CONFIRMED'
-              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-              : booking.status === 'COMPLETED'
+          className={`text-xs font-black uppercase px-3 py-1.5 rounded-full border shadow-xs ${booking.status === 'CONFIRMED'
+            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+            : booking.status === 'COMPLETED'
               ? 'bg-blue-100 text-blue-800 border-blue-300'
               : booking.status === 'CANCELLED'
-              ? 'bg-red-100 text-red-800 border-red-300'
-              : 'bg-amber-100 text-amber-800 border-amber-300'
-          }`}
+                ? 'bg-red-100 text-red-800 border-red-300'
+                : 'bg-amber-100 text-amber-800 border-amber-300'
+            }`}
         >
           {booking.status}
         </span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
+
         {/* Left Column: Machinery Photo & Specification Gallery */}
         <div className="space-y-4">
           <div className="relative h-96 w-full bg-gray-100 rounded-3xl overflow-hidden border border-gray-100 shadow-sm">
@@ -177,9 +176,8 @@ function JobDetails() {
                 <button
                   key={img.id}
                   onClick={() => setActiveImage(img.imageUrl)}
-                  className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 shrink-0 transition-all ${
-                    activeImage === img.imageUrl ? 'border-[#3E7B27] ring-2 ring-emerald-100' : 'border-gray-200 opacity-70 hover:opacity-100'
-                  }`}
+                  className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 shrink-0 transition-all ${activeImage === img.imageUrl ? 'border-[#3E7B27] ring-2 ring-emerald-100' : 'border-gray-200 opacity-70 hover:opacity-100'
+                    }`}
                 >
                   <img src={img.imageUrl} alt="Thumbnail" className="w-full h-full object-cover" />
                 </button>
@@ -218,7 +216,7 @@ function JobDetails() {
 
         {/* Right Column: Operational Assignment & Action Controls */}
         <div className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 space-y-6 shadow-sm">
-          
+
           <div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">
               {booking.equipmentName || `Machine #${booking.equipmentId}`}
