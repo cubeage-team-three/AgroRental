@@ -5,6 +5,7 @@ import com.agrorental.operator.dto.OperatorRegistrationRequest;
 import com.agrorental.operator.dto.OperatorResponse;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
+import com.agrorental.operator.mapper.OperatorDocumentMapper;
 import com.agrorental.operator.mapper.OperatorMapper;
 import com.agrorental.operator.repository.OperatorRepository;
 import com.agrorental.operator.service.OperatorService;
@@ -22,7 +23,6 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,7 +36,7 @@ class OperatorServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Spy
-    private OperatorMapper operatorMapper = new OperatorMapper();
+    private OperatorMapper operatorMapper = new OperatorMapper(new OperatorDocumentMapper());
 
     @InjectMocks
     private OperatorService operatorService;
@@ -82,6 +82,7 @@ class OperatorServiceTest {
         assertEquals("9876543210", response.getMobileNumber());
         assertEquals("suresh@example.com", response.getEmail());
         assertEquals(OperatorStatus.PENDING, response.getStatus());
+        assertFalse(response.isMobileVerified());
         assertTrue(response.isActive());
 
         verify(operatorRepository).existsByMobileNumber("9876543210");
