@@ -6,6 +6,7 @@ import com.agrorental.equipment.enums.FuelType;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * Compact API response DTO representing an equipment listing card for Farmer search/listing discovery.
@@ -28,6 +29,8 @@ public class EquipmentSummaryResponse {
     private Double latitude;
     private Double longitude;
     private AvailabilityStatus availabilityStatus;
+    private LocalDate availableFromDate;
+    private LocalDate availableToDate;
     private Boolean isDisabled;
     private String primaryImageUrl;
 }

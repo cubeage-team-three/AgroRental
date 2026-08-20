@@ -6,6 +6,7 @@ import com.agrorental.equipment.enums.FuelType;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,6 +36,8 @@ public class EquipmentResponse {
     private Double latitude;
     private Double longitude;
     private AvailabilityStatus availabilityStatus;
+    private LocalDate availableFromDate;
+    private LocalDate availableToDate;
     private String maintenanceNotes;
     private Boolean isDisabled;
     private List<EquipmentImageResponse> images;
