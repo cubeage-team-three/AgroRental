@@ -1,6 +1,7 @@
 package com.agrorental.operator.dto;
 
 import com.agrorental.operator.entity.OperatorStatus;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class OperatorResponse {
 
     private Long id;
@@ -27,6 +29,8 @@ public class OperatorResponse {
     private String skills;
     private String profilePhoto;
     private OperatorStatus status;
+    private boolean mobileVerified;
+    private String rejectionReason;
     private Long partnerId;
     private boolean active;
     private LocalDateTime createdAt;

@@ -7,7 +7,6 @@ import { farmService } from '../../services/farmService';
 import { getFarmerId } from '../../services/authService';
 
 import { reviewService } from '../../services/reviewService';
-
 function BookEquipment() {
   const [searchParams] = useSearchParams();
   const { equipmentId: pathEquipmentId } = useParams();
