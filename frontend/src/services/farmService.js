@@ -44,10 +44,10 @@ export const farmService = {
       if (Array.isArray(response)) {
         return response;
       }
-      return response || MOCK_FARMS;
+      return response ? (Array.isArray(response.data) ? response.data : []) : [];
     } catch (error) {
-      console.warn('API fetch failed for farms, returning fallback list:', error);
-      return MOCK_FARMS;
+      console.warn('API fetch failed for farms:', error);
+      return [];
     }
   },
 

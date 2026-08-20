@@ -252,14 +252,25 @@ export const equipmentService = {
    * Retrieves all equipment owned by a specific partner.
    */
   async getPartnerEquipment(partnerId = 1) {
-    try {
-      const res = await request(`/api/equipment/partner/${partnerId}`, { method: 'GET', partnerId });
-      if (res && res.length > 0) return res;
-    } catch (e) {
-      console.warn(`Partner equipment API fallback active:`, e);
+  try {
+    const res = await request(`/equipment/partner/${partnerId}`, {
+      method: 'GET',
+      partnerId,
+    });
+
+    if (Array.isArray(res)) {
+      return res;
     }
-    return MOCK_EQUIPMENT.filter((item) => item.partnerId === Number(partnerId));
-  },
+
+    return [];
+  } catch (e) {
+    console.warn('Partner equipment API fallback active:', e);
+
+    return MOCK_EQUIPMENT.filter(
+      (item) => item.partnerId === Number(partnerId)
+    );
+  }
+},
 
   /**
    * Creates a new machinery listing.
