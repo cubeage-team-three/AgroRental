@@ -28,6 +28,7 @@ import CheckoutPayment from '../pages/farmer/CheckoutPayment';
 import WriteReview from '../pages/farmer/WriteReview';
 import FarmerPayments from '../pages/farmer/Payments';
 import Invoice from '../pages/farmer/Invoice';
+import LiveTracking from '../pages/farmer/LiveTracking';
 import FarmerComplaints from '../pages/farmer/Complaints';
 import FarmerNotifications from '../pages/farmer/Notifications';
 
@@ -101,6 +102,8 @@ function AppRoutes() {
         <Route path="bookings/:id/pay" element={<CheckoutPayment />} />
         <Route path="bookings/:id/invoice" element={<Invoice />} />
         <Route path="bookings/:id/review" element={<WriteReview />} />
+        <Route path="bookings/:id/tracking" element={<LiveTracking />} />
+        <Route path="live-tracking" element={<LiveTracking />} />
         <Route path="payments" element={<FarmerPayments />} />
         <Route path="complaints" element={<FarmerComplaints />} />
         <Route path="notifications" element={<FarmerNotifications />} />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
+import { request } from "../../services/apiClient";
 import {
   AnimatePresence,
   motion,
@@ -70,8 +70,10 @@ function calculateDays(startDate, endDate) {
 }
 
 async function submitBooking(payload) {
-  const response = await axios.post(`${API_BASE_URL}/bookings`, payload);
-  return response.data?.data ?? response.data;
+  return await request('/bookings', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
 }
 
 function validateStep(step, form) {
