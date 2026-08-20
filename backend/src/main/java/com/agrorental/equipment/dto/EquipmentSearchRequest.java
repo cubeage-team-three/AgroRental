@@ -6,6 +6,7 @@ import jakarta.validation.constraints.DecimalMin;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * Request DTO representing dynamic Farmer search and filter parameters for Equipment discovery.
@@ -28,4 +29,19 @@ public class EquipmentSearchRequest {
     private AvailabilityStatus availabilityStatus;
 
     private String locationAddress;
+
+    @DecimalMin(value = "0", message = "Minimum HP cannot be negative")
+    private Integer minHp;
+
+    private LocalDate startDate;
+
+    private LocalDate endDate;
+
+    private Double minRating;
+
+    private Double userLat;
+
+    private Double userLng;
+
+    private Double maxDistanceKm;
 }

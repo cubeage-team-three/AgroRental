@@ -47,13 +47,45 @@ function ManageEquipment() {
     }
   };
 
+  const handleDeleteEquipment = async (item) => {
+    if (!window.confirm(`Are you sure you want to permanently remove "${item.name}" from the system catalog?`)) {
+      return;
+    }
+    setActionLoading(item.id);
+    try {
+      await equipmentService.deleteEquipment(item.id, item.partnerId || 1);
+      await fetchAllEquipment();
+    } catch (err) {
+      alert(err.message || 'Failed to delete equipment listing');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
         <div>
           <h1 className="text-3xl font-bold text-green-800 tracking-tight">System Equipment Administration</h1>
-          <p className="text-gray-600 mt-1">Global catalog inspection and administrative lockout management.</p>
+          <p className="text-gray-600 mt-1">Global catalog inspection, administrative lockouts, and fleet maintenance management.</p>
         </div>
+      </div>
+
+      {/* Admin Search Bar */}
+      <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-xs flex flex-col sm:flex-row gap-3">
+        <input
+          type="text"
+          placeholder="Filter equipment by location or keyword..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+        />
+        <button
+          onClick={fetchAllEquipment}
+          className="px-5 py-2 bg-green-700 text-white font-semibold rounded-lg hover:bg-green-800 transition text-sm"
+        >
+          Search Catalog
+        </button>
       </div>
 
       {error && (
@@ -71,6 +103,10 @@ function ManageEquipment() {
             <div key={idx} className="h-16 bg-gray-200 rounded-xl" />
           ))}
         </div>
+      ) : equipmentList.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center text-gray-500">
+          No machinery listings found in the system catalog.
+        </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
@@ -82,7 +118,7 @@ function ManageEquipment() {
                   <th className="px-6 py-4">Category</th>
                   <th className="px-6 py-4">Daily Rate</th>
                   <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Admin Action</th>
+                  <th className="px-6 py-4">Admin Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -108,17 +144,24 @@ function ManageEquipment() {
                           {badge.label}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 flex items-center gap-2">
                         <button
                           disabled={isProcessing}
                           onClick={() => handleToggleEnable(item)}
                           className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
                             item.isDisabled
                               ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
-                              : 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
+                              : 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100'
                           }`}
                         >
-                          {isProcessing ? 'Updating...' : item.isDisabled ? 'Re-enable Listing' : 'Admin Disable'}
+                          {isProcessing ? 'Updating...' : item.isDisabled ? 'Re-enable' : 'Disable'}
+                        </button>
+                        <button
+                          disabled={isProcessing || item.availabilityStatus === 'BOOKED'}
+                          onClick={() => handleDeleteEquipment(item)}
+                          className="text-xs font-bold px-3 py-1.5 rounded-lg border bg-red-50 text-red-700 border-red-300 hover:bg-red-100 disabled:opacity-50 transition"
+                        >
+                          Remove
                         </button>
                       </td>
                     </tr>
