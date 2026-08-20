@@ -103,8 +103,8 @@ function Navbar() {
                 className="bg-transparent font-medium focus:outline-none cursor-pointer"
               >
                 {LANGUAGES.map((lang) => {
-                  const code = typeof lang === 'string' ? lang : (lang.code || lang.label);
-                  const label = typeof lang === 'string' ? lang : (lang.native || lang.label);
+                  const code = typeof lang === 'string' ? lang : lang.code || lang.label;
+                  const label = typeof lang === 'string' ? lang : lang.native || lang.label;
                   return (
                     <option key={code} value={code}>
                       {label}
