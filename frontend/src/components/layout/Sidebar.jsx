@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 import { getCurrentUser, logoutUser, getFarmerId, getPartnerId, getOperatorId } from '../../services/authService';
 import { notificationService } from '../../services/notificationService';
 import { useLanguage } from '../../context/LanguageContext';
@@ -8,15 +7,7 @@ import { useLanguage } from '../../context/LanguageContext';
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  let langCtx;
-  try {
-    langCtx = useLanguage();
-  } catch (e) {
-    langCtx = {};
-  }
-  const t = langCtx?.t || ((k, d) => d || k);
-
+  const { t } = useLanguage();
   const currentUser = getCurrentUser();
   const userName = currentUser?.fullName || 'AgroRental User';
   const mobileNumber = currentUser?.mobileNumber || '9876543210';
@@ -30,12 +21,12 @@ function Sidebar() {
   let portalTitle = 'Farmer Portal';
   let navItems = [
     { path: '/farmer/dashboard', labelKey: 'menu_dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/farmer/profile', labelKey: 'menu_profile', label: 'My Profile', icon: '👤' },
+    { path: '/farmer/profile', labelKey: 'menu_profile', label: 'Profile', icon: '👤' },
     { path: '/farmer/farms', labelKey: 'menu_my_farms', label: 'My Farms', icon: '🌾' },
-    { path: '/farmer/equipment', labelKey: 'menu_search_equipment', label: 'Search Equipment', icon: '🚜' },
+    { path: '/farmer/equipment', labelKey: 'menu_search_equipment', label: 'Book Machinery', icon: '🚜' },
     { path: '/farmer/bookings', labelKey: 'menu_my_bookings', label: 'My Bookings', icon: '📋' },
-    { path: '/farmer/payments', labelKey: 'menu_payments', label: 'Payments & Invoices', icon: '💳' },
-    { path: '/farmer/complaints', labelKey: 'menu_support', label: 'Support & Issues', icon: '🎧' },
+    { path: '/farmer/payments', labelKey: 'menu_payments', label: 'Payments', icon: '💳' },
+    { path: '/farmer/complaints', labelKey: 'menu_support', label: 'Support', icon: '🎧' },
     { path: '/farmer/notifications', labelKey: 'menu_notifications', label: 'Notifications', icon: '🔔' },
   ];
 
@@ -75,44 +66,40 @@ function Sidebar() {
   }, [currentRole, currentId, location.pathname]);
 
   return (
-    <aside className="w-64 bg-[#0F382C] text-white min-h-screen flex flex-col justify-between p-4 shadow-xl border-r border-emerald-950/40 font-sans shrink-0">
+    <aside className="w-64 bg-[#1B4D3E] text-white min-h-screen flex flex-col justify-between p-4 shadow-xl border-r border-emerald-900/30 font-sans shrink-0">
       <div className="space-y-6">
         
-        {/* Official Brand Logo Header */}
-        <div className="flex items-center gap-3 px-2 py-2 border-b border-emerald-800/60">
-          <div className="flex items-center overflow-hidden rounded-xl bg-white px-2 py-1 shadow-sm ring-1 ring-slate-900/5 h-11 shrink-0">
-            <img
-              src={agroRentLogo}
-              alt="AgroRent Marketplace"
-              className="h-full w-auto object-contain"
-            />
+        {/* Brand Header */}
+        <div className="flex items-center gap-3 px-2 py-3 border-b border-emerald-800/60">
+          <div className="w-10 h-10 rounded-2xl bg-[#3E7B27] text-white flex items-center justify-center font-bold text-xl shadow-md border border-white/20">
+            🌱
           </div>
           <div>
-            <h1 className="text-lg font-extrabold tracking-tight text-white drop-shadow-sm">AgroRent</h1>
-            <span className="text-[10px] font-extrabold text-lime-400 uppercase tracking-wider block -mt-0.5">
+            <h1 className="text-xl font-extrabold tracking-tight text-white drop-shadow-sm">AgroRent</h1>
+            <span className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest block -mt-0.5">
               {portalTitle}
             </span>
           </div>
         </div>
 
         {/* User Mini Profile Card */}
-        <div className="bg-[#194D3E] p-3 rounded-2xl border border-emerald-700/50 flex items-center gap-3 shadow-inner">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-lime-400 to-emerald-600 text-emerald-950 font-extrabold flex items-center justify-center text-lg shadow">
+        <div className="bg-[#265D4D] p-3 rounded-2xl border border-emerald-700/50 flex items-center gap-3 shadow-inner">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-extrabold flex items-center justify-center text-lg shadow">
             {userName.charAt(0).toUpperCase()}
           </div>
           <div className="overflow-hidden">
-            <h3 className="text-sm font-extrabold text-white truncate">{userName}</h3>
+            <h3 className="text-sm font-bold text-white truncate">{userName}</h3>
             <p className="text-[11px] text-emerald-200 font-medium truncate">+91 {mobileNumber}</p>
-            <span className="inline-block mt-0.5 px-2 py-0.2 bg-lime-400/20 text-lime-300 rounded text-[9px] font-extrabold border border-lime-400/30">
+            <span className="inline-block mt-0.5 px-2 py-0.2 bg-emerald-500/30 text-emerald-100 rounded text-[9px] font-extrabold">
               ✓ Active Account
             </span>
           </div>
         </div>
 
-        {/* Navigation Menu */}
+        {/* Main Navigation Menu */}
         <nav className="space-y-1">
           <span className="px-3 text-[10px] font-extrabold uppercase tracking-widest text-emerald-300/70 block mb-2">
-            Navigation Menu
+            Main Navigation
           </span>
           {navItems.map((item) => (
             <NavLink
@@ -121,7 +108,7 @@ function Sidebar() {
               className={({ isActive }) =>
                 `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 ${
                   isActive
-                    ? 'bg-lime-400 text-emerald-950 shadow-md border border-lime-300/40 translate-x-1 font-extrabold'
+                    ? 'bg-[#3E7B27] text-white shadow-md border border-emerald-400/30 translate-x-1'
                     : 'text-emerald-100/90 hover:bg-emerald-800/50 hover:text-white'
                 }`
               }
@@ -148,7 +135,7 @@ function Sidebar() {
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/20 hover:bg-red-600 text-red-100 hover:text-white rounded-xl text-xs font-bold transition-all duration-150 border border-red-500/30 shadow-sm"
         >
           <span>🚪</span>
-          <span>Logout Account</span>
+          <span>{t('logout')}</span>
         </button>
       </div>
 
