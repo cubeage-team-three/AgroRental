@@ -13,6 +13,9 @@ public class BookingResponse {
 
     private Long id;
     private Long farmerId;
+    private Long farmId;
+    private String farmName;
+    private String farmLocation;
     private Long equipmentId;
     private String equipmentName;
     private String equipmentCategory;
@@ -30,9 +33,12 @@ public class BookingResponse {
 
     public BookingResponse() {}
 
-    public BookingResponse(Long id, Long farmerId, Long equipmentId, String equipmentName, String equipmentCategory, String primaryImageUrl, Long partnerId, Long operatorId, LocalDate startDate, LocalDate endDate, BigDecimal totalCost, BookingStatus status, String deliveryAddress, String notes, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public BookingResponse(Long id, Long farmerId, Long farmId, String farmName, String farmLocation, Long equipmentId, String equipmentName, String equipmentCategory, String primaryImageUrl, Long partnerId, Long operatorId, LocalDate startDate, LocalDate endDate, BigDecimal totalCost, BookingStatus status, String deliveryAddress, String notes, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.farmerId = farmerId;
+        this.farmId = farmId;
+        this.farmName = farmName;
+        this.farmLocation = farmLocation;
         this.equipmentId = equipmentId;
         this.equipmentName = equipmentName;
         this.equipmentCategory = equipmentCategory;
@@ -49,6 +55,10 @@ public class BookingResponse {
         this.updatedAt = updatedAt;
     }
 
+    public BookingResponse(Long id, Long farmerId, Long equipmentId, String equipmentName, String equipmentCategory, String primaryImageUrl, Long partnerId, Long operatorId, LocalDate startDate, LocalDate endDate, BigDecimal totalCost, BookingStatus status, String deliveryAddress, String notes, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this(id, farmerId, null, null, null, equipmentId, equipmentName, equipmentCategory, primaryImageUrl, partnerId, operatorId, startDate, endDate, totalCost, status, deliveryAddress, notes, createdAt, updatedAt);
+    }
+
     public static BookingResponseBuilder builder() {
         return new BookingResponseBuilder();
     }
@@ -56,6 +66,9 @@ public class BookingResponse {
     public static class BookingResponseBuilder {
         private Long id;
         private Long farmerId;
+        private Long farmId;
+        private String farmName;
+        private String farmLocation;
         private Long equipmentId;
         private String equipmentName;
         private String equipmentCategory;
@@ -75,6 +88,9 @@ public class BookingResponse {
 
         public BookingResponseBuilder id(Long id) { this.id = id; return this; }
         public BookingResponseBuilder farmerId(Long farmerId) { this.farmerId = farmerId; return this; }
+        public BookingResponseBuilder farmId(Long farmId) { this.farmId = farmId; return this; }
+        public BookingResponseBuilder farmName(String farmName) { this.farmName = farmName; return this; }
+        public BookingResponseBuilder farmLocation(String farmLocation) { this.farmLocation = farmLocation; return this; }
         public BookingResponseBuilder equipmentId(Long equipmentId) { this.equipmentId = equipmentId; return this; }
         public BookingResponseBuilder equipmentName(String equipmentName) { this.equipmentName = equipmentName; return this; }
         public BookingResponseBuilder equipmentCategory(String equipmentCategory) { this.equipmentCategory = equipmentCategory; return this; }
@@ -91,7 +107,7 @@ public class BookingResponse {
         public BookingResponseBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
 
         public BookingResponse build() {
-            return new BookingResponse(id, farmerId, equipmentId, equipmentName, equipmentCategory, primaryImageUrl, partnerId, operatorId, startDate, endDate, totalCost, status, deliveryAddress, notes, createdAt, updatedAt);
+            return new BookingResponse(id, farmerId, farmId, farmName, farmLocation, equipmentId, equipmentName, equipmentCategory, primaryImageUrl, partnerId, operatorId, startDate, endDate, totalCost, status, deliveryAddress, notes, createdAt, updatedAt);
         }
     }
 
@@ -100,6 +116,15 @@ public class BookingResponse {
 
     public Long getFarmerId() { return farmerId; }
     public void setFarmerId(Long farmerId) { this.farmerId = farmerId; }
+
+    public Long getFarmId() { return farmId; }
+    public void setFarmId(Long farmId) { this.farmId = farmId; }
+
+    public String getFarmName() { return farmName; }
+    public void setFarmName(String farmName) { this.farmName = farmName; }
+
+    public String getFarmLocation() { return farmLocation; }
+    public void setFarmLocation(String farmLocation) { this.farmLocation = farmLocation; }
 
     public Long getEquipmentId() { return equipmentId; }
     public void setEquipmentId(Long equipmentId) { this.equipmentId = equipmentId; }

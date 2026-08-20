@@ -18,7 +18,7 @@ function Navbar() {
   let t = (key, defaultVal) => defaultVal || key;
   let language = 'English';
   let setLanguage = () => { };
-  let LANGUAGES = {};
+  let LANGUAGES = [];
 
   try {
     const langCtx = useLanguage();
@@ -26,17 +26,22 @@ function Navbar() {
       t = (key, defaultVal) => langCtx.t(key) !== key ? langCtx.t(key) : (defaultVal || key);
       language = langCtx.language;
       setLanguage = langCtx.setLanguage;
-      LANGUAGES = langCtx.LANGUAGES || {};
+      LANGUAGES = langCtx.LANGUAGES || [];
     }
   } catch (e) {
     // Fallback if not wrapped in LanguageProvider
   }
 
   useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
@@ -89,7 +94,7 @@ function Navbar() {
 
         {/* Actions */}
         <div className="hidden shrink-0 items-center gap-3 md:flex">
-          {Object.keys(LANGUAGES).length > 0 && (
+          {Array.isArray(LANGUAGES) && LANGUAGES.length > 0 && (
             <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-xs font-semibold text-slate-700 backdrop-blur-md">
               <Globe className="h-4 w-4 text-emerald-600" />
               <select
@@ -97,11 +102,15 @@ function Navbar() {
                 onChange={(e) => setLanguage(e.target.value)}
                 className="bg-transparent font-medium focus:outline-none cursor-pointer"
               >
-                {Object.entries(LANGUAGES).map(([key, val]) => (
-                  <option key={key} value={val}>
-                    {val}
-                  </option>
-                ))}
+                {LANGUAGES.map((lang) => {
+                  const code = typeof lang === 'string' ? lang : (lang.code || lang.label);
+                  const label = typeof lang === 'string' ? lang : (lang.native || lang.label);
+                  return (
+                    <option key={code} value={code}>
+                      {label}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           )}
