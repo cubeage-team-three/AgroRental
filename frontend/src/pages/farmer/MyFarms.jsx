@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { farmService } from '../../services/farmService';
+import { getFarmerId } from '../../services/authService';
 import { Plus, MapPin, Sprout, Edit2, Trash2, X, Check, Globe, Layers, Navigation } from 'lucide-react';
 
 function MyFarms() {
@@ -32,7 +33,8 @@ function MyFarms() {
     setLoading(true);
     setError(null);
     try {
-      const data = await farmService.getFarms(1);
+      const activeFarmerId = getFarmerId() || 1;
+      const data = await farmService.getFarms(activeFarmerId);
       setFarms(data || []);
     } catch (err) {
       console.error('Error fetching farms:', err);
@@ -106,7 +108,7 @@ function MyFarms() {
     setFormSubmitting(true);
 
     const payload = {
-      farmerId: 1,
+      farmerId: getFarmerId() || 1,
       farmName: formData.farmName,
       village: formData.village,
       taluka: formData.taluka,

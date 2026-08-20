@@ -21,32 +21,17 @@ function FarmerDashboard() {
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     profileSummary: {
-      fullName: currentUser?.fullName || 'Ramesh Yadav',
-      mobileNumber: currentUser?.mobileNumber || '9876543210',
+      fullName: currentUser?.fullName || 'Farmer User',
+      mobileNumber: currentUser?.mobileNumber || '',
       accountStatus: currentUser?.accountStatus || 'ACTIVE',
       preferredLanguage: currentUser?.preferredLanguage || 'English',
     },
-    totalFarmsCount: 2,
-    activeBookingsCount: 1,
-    completedBookingsCount: 4,
-    totalSpentAmount: 12500,
-    activeBookingStatusMessage: 'Mahindra 575 DI Tractor #BK-2026-0891 is confirmed for tomorrow 9:00 AM.',
-    recentBookings: [
-      {
-        bookingId: 'BK-2026-0891',
-        equipmentName: 'Mahindra 575 DI Tractor',
-        bookingDate: '18 Aug 2026',
-        status: 'ACCEPTED',
-        totalCost: '₹3,200',
-      },
-      {
-        bookingId: 'BK-2026-0744',
-        equipmentName: 'John Deere Rotavator 6ft',
-        bookingDate: '12 Aug 2026',
-        status: 'COMPLETED',
-        totalCost: '₹1,800',
-      },
-    ],
+    totalFarmsCount: 0,
+    activeBookingsCount: 0,
+    completedBookingsCount: 0,
+    totalSpentAmount: 0,
+    activeBookingStatusMessage: 'No active bookings currently in progress.',
+    recentBookings: [],
   });
 
   useEffect(() => {
@@ -255,6 +240,30 @@ function FarmerDashboard() {
           </div>
 
           <div
+            onClick={() => navigate('/farmer/live-tracking')}
+            className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-600 hover:shadow-md transition-all cursor-pointer group"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+              📡
+            </div>
+            <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">Live Machine Tracking</h3>
+            <p className="text-xs text-slate-500 mt-1">Real-time GPS tracking for active machines, field arrival & ETA.</p>
+            <span className="inline-flex items-center text-xs font-bold text-teal-700 mt-3 group-hover:translate-x-1 transition-transform">Open Live GPS →</span>
+          </div>
+
+          <div
+            onClick={() => navigate('/farmer/complaints')}
+            className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-600 hover:shadow-md transition-all cursor-pointer group"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-700 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+              ⚠️
+            </div>
+            <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">Help & Complaints</h3>
+            <p className="text-xs text-slate-500 mt-1">Report service disputes, breakdown issues, or billing queries.</p>
+            <span className="inline-flex items-center text-xs font-bold text-rose-700 mt-3 group-hover:translate-x-1 transition-transform">Get Support →</span>
+          </div>
+
+          <div
             onClick={() => navigate('/farmer/profile')}
             className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-600 hover:shadow-md transition-all cursor-pointer group"
           >
@@ -262,7 +271,7 @@ function FarmerDashboard() {
               👤
             </div>
             <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">My Profile & Preferences</h3>
-            <p className="text-xs text-slate-500 mt-1">Update contact details, bank accounts, soil health cards & security.</p>
+            <p className="text-xs text-slate-500 mt-1">Update contact details, preferred language & security settings.</p>
             <span className="inline-flex items-center text-xs font-bold text-emerald-700 mt-3 group-hover:translate-x-1 transition-transform">Edit Profile →</span>
           </div>
         </div>
