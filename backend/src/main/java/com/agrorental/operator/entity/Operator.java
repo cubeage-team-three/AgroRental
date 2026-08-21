@@ -5,6 +5,7 @@ import com.agrorental.partner.entity.Partner;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,6 +53,10 @@ public class Operator extends BaseEntity {
 
     @Column(name = "profile_photo")
     private String profilePhoto;
+
+    @Column(name = "hourly_rate")
+    @Builder.Default
+    private BigDecimal hourlyRate = new BigDecimal("500.00");
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
