@@ -101,6 +101,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                     log.debug("Authenticated partner ID {} in SecurityContext", userId);
+                } else if (userId != null && "FARMER".equalsIgnoreCase(role)) {
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            "FARMER_" + userId,
+                            null,
+                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_FARMER"))
+                    );
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.debug("Authenticated farmer ID {} in SecurityContext", userId);
                 }
             }
         } catch (Exception ex) {

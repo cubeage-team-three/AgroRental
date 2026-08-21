@@ -58,11 +58,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/operators/otp/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/operators/*/documents").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/operators/*/documents").permitAll()
+                        // Farmer Review submission on completed operator job
+                        .requestMatchers(HttpMethod.POST, "/api/operators/jobs/*/reviews").hasRole("FARMER")
+                        .requestMatchers(HttpMethod.GET, "/api/operators/jobs/*/review").authenticated()
                         // Operator Protected Endpoints
                         .requestMatchers("/api/operators/me").hasRole("OPERATOR")
+                        .requestMatchers("/api/operators/me/**").hasRole("OPERATOR")
                         .requestMatchers("/api/operators/profile/**").hasRole("OPERATOR")
                         .requestMatchers("/api/operators/jobs/**").hasRole("OPERATOR")
                         .requestMatchers("/api/operators/dashboard/**").hasRole("OPERATOR")
+                        .requestMatchers("/api/operators/earnings/**").hasRole("OPERATOR")
                         // Admin Protected Endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Existing Platform Public and Shared Endpoints
