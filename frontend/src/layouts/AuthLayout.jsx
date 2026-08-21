@@ -1,20 +1,86 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import heroGoldenHour from "../assets/images/hero-golden-hour.jpg";
+import farmerImage from "../assets/images/ModuleService Images/Farmer.jpeg";
+import equipmentOwnerImage from "../assets/images/ModuleService Images/Equipment Owner.jpeg";
+import operatorImage from "../assets/images/ModuleService Images/Operator.jpeg";
 
 const EASE = [0.22, 1, 0.36, 1];
 
+const HERO_CONTENT = {
+  "/register": {
+    image: farmerImage,
+    alt: "Farmer using AgroRent in the field",
+    headline: (
+      <>
+        Book Any Farm Service,
+        <br />
+        In Minutes.
+      </>
+    ),
+    subtext:
+      "Join 50,000+ farmers already renting equipment, booking operators, and tracking every job live on AgroRent.",
+  },
+  "/register/partner": {
+    image: equipmentOwnerImage,
+    alt: "Equipment owner with a tractor fleet",
+    headline: (
+      <>
+        Turn Your Machines
+        <br />
+        Into Income.
+      </>
+    ),
+    subtext:
+      "3,200+ machines are already listed on AgroRent — list yours, accept bookings instantly, and get paid on time.",
+  },
+  "/register/operator": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Get Matched to Jobs,
+        <br />
+        Near You.
+      </>
+    ),
+    subtext: "Join 12,000+ verified operators earning steady income with live job alerts and fast payouts.",
+  },
+};
+
+const DEFAULT_HERO = {
+  image: heroGoldenHour,
+  alt: "Golden-hour view of Indian farmland",
+  headline: (
+    <>
+      Empowering India&apos;s Farms,
+      <br />
+      One Acre at a Time.
+    </>
+  ),
+  subtext:
+    "Trusted by 50,000+ farmers for equipment rentals, verified operators, and same-day harvest support — anywhere in rural India.",
+};
+
 function AuthLayout() {
   const location = useLocation();
+  const hero = HERO_CONTENT[location.pathname] || DEFAULT_HERO;
 
   return (
     <div className="flex min-h-screen flex-col bg-white lg:flex-row">
       <div className="relative h-[220px] w-full shrink-0 overflow-hidden sm:h-[300px] lg:h-auto lg:w-[44%] xl:w-[48%]">
-        <img
-          src={heroGoldenHour}
-          alt="Golden-hour view of Indian farmland"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={hero.image}
+            src={hero.image}
+            alt={hero.alt}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </AnimatePresence>
         <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/95 via-emerald-950/35 to-emerald-950/10 lg:via-emerald-950/25" />
         <div className="absolute inset-0 hidden bg-gradient-to-r from-transparent via-transparent to-emerald-950/20 lg:block" />
 
@@ -26,25 +92,22 @@ function AuthLayout() {
         </Link>
 
         <div className="absolute inset-x-0 bottom-0 z-10 p-6 sm:p-8 lg:p-12 xl:p-16">
-          <motion.h2
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: EASE }}
-            className="font-display text-2xl font-bold leading-[1.15] text-white [text-shadow:0_0_35px_rgba(163,230,53,0.45)] sm:text-3xl lg:text-4xl xl:text-[2.65rem]"
-          >
-            Empowering India&apos;s Farms,
-            <br />
-            One Acre at a Time.
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.15, ease: EASE }}
-            className="mt-4 hidden max-w-sm text-sm leading-relaxed text-white/70 lg:block"
-          >
-            Trusted by 50,000+ farmers for equipment rentals, verified operators, and
-            same-day harvest support — anywhere in rural India.
-          </motion.p>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.5, ease: EASE }}
+            >
+              <h2 className="font-display text-2xl font-bold leading-[1.15] text-white [text-shadow:0_0_35px_rgba(163,230,53,0.45)] sm:text-3xl lg:text-4xl xl:text-[2.65rem]">
+                {hero.headline}
+              </h2>
+              <p className="mt-4 hidden max-w-sm text-sm leading-relaxed text-white/70 lg:block">
+                {hero.subtext}
+              </p>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
 

@@ -71,8 +71,6 @@ function AppRoutes() {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
         <Route path="register/farmer" element={<RegisterFarmer />} />
-        <Route path="register/partner" element={<RegisterPartner />} />
-        <Route path="register/operator" element={<RegisterOperator />} />
         <Route path="verify-otp" element={<VerifyOtp />} />
       </Route>
 
@@ -80,6 +78,8 @@ function AppRoutes() {
       <Route element={<AuthLayout />}>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
+        <Route path="register/partner" element={<RegisterPartner />} />
+        <Route path="register/operator" element={<RegisterOperator />} />
       </Route>
 
       {/* Farmer routes */}
