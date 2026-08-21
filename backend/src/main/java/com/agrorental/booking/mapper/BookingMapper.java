@@ -7,7 +7,11 @@ import com.agrorental.booking.entity.BookingStatus;
 import com.agrorental.equipment.entity.Equipment;
 import com.agrorental.equipment.entity.EquipmentImage;
 import com.agrorental.farmer.entity.Farm;
+import com.agrorental.farmer.entity.Farmer;
+import com.agrorental.farmer.repository.FarmerRepository;
+import com.agrorental.operator.entity.Operator;
 import com.agrorental.partner.entity.Partner;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -17,6 +21,12 @@ import java.math.BigDecimal;
  */
 @Component
 public class BookingMapper {
+
+    private final FarmerRepository farmerRepository;
+
+    public BookingMapper(@Autowired(required = false) FarmerRepository farmerRepository) {
+        this.farmerRepository = farmerRepository;
+    }
 
     /**
      * Maps a BookingCreateRequest DTO, Equipment entity, Partner entity, Farm entity, and calculated total cost to a Booking entity.
@@ -34,7 +44,7 @@ public class BookingMapper {
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .totalCost(totalCost)
-                .status(BookingStatus.CONFIRMED)
+                .status(BookingStatus.PENDING)
                 .deliveryAddress(request.getDeliveryAddress())
                 .notes(request.getNotes())
                 .build();
@@ -75,7 +85,32 @@ public class BookingMapper {
         }
 
         Long partnerId = booking.getPartner() != null ? booking.getPartner().getId() : null;
-        Long operatorId = booking.getOperator() != null ? booking.getOperator().getId() : null;
+        
+        Long operatorId = null;
+        String operatorName = null;
+        String operatorMobile = null;
+        if (booking.getOperator() != null) {
+            operatorId = booking.getOperator().getId();
+            operatorName = booking.getOperator().getFullName();
+            operatorMobile = booking.getOperator().getMobileNumber();
+        }
+
+        String farmerName = null;
+        String farmerMobile = null;
+        String farmerEmail = null;
+        if (booking.getFarmerId() != null && farmerRepository != null) {
+            try {
+                Farmer farmer = farmerRepository.findById(booking.getFarmerId()).orElse(null);
+                if (farmer != null) {
+                    farmerName = farmer.getFullName();
+                    farmerMobile = farmer.getMobileNumber();
+                    farmerEmail = farmer.getEmail();
+                }
+            } catch (Exception ignored) {}
+        }
+        if (farmerName == null && booking.getFarmerId() != null) {
+            farmerName = "Farmer #" + booking.getFarmerId();
+        }
 
         Farm farm = booking.getFarm();
         Long farmId = farm != null ? farm.getId() : null;
@@ -88,6 +123,9 @@ public class BookingMapper {
         return BookingResponse.builder()
                 .id(booking.getId())
                 .farmerId(booking.getFarmerId())
+                .farmerName(farmerName)
+                .farmerMobile(farmerMobile)
+                .farmerEmail(farmerEmail)
                 .farmId(farmId)
                 .farmName(farmName)
                 .farmLocation(farmLocation)
@@ -97,12 +135,15 @@ public class BookingMapper {
                 .primaryImageUrl(primaryImageUrl)
                 .partnerId(partnerId)
                 .operatorId(operatorId)
+                .operatorName(operatorName)
+                .operatorMobile(operatorMobile)
                 .startDate(booking.getStartDate())
                 .endDate(booking.getEndDate())
                 .totalCost(booking.getTotalCost())
                 .status(booking.getStatus())
                 .deliveryAddress(booking.getDeliveryAddress())
                 .notes(booking.getNotes())
+                .rejectionReason(booking.getRejectionReason())
                 .createdAt(booking.getCreatedAt())
                 .updatedAt(booking.getUpdatedAt())
                 .build();

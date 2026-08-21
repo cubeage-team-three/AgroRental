@@ -45,6 +45,8 @@ public class EquipmentMapper {
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
                 .availabilityStatus(AvailabilityStatus.AVAILABLE)
+                .availableFromDate(request.getAvailableFromDate())
+                .availableToDate(request.getAvailableToDate())
                 .isDisabled(false)
                 .build();
 
@@ -105,6 +107,12 @@ public class EquipmentMapper {
         if (request.getAvailabilityStatus() != null) {
             equipment.setAvailabilityStatus(request.getAvailabilityStatus());
         }
+        if (request.getAvailableFromDate() != null) {
+            equipment.setAvailableFromDate(request.getAvailableFromDate());
+        }
+        if (request.getAvailableToDate() != null) {
+            equipment.setAvailableToDate(request.getAvailableToDate());
+        }
         if (request.getMaintenanceNotes() != null) {
             equipment.setMaintenanceNotes(request.getMaintenanceNotes());
         }
@@ -152,6 +160,8 @@ public class EquipmentMapper {
                 .latitude(equipment.getLatitude())
                 .longitude(equipment.getLongitude())
                 .availabilityStatus(equipment.getAvailabilityStatus())
+                .availableFromDate(equipment.getAvailableFromDate())
+                .availableToDate(equipment.getAvailableToDate())
                 .maintenanceNotes(equipment.getMaintenanceNotes())
                 .isDisabled(equipment.getIsDisabled())
                 .images(imageResponses)
@@ -213,6 +223,8 @@ public class EquipmentMapper {
                 .latitude(equipment.getLatitude())
                 .longitude(equipment.getLongitude())
                 .availabilityStatus(equipment.getAvailabilityStatus())
+                .availableFromDate(equipment.getAvailableFromDate())
+                .availableToDate(equipment.getAvailableToDate())
                 .isDisabled(equipment.getIsDisabled())
                 .primaryImageUrl(primaryImageUrl)
                 .build();

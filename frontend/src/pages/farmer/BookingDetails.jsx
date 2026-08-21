@@ -242,7 +242,21 @@ function BookingDetails() {
                 <p className="text-xs uppercase font-semibold text-emerald-200">Total Rental Cost</p>
                 <p className="text-3xl font-extrabold text-white">₹{booking.totalCost}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  to={`/farmer/bookings/${booking.id}/tracking`}
+                  className="rounded-xl border border-emerald-400/40 bg-emerald-700/60 px-4 py-2.5 text-xs font-bold text-emerald-100 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5"
+                >
+                  <MapPin className="h-4 w-4 text-emerald-300" /> Live Tracking
+                </Link>
+
+                <Link
+                  to={`/farmer/complaints?bookingId=${booking.id}`}
+                  className="rounded-xl border border-amber-400/40 bg-amber-600/30 px-4 py-2.5 text-xs font-bold text-amber-200 hover:bg-amber-600 hover:text-white transition flex items-center gap-1.5"
+                >
+                  <AlertCircle className="h-4 w-4 text-amber-300" /> Log Complaint
+                </Link>
+
                 {booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
                   <button
                     onClick={handleCancel}

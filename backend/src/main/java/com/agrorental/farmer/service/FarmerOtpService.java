@@ -34,7 +34,8 @@ public class FarmerOtpService {
         Farmer farmer = farmerRepository.findByMobileNumber(mobile)
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer not found with mobile number: " + mobile));
 
-        // Generate a 6-digit numeric OTP (e.g. 123456 in dev/test for easy verification)
+        // Generate a 6-digit numeric OTP (e.g. 123456 in dev/test for easy
+        // verification)
         String generatedOtp = String.format("%06d", RANDOM.nextInt(900000) + 100000);
 
         FarmerOtp otpRecord = FarmerOtp.builder()
@@ -66,7 +67,8 @@ public class FarmerOtpService {
         log.info("Verifying OTP for mobile: {}", mobile);
 
         FarmerOtp otpRecord = farmerOtpRepository.findTopByMobileNumberOrderByCreatedAtDesc(mobile)
-                .orElseThrow(() -> new BadRequestException("No active OTP request found for this mobile number. Please request a new OTP."));
+                .orElseThrow(() -> new BadRequestException(
+                        "No active OTP request found for this mobile number. Please request a new OTP."));
 
         if (Boolean.TRUE.equals(otpRecord.getVerified())) {
             log.info("OTP already verified for mobile: {}", mobile);
@@ -100,7 +102,8 @@ public class FarmerOtpService {
             log.warn("Incorrect OTP entered for mobile {}. Attempts remaining: {}", mobile, remaining);
 
             if (remaining == 0) {
-                throw new BadRequestException("Invalid OTP. Maximum attempts exceeded (3/3). Please request a new OTP.");
+                throw new BadRequestException(
+                        "Invalid OTP. Maximum attempts exceeded (3/3). Please request a new OTP.");
             } else {
                 throw new BadRequestException("Invalid OTP code. You have " + remaining + " attempt(s) remaining.");
             }

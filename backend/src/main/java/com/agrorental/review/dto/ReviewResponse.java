@@ -2,6 +2,7 @@ package com.agrorental.review.dto;
 
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -20,8 +21,10 @@ public class ReviewResponse {
     private String farmerName;
     private Long equipmentId;
     private String equipmentName;
+    private String equipmentCategory;
     private Long partnerId;
     private Integer rating;
     private String comment;
+    private LocalDate serviceDate;
     private LocalDateTime createdAt;
 }

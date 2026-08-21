@@ -58,33 +58,53 @@ public class PaymentController {
     // --- Partner & General Payment Endpoints ---
 
     @PostMapping("/api/payments")
-    public ResponseEntity<PaymentResponse> createPayment(@Valid @RequestBody PaymentCreateRequest request) {
+    public ResponseEntity<ApiResponse<PaymentResponse>> createPayment(@Valid @RequestBody PaymentCreateRequest request) {
         PaymentResponse response = paymentService.createPayment(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Payment created successfully", response));
     }
 
     @GetMapping("/api/payments/{id}")
-    public ResponseEntity<PaymentResponse> getPaymentById(@PathVariable Long id) {
-        return ResponseEntity.ok(paymentService.getPaymentById(id));
+    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentById(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Payment retrieved successfully", paymentService.getPaymentById(id)));
     }
 
     @GetMapping("/api/payments/booking/{bookingId}")
-    public ResponseEntity<PaymentResponse> getPaymentByBookingId(@PathVariable Long bookingId) {
-        return ResponseEntity.ok(paymentService.getPaymentByBookingId(bookingId));
+    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentByBookingId(@PathVariable Long bookingId) {
+        return ResponseEntity.ok(ApiResponse.success("Payment retrieved successfully", paymentService.getPaymentByBookingId(bookingId)));
     }
 
     @GetMapping("/api/payments/farmer/{farmerId}")
-    public ResponseEntity<List<PaymentResponse>> getPaymentsByFarmer(@PathVariable Long farmerId) {
-        return ResponseEntity.ok(paymentService.getPaymentsByFarmer(farmerId));
+    public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsByFarmer(@PathVariable Long farmerId) {
+        return ResponseEntity.ok(ApiResponse.success("Farmer payments retrieved successfully", paymentService.getPaymentsByFarmer(farmerId)));
     }
 
     @GetMapping("/api/payments/partner/{partnerId}")
-    public ResponseEntity<List<PaymentResponse>> getPaymentsByPartner(@PathVariable Long partnerId) {
-        return ResponseEntity.ok(paymentService.getPaymentsByPartner(partnerId));
+    public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsByPartner(@PathVariable Long partnerId) {
+        return ResponseEntity.ok(ApiResponse.success("Partner payments retrieved successfully", paymentService.getPaymentsByPartner(partnerId)));
     }
 
     @GetMapping("/api/payments/partner/{partnerId}/earnings")
-    public ResponseEntity<PartnerEarningsSummary> getPartnerEarningsSummary(@PathVariable Long partnerId) {
-        return ResponseEntity.ok(paymentService.getPartnerEarningsSummary(partnerId));
+    public ResponseEntity<ApiResponse<PartnerEarningsSummary>> getPartnerEarningsSummary(@PathVariable Long partnerId) {
+        return ResponseEntity.ok(ApiResponse.success("Partner earnings summary retrieved successfully", paymentService.getPartnerEarningsSummary(partnerId)));
+    }
+
+    @GetMapping("/api/payments/partner/{partnerId}/earnings-detail")
+    public ResponseEntity<ApiResponse<PartnerEarningsDetailResponse>> getPartnerEarningsDetail(@PathVariable Long partnerId) {
+        return ResponseEntity.ok(ApiResponse.success("Partner earnings detail retrieved successfully", paymentService.getPartnerEarningsDetail(partnerId)));
+    }
+
+    @GetMapping("/api/payments/partner/{partnerId}/reports/booking-revenue")
+    public ResponseEntity<ApiResponse<List<PartnerBookingRevenueReportDto>>> getPartnerBookingRevenueReport(@PathVariable Long partnerId) {
+        return ResponseEntity.ok(ApiResponse.success("Booking revenue report generated successfully", paymentService.getPartnerBookingRevenueReport(partnerId)));
+    }
+
+    @GetMapping("/api/payments/partner/{partnerId}/reports/equipment-revenue")
+    public ResponseEntity<ApiResponse<List<PartnerEquipmentRevenueReportDto>>> getPartnerEquipmentRevenueReport(@PathVariable Long partnerId) {
+        return ResponseEntity.ok(ApiResponse.success("Equipment revenue report generated successfully", paymentService.getPartnerEquipmentRevenueReport(partnerId)));
+    }
+
+    @GetMapping("/api/payments/partner/{partnerId}/reports/customer-revenue")
+    public ResponseEntity<ApiResponse<List<PartnerCustomerRevenueReportDto>>> getPartnerCustomerRevenueReport(@PathVariable Long partnerId) {
+        return ResponseEntity.ok(ApiResponse.success("Customer revenue report generated successfully", paymentService.getPartnerCustomerRevenueReport(partnerId)));
     }
 }
