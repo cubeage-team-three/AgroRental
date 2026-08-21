@@ -72,6 +72,38 @@ export const paymentService = {
     const data = await apiClient.get(`/payments/partner/${partnerId}/earnings`);
     return data;
   },
+
+  /**
+   * FR-19: Retrieves detailed daily/weekly/monthly/yearly earnings breakdown.
+   */
+  async getPartnerEarningsDetail(partnerId) {
+    const data = await apiClient.get(`/payments/partner/${partnerId}/earnings-detail`);
+    return data;
+  },
+
+  /**
+   * FR-19 Report 1: Booking Revenue Report
+   */
+  async getBookingRevenueReport(partnerId) {
+    const data = await apiClient.get(`/payments/partner/${partnerId}/reports/booking-revenue`);
+    return data || [];
+  },
+
+  /**
+   * FR-19 Report 2: Equipment-wise Revenue Report
+   */
+  async getEquipmentRevenueReport(partnerId) {
+    const data = await apiClient.get(`/payments/partner/${partnerId}/reports/equipment-revenue`);
+    return data || [];
+  },
+
+  /**
+   * FR-19 Report 3: Customer-wise Revenue Report
+   */
+  async getCustomerRevenueReport(partnerId) {
+    const data = await apiClient.get(`/payments/partner/${partnerId}/reports/customer-revenue`);
+    return data || [];
+  },
 };
 
 export default paymentService;

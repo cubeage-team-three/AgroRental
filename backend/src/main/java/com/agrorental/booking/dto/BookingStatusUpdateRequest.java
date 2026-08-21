@@ -13,11 +13,18 @@ public class BookingStatusUpdateRequest {
 
     private Long operatorId;
 
+    private String rejectionReason;
+
     public BookingStatusUpdateRequest() {}
 
-    public BookingStatusUpdateRequest(BookingStatus status, Long operatorId) {
+    public BookingStatusUpdateRequest(BookingStatus status, Long operatorId, String rejectionReason) {
         this.status = status;
         this.operatorId = operatorId;
+        this.rejectionReason = rejectionReason;
+    }
+
+    public BookingStatusUpdateRequest(BookingStatus status, Long operatorId) {
+        this(status, operatorId, null);
     }
 
     public static BookingStatusUpdateRequestBuilder builder() {
@@ -27,14 +34,16 @@ public class BookingStatusUpdateRequest {
     public static class BookingStatusUpdateRequestBuilder {
         private BookingStatus status;
         private Long operatorId;
+        private String rejectionReason;
 
         BookingStatusUpdateRequestBuilder() {}
 
         public BookingStatusUpdateRequestBuilder status(BookingStatus status) { this.status = status; return this; }
         public BookingStatusUpdateRequestBuilder operatorId(Long operatorId) { this.operatorId = operatorId; return this; }
+        public BookingStatusUpdateRequestBuilder rejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; return this; }
 
         public BookingStatusUpdateRequest build() {
-            return new BookingStatusUpdateRequest(status, operatorId);
+            return new BookingStatusUpdateRequest(status, operatorId, rejectionReason);
         }
     }
 
@@ -43,4 +52,7 @@ public class BookingStatusUpdateRequest {
 
     public Long getOperatorId() { return operatorId; }
     public void setOperatorId(Long operatorId) { this.operatorId = operatorId; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 }

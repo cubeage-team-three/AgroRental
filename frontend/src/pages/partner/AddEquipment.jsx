@@ -46,6 +46,9 @@ function AddEquipment() {
     latitude: 18.5204,
     longitude: 73.8567,
     imageUrl: '',
+    availabilityStatus: 'AVAILABLE',
+    isDisabled: false,
+    maintenanceNotes: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -82,6 +85,9 @@ function AddEquipment() {
           latitude: data.latitude || 18.5204,
           longitude: data.longitude || 73.8567,
           imageUrl: primaryImage,
+          availabilityStatus: data.availabilityStatus || 'AVAILABLE',
+          isDisabled: data.isDisabled ?? false,
+          maintenanceNotes: data.maintenanceNotes || '',
         });
       })
       .catch((err) => {
@@ -109,21 +115,90 @@ function AddEquipment() {
     setConflictWarning(null);
 
     // Form Validations
-    if (!formData.name.trim() || !formData.brand.trim() || !formData.model.trim()) {
-      setError('Please fill in all required equipment identification fields.');
+    if (!formData.name.trim()) {
+      setError('Equipment name is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (!formData.category) {
+      setError('Equipment category is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (!formData.brand.trim()) {
+      setError('Brand is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (!formData.model.trim()) {
+      setError('Model is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (!formData.manufacturingYear || isNaN(Number(formData.manufacturingYear))) {
+      setError('Manufacturing year is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (!formData.capacity.trim()) {
+      setError('Capacity is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (!formData.rentalPrice || Number(formData.rentalPrice) <= 0) {
+      setError('Daily rental price must be greater than zero.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.fuelType) {
+      setError('Fuel type is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (!formData.locationAddress.trim()) {
+      setError('Location address is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (formData.latitude === undefined || formData.latitude === null || isNaN(Number(formData.latitude))) {
+      setError('Latitude is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (formData.longitude === undefined || formData.longitude === null || isNaN(Number(formData.longitude))) {
+      setError('Longitude is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (!formData.imageUrl.trim()) {
+      setError('At least one equipment image is required.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.description.trim()) {
+      setError('Description is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (!partnerId) {
+      setError('Partner ID is mandatory');
       setLoading(false);
       return;
     }
 
-    if (Number(formData.rentalPrice) <= 0) {
-      setError('Daily rental price must be greater than zero.');
+    if (editId && !formData.availabilityStatus) {
+      setError('Availability status is mandatory');
+      setLoading(false);
+      return;
+    }
+    if (editId && (formData.isDisabled === undefined || formData.isDisabled === null)) {
+      setError('Disabled status is mandatory');
       setLoading(false);
       return;
     }
 
     try {
       const payload = {
-        partnerId: Number(partnerId),
         name: formData.name.trim(),
         category: formData.category,
         brand: formData.brand.trim(),
@@ -136,20 +211,22 @@ function AddEquipment() {
         locationAddress: formData.locationAddress.trim(),
         latitude: Number(formData.latitude),
         longitude: Number(formData.longitude),
-        images: formData.imageUrl.trim()
-          ? [
-            {
-              imageUrl: formData.imageUrl.trim(),
-              isPrimary: true,
-              displayOrder: 1,
-            },
-          ]
-          : [],
+        images: [
+          {
+            imageUrl: formData.imageUrl.trim(),
+            isPrimary: true,
+            displayOrder: 1,
+          },
+        ],
       };
 
       if (editId) {
+        payload.availabilityStatus = formData.availabilityStatus;
+        payload.isDisabled = formData.isDisabled;
+        payload.maintenanceNotes = formData.maintenanceNotes ? formData.maintenanceNotes.trim() : null;
         await equipmentService.updateEquipment(editId, payload, partnerId);
       } else {
+        payload.partnerId = Number(partnerId);
         await equipmentService.createEquipment(payload, partnerId);
       }
 
@@ -160,6 +237,9 @@ function AddEquipment() {
         setConflictWarning(
           err.message || 'This equipment was updated by another session. Please refresh and try again.'
         );
+      } else if (err.status === 400 && err.data?.data) {
+        const fieldErrors = Object.values(err.data.data).join(', ');
+        setError(fieldErrors || 'Validation Error: Please check all fields.');
       } else {
         setError(err.message || 'Failed to save equipment. Please check all fields.');
       }
@@ -460,7 +540,7 @@ function AddEquipment() {
             {/* Image URL with Live Preview */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Primary Equipment Photo URL
+                Primary Equipment Photo URL <span className="text-red-500">*</span>
               </label>
               <input
                 type="url"
@@ -525,6 +605,76 @@ function AddEquipment() {
 
           </div>
         </div>
+
+        {/* Section 4: Status & Maintenance (Edit mode only) */}
+        {editId && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+              <AlertCircle className="w-5 h-5 text-[#3E7B27]" />
+              <h2 className="text-base font-black text-[#142E1C] uppercase tracking-wider">
+                4. Availability & Status Settings
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Availability Status */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Availability Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="availabilityStatus"
+                  value={formData.availabilityStatus}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all cursor-pointer"
+                >
+                  <option value="AVAILABLE">Available</option>
+                  <option value="BOOKED">Booked</option>
+                  <option value="UNDER_MAINTENANCE">Under Maintenance</option>
+                  <option value="INACTIVE">Inactive</option>
+                </select>
+              </div>
+
+              {/* Is Disabled */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Listing Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="isDisabled"
+                  value={formData.isDisabled.toString()}
+                  onChange={(e) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      isDisabled: e.target.value === 'true',
+                    }));
+                  }}
+                  required
+                  className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all cursor-pointer"
+                >
+                  <option value="false">Active / Visible</option>
+                  <option value="true">Disabled / Hidden</option>
+                </select>
+              </div>
+
+              {/* Maintenance Notes */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Maintenance / Administrative Notes
+                </label>
+                <textarea
+                  name="maintenanceNotes"
+                  rows={2}
+                  placeholder="Enter maintenance updates, reason for disabling, or administrative notes..."
+                  value={formData.maintenanceNotes}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form Action Footer */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">

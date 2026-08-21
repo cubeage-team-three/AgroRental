@@ -65,8 +65,14 @@ public class ReviewService {
             throw new BadRequestException("A review has already been submitted for this booking");
         }
 
-        Long equipmentId = booking.getEquipment() != null ? booking.getEquipment().getId() : 1L;
-        Long partnerId = booking.getPartner() != null ? booking.getPartner().getId() : 1L;
+        if (booking.getEquipment() == null) {
+            throw new ResourceNotFoundException("Equipment not found for Booking: " + booking.getId());
+        }
+        if (booking.getPartner() == null) {
+            throw new ResourceNotFoundException("Partner not found for Booking: " + booking.getId());
+        }
+        Long equipmentId = booking.getEquipment().getId();
+        Long partnerId = booking.getPartner().getId();
 
         Review review = Review.builder()
                 .bookingId(booking.getId())
@@ -79,7 +85,7 @@ public class ReviewService {
 
         Review saved = reviewRepository.save(review);
 
-        String equipName = booking.getEquipment() != null ? booking.getEquipment().getName() : "Machinery";
+        String equipName = booking.getEquipment().getName();
 
         // Dispatch Phase 7 Notification to Partner
         notificationService.sendNotification(
@@ -157,11 +163,24 @@ public class ReviewService {
     private ReviewResponse mapToResponse(Review review, Booking booking) {
         String farmerName = farmerRepository.findById(review.getFarmerId())
                 .map(f -> f.getFullName())
-                .orElse("Ramesh Yadav");
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer not found with ID: " + review.getFarmerId()));
 
-        String equipmentName = (booking != null && booking.getEquipment() != null)
-                ? booking.getEquipment().getName()
-                : "Agricultural Machinery";
+        if (booking == null) {
+            booking = bookingRepository.findById(review.getBookingId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + review.getBookingId()));
+        }
+
+        if (booking.getEquipment() == null) {
+            throw new ResourceNotFoundException("Equipment not found for Booking: " + booking.getId());
+        }
+
+        String equipmentName = booking.getEquipment().getName();
+
+        String category = booking.getEquipment().getCategory() != null
+                ? booking.getEquipment().getCategory().name()
+                : null;
+
+        java.time.LocalDate sDate = booking.getStartDate();
 
         return ReviewResponse.builder()
                 .id(review.getId())
@@ -170,9 +189,11 @@ public class ReviewService {
                 .farmerName(farmerName)
                 .equipmentId(review.getEquipmentId())
                 .equipmentName(equipmentName)
+                .equipmentCategory(category)
                 .partnerId(review.getPartnerId())
                 .rating(review.getRating())
                 .comment(review.getComment())
+                .serviceDate(sDate)
                 .createdAt(review.getCreatedAt())
                 .build();
     }

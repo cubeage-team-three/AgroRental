@@ -5,6 +5,8 @@ import com.agrorental.operator.entity.OperatorStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -40,7 +42,7 @@ public interface OperatorRepository extends JpaRepository<Operator, Long> {
 
     Page<Operator> findByStatusAndActiveAndMobileVerified(OperatorStatus status, boolean active, boolean mobileVerified, Pageable pageable);
 
-    @org.springframework.data.jpa.repository.Query("""
+    @Query("""
         SELECT o FROM Operator o
         WHERE o.status = :status
           AND o.active = :active
@@ -53,10 +55,15 @@ public interface OperatorRepository extends JpaRepository<Operator, Long> {
           )
     """)
     Page<Operator> searchEligibleOperators(
-            @org.springframework.data.repository.query.Param("status") OperatorStatus status,
-            @org.springframework.data.repository.query.Param("active") boolean active,
-            @org.springframework.data.repository.query.Param("mobileVerified") boolean mobileVerified,
-            @org.springframework.data.repository.query.Param("search") String search,
+            @Param("status") OperatorStatus status,
+            @Param("active") boolean active,
+            @Param("mobileVerified") boolean mobileVerified,
+            @Param("search") String search,
             Pageable pageable
     );
+
+    List<Operator> findByPartnerId(Long partnerId);
+
+    @Query("SELECT o FROM Operator o WHERE o.status = :status AND (o.partner.id = :partnerId OR o.partner IS NULL)")
+    List<Operator> findAvailableOperatorsForPartner(@Param("status") OperatorStatus status, @Param("partnerId") Long partnerId);
 }
