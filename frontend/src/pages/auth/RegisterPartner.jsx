@@ -1,22 +1,30 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
-  Tractor,
-  User,
+  ArrowRight,
   Building2,
-  Phone,
-  Mail,
-  Lock,
-  MapPin,
   Eye,
   EyeOff,
-  CheckCircle2,
-  AlertCircle,
-  ArrowRight,
-  ShieldCheck,
+  LayoutDashboard,
+  Loader2,
+  Lock,
+  Mail,
+  Sprout,
+  Tractor,
+  User,
+  X,
 } from 'lucide-react';
 import { partnerService } from '../../services/partnerService';
-import { saveUserSession } from '../../services/authService';
+import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
+import MagneticButton from '../../components/ui/MagneticButton';
+import AuthField from '../../components/auth/AuthField';
+
+const ROLES = [
+  { id: 'farmer', label: 'Farmer', icon: Sprout },
+  { id: 'owner', label: 'Equipment Owner', icon: Tractor },
+  { id: 'admin', label: 'Admin', icon: LayoutDashboard },
+];
 
 function RegisterPartner() {
   const navigate = useNavigate();
@@ -53,6 +61,16 @@ function RegisterPartner() {
       mobileNumber: val,
     }));
     if (errorMessage) setErrorMessage('');
+  };
+
+  const handleRoleSelect = (roleId) => {
+    if (roleId === 'farmer') {
+      navigate('/register');
+      return;
+    }
+    if (roleId === 'admin') {
+      alert('Admin registration is restricted to system administrators.');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -93,8 +111,7 @@ function RegisterPartner() {
         password: formData.password,
       };
 
-      const res = await partnerService.registerPartner(payload);
-      const partnerData = res.data || res;
+      await partnerService.registerPartner(payload);
 
       setSuccessMessage('✓ Equipment Partner account registered successfully! Redirecting to login...');
 
@@ -122,266 +139,193 @@ function RegisterPartner() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F6F0] flex flex-col items-center justify-start py-8 px-4 sm:px-6 font-sans">
-      
-      {/* Top Header Navigation Brand */}
-      <div className="w-full max-w-xl flex items-center justify-between py-2 mb-4">
-        <Link to="/" className="flex items-center gap-2 text-2xl font-black text-[#142E1C] tracking-tight">
-          <span className="w-9 h-9 rounded-2xl bg-[#3E7B27] text-white flex items-center justify-center font-bold text-lg shadow-sm">
-            🌱
-          </span>
-          <span>AgroRent</span>
-        </Link>
-      </div>
+    <RevealGroup stagger={0.06} delayChildren={0.05}>
+      <RevealItem>
+        <h1 className="font-display text-[28px] font-bold tracking-tight text-slate-900 sm:text-[32px]">
+          Register as Machinery Owner
+        </h1>
+        <p className="mt-2 text-[15px] text-slate-500">List your equipment and start earning on AgroRent.</p>
+      </RevealItem>
 
-      {/* Main Registration Card */}
-      <div className="w-full max-w-xl bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100/90 transition-all duration-300">
-        
-        {/* Banner Hero Image Header */}
-        <div className="relative h-28 sm:h-32 bg-gradient-to-r from-[#142E1C] via-[#1B4D3E] to-[#2E7D32] overflow-hidden flex items-center justify-center">
-          <img
-            src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80"
-            alt="Agro Field Banner"
-            className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay"
-          />
-          <div className="relative z-10 text-center px-4 text-white">
-            <span className="text-[11px] uppercase tracking-widest font-black text-lime-300 block mb-0.5">
-              Equipment Partner Portal
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-wide drop-shadow-md">
-              Register as Machinery Owner
-            </h2>
-          </div>
-        </div>
-
-        {/* Form Container */}
-        <div className="p-6 sm:p-8 space-y-6">
-          
-          {/* Role Selection Tabs */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-              Select Registration Role
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              
-              {/* Farmer Tab */}
+      <RevealItem className="mt-7">
+        <span className="mb-3 block text-xs font-semibold uppercase tracking-wide text-slate-400">I am a</span>
+        <div className="grid grid-cols-3 gap-2.5">
+          {ROLES.map((r) => {
+            const active = r.id === 'owner';
+            return (
               <button
+                key={r.id}
                 type="button"
-                onClick={() => navigate('/register')}
-                className="flex flex-col items-center justify-center p-3 rounded-2xl border border-gray-200 bg-white text-gray-600 hover:border-gray-300 transition-all"
+                onClick={() => handleRoleSelect(r.id)}
+                className="relative flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-transparent p-3.5 transition-colors duration-200"
               >
-                <span className="text-xl mb-0.5">🌾</span>
-                <span className="text-xs font-bold">Farmer</span>
-              </button>
-
-              {/* Equipment Owner Tab (Active) */}
-              <button
-                type="button"
-                className="flex flex-col items-center justify-center p-3 rounded-2xl border-2 border-[#3E7B27] bg-[#F1F8EE] text-[#142E1C] shadow-sm font-black transition-all"
-              >
-                <span className="text-xl mb-0.5">🚜</span>
-                <span className="text-xs font-black">Machinery Owner</span>
-              </button>
-
-              {/* Admin Tab */}
-              <button
-                type="button"
-                onClick={() => alert('Admin registration is restricted to system administrators.')}
-                className="flex flex-col items-center justify-center p-3 rounded-2xl border border-gray-200 bg-white text-gray-600 hover:border-gray-300 transition-all"
-              >
-                <span className="text-xl mb-0.5">📊</span>
-                <span className="text-xs font-bold">Admin</span>
-              </button>
-
-            </div>
-          </div>
-
-          {/* Feedback Banners */}
-          {errorMessage && (
-            <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-xl text-red-700 text-sm font-medium flex items-center justify-between shadow-xs">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />
-                <span>{errorMessage}</span>
-              </div>
-              <button type="button" onClick={() => setErrorMessage('')} className="text-red-500 font-bold ml-2">✕</button>
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="p-4 bg-emerald-50 border-l-4 border-emerald-500 rounded-xl text-emerald-800 text-sm font-medium flex items-center gap-2 shadow-xs">
-              <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
-              <span>{successMessage}</span>
-            </div>
-          )}
-
-          {/* Registration Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              {/* Full Name */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="fullName"
-                    required
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Rajesh Patel"
-                    className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                {active && (
+                  <motion.span
+                    layoutId="partner-role-highlight"
+                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    className="absolute inset-0 rounded-2xl border-2 border-emerald-600 bg-emerald-50"
                   />
-                </div>
-              </div>
-
-              {/* Business Name */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Enterprise Name
-                </label>
-                <input
-                  type="text"
-                  name="businessName"
-                  value={formData.businessName}
-                  onChange={handleInputChange}
-                  placeholder="e.g. Patel Agro Fleet"
-                  className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
-                />
-              </div>
-
-              {/* Mobile Number */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Mobile Number <span className="text-red-500">*</span>
-                </label>
-                <div className="flex rounded-xl overflow-hidden border border-transparent focus-within:ring-2 focus-within:ring-[#3E7B27] focus-within:bg-white">
-                  <span className="inline-flex items-center px-3 bg-[#E6E4DC] text-gray-700 text-xs font-bold border-r border-gray-300">
-                    IN +91
-                  </span>
-                  <input
-                    type="tel"
-                    required
-                    maxLength={10}
-                    value={formData.mobileNumber}
-                    onChange={handleMobileChange}
-                    placeholder="98765 43210"
-                    className="w-full px-3 py-2.5 bg-[#F0EFE9] text-gray-900 text-sm font-semibold focus:outline-none focus:bg-white transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Email Address */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="rajesh.patel@example.com"
-                  className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
-                />
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Account Password <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    required
-                    minLength={6}
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                    className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 text-xs"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm Password */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Confirm Password <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
-                />
-              </div>
-
-              {/* Address / Operational Hub */}
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Machinery Base Address / Hub
-                </label>
-                <textarea
-                  name="address"
-                  rows={2}
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  placeholder="e.g. Krishi Seva Kendra, Market Yard, Pune, Maharashtra"
-                  className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
-                />
-              </div>
-
-            </div>
-
-            {/* Submit Button */}
-            <div className="pt-3">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 px-6 bg-[#3E7B27] hover:bg-[#2E6F22] text-white font-extrabold rounded-2xl shadow-md hover:shadow-lg transition-all duration-150 flex items-center justify-center gap-2 group disabled:opacity-70"
-              >
-                {loading ? (
-                  <span>Registering Partner Account...</span>
-                ) : (
-                  <>
-                    <span>Create Partner Account</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </>
                 )}
+                <r.icon className={`relative h-5 w-5 ${active ? 'text-emerald-700' : 'text-slate-400'}`} />
+                <span className={`relative text-xs font-semibold ${active ? 'text-emerald-800' : 'text-slate-500'}`}>
+                  {r.label}
+                </span>
               </button>
+            );
+          })}
+        </div>
+      </RevealItem>
+
+      {errorMessage && (
+        <RevealItem className="mt-5">
+          <div className="flex items-start justify-between gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <span>{errorMessage}</span>
+            <button type="button" onClick={() => setErrorMessage('')} className="shrink-0 text-red-400 transition-colors hover:text-red-600">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </RevealItem>
+      )}
+
+      {successMessage && (
+        <RevealItem className="mt-5">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+            {successMessage}
+          </div>
+        </RevealItem>
+      )}
+
+      <RevealItem className="mt-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <AuthField
+            id="fullName"
+            name="fullName"
+            label="Full Name"
+            icon={User}
+            type="text"
+            value={formData.fullName}
+            onChange={handleInputChange}
+          />
+
+          <AuthField
+            id="businessName"
+            name="businessName"
+            label="Enterprise Name (Optional)"
+            icon={Building2}
+            type="text"
+            value={formData.businessName}
+            onChange={handleInputChange}
+          />
+
+          <AuthField
+            id="mobileNumber"
+            name="mobileNumber"
+            label="Mobile Number"
+            type="tel"
+            maxLength={10}
+            prefix="+91"
+            value={formData.mobileNumber}
+            onChange={handleMobileChange}
+          />
+
+          <AuthField
+            id="email"
+            name="email"
+            label="Email Address (Optional)"
+            icon={Mail}
+            type="email"
+            value={formData.email}
+            onChange={handleInputChange}
+          />
+
+          <AuthField
+            id="password"
+            name="password"
+            label="Account Password"
+            icon={Lock}
+            type={showPassword ? 'text' : 'password'}
+            minLength={6}
+            value={formData.password}
+            onChange={handleInputChange}
+            rightSlot={
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="text-slate-400 transition-colors hover:text-slate-600"
+              >
+                {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+              </button>
+            }
+          />
+
+          <AuthField
+            id="confirmPassword"
+            name="confirmPassword"
+            label="Confirm Password"
+            icon={Lock}
+            type="password"
+            value={formData.confirmPassword}
+            onChange={handleInputChange}
+          />
+
+          <div>
+            <label htmlFor="address" className="mb-1.5 block text-xs font-semibold text-slate-600">
+              Machinery Base Address / Hub (Optional)
+            </label>
+            <div className="rounded-2xl border border-transparent bg-[#F7F6F0] transition-all duration-300 ease-out focus-within:border-emerald-500 focus-within:bg-white focus-within:shadow-[0_0_0_4px_rgba(16,185,129,0.12),0_0_22px_-6px_rgba(132,204,22,0.55)]">
+              <textarea
+                id="address"
+                name="address"
+                rows={2}
+                value={formData.address}
+                onChange={handleInputChange}
+                placeholder="e.g. Krishi Seva Kendra, Market Yard, Pune, Maharashtra"
+                className="w-full resize-none rounded-2xl bg-transparent px-4 py-3.5 text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
+              />
             </div>
-
-          </form>
-
-          {/* Footer Link */}
-          <div className="text-center pt-2 border-t border-gray-100">
-            <p className="text-xs text-gray-500 font-medium">
-              Already have an equipment partner account?{' '}
-              <Link to="/login" className="font-bold text-[#3E7B27] hover:underline">
-                Log In Here
-              </Link>
-            </p>
           </div>
 
-        </div>
+          <MagneticButton className="block w-full pt-1">
+            <motion.button
+              type="submit"
+              disabled={loading}
+              animate={
+                loading
+                  ? {}
+                  : {
+                      boxShadow: [
+                        '0 0 20px 0px rgba(163,230,53,0.35)',
+                        '0 0 38px 6px rgba(163,230,53,0.6)',
+                        '0 0 20px 0px rgba(163,230,53,0.35)',
+                      ],
+                    }
+              }
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-800 text-[15px] font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-900 active:scale-[0.98] disabled:opacity-70"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                  Registering Partner Account...
+                </>
+              ) : (
+                <>
+                  Create Partner Account
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </motion.button>
+          </MagneticButton>
+        </form>
+      </RevealItem>
 
-      </div>
-
-    </div>
+      <RevealItem className="mt-8 text-center text-sm text-slate-500">
+        Already have an equipment partner account?{' '}
+        <Link to="/login" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
+          Log In Here
+        </Link>
+      </RevealItem>
+    </RevealGroup>
   );
 }
 

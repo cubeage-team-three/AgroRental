@@ -1,29 +1,31 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  HardHat,
-  User,
-  Phone,
-  Mail,
-  MapPin,
-  Lock,
+  ArrowRight,
+  Award,
+  CheckCircle2,
+  ChevronLeft,
+  Clock,
   Eye,
   EyeOff,
-  Wrench,
-  Award,
-  ShieldCheck,
   FileText,
-  CheckCircle2,
-  AlertCircle,
-  ArrowRight,
-  ArrowLeft,
+  HardHat,
   Loader2,
+  Lock,
+  Mail,
+  MapPin,
+  Phone,
   RefreshCw,
-  Clock,
+  ShieldCheck,
   Sparkles,
+  User,
+  X,
 } from 'lucide-react';
 import { operatorService } from '../../services/operatorService';
+import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
+import MagneticButton from '../../components/ui/MagneticButton';
+import AuthField from '../../components/auth/AuthField';
 
 const POPULAR_SKILLS = [
   'Tractor Operation',
@@ -35,9 +37,16 @@ const POPULAR_SKILLS = [
   'Baler & Thresher',
 ];
 
-function RegisterOperator() {
-  const navigate = useNavigate();
+const STEPS = [
+  { step: 1, label: 'Profile & Skills' },
+  { step: 2, label: 'KYC & License' },
+  { step: 3, label: 'OTP Verification' },
+  { step: 4, label: 'Approval Status' },
+];
 
+const EASE = [0.22, 1, 0.36, 1];
+
+function RegisterOperator() {
   // Wizard Steps: 1 = Basic Info & Skills, 2 = KYC & Docs, 3 = OTP Verification, 4 = Success Pending Status
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -305,346 +314,238 @@ function RegisterOperator() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] py-8 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <RevealGroup stagger={0.07} delayChildren={0.05}>
+      <RevealItem className="flex justify-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700">
+          <HardHat className="h-6 w-6" />
+        </span>
+      </RevealItem>
 
-        {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl bg-[#142E1C] text-[#C1FF72] shadow-md mb-1">
-            <HardHat className="w-7 h-7" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#142E1C] tracking-tight">
-            Equipment Operator Registration
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-500 font-medium">
-            Join the certified AgroRental machinery crew. Connect with fleet owners and earn verified job deployments.
-          </p>
-        </div>
+      <RevealItem className="mt-5 text-center">
+        <h1 className="font-display text-[26px] font-bold tracking-tight text-slate-900 sm:text-[30px]">
+          Equipment Operator Registration
+        </h1>
+        <p className="mt-2 text-[15px] text-slate-500">
+          Join the certified AgroRent machinery crew and get matched to jobs near you.
+        </p>
+      </RevealItem>
 
-        {/* Stepper Wizard Progress */}
-        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-gray-200/70 shadow-xs">
-          <div className="grid grid-cols-4 gap-2 text-center">
-            {[
-              { step: 1, label: 'Profile & Skills' },
-              { step: 2, label: 'KYC & License' },
-              { step: 3, label: 'OTP Verification' },
-              { step: 4, label: 'Approval Status' },
-            ].map((item) => (
-              <div key={item.step} className="space-y-1">
-                <div
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    currentStep >= item.step ? 'bg-[#3E7B27]' : 'bg-gray-200'
-                  }`}
-                />
-                <span
-                  className={`text-[10px] sm:text-xs font-bold block ${
-                    currentStep === item.step
-                      ? 'text-[#142E1C] font-black'
-                      : currentStep > item.step
-                      ? 'text-[#3E7B27]'
-                      : 'text-gray-400'
-                  }`}
-                >
-                  {item.step}. {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Error / Success Banners */}
-        <AnimatePresence>
-          {errorMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center justify-between shadow-xs"
-            >
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
-                <span>{errorMessage}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setErrorMessage('')}
-                className="text-red-500 hover:text-red-700 font-black text-sm"
+      <RevealItem className="mt-7">
+        <div className="grid grid-cols-4 gap-2">
+          {STEPS.map((item) => (
+            <div key={item.step} className="space-y-1.5 text-center">
+              <div
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  currentStep >= item.step ? 'bg-emerald-600' : 'bg-slate-200'
+                }`}
+              />
+              <span
+                className={`block text-[10px] font-semibold leading-tight ${
+                  currentStep === item.step
+                    ? 'text-emerald-800'
+                    : currentStep > item.step
+                      ? 'text-emerald-600'
+                      : 'text-slate-400'
+                }`}
               >
-                ✕
-              </button>
-            </motion.div>
-          )}
-
-          {successMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center justify-between shadow-xs"
-            >
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                <span>{successMessage}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSuccessMessage('')}
-                className="text-emerald-700 hover:text-emerald-950 font-black text-sm"
-              >
-                ✕
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Step 1: Personal & Operational Skills Form */}
-        {currentStep === 1 && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/70 shadow-sm space-y-6"
-          >
-            <div className="border-b border-gray-100 pb-3">
-              <h2 className="text-lg font-black text-[#142E1C]">
-                Step 1: Personal & Operational Experience
-              </h2>
-              <p className="text-xs text-gray-500">
-                Provide your basic contact and agricultural equipment skill profile.
-              </p>
+                {item.label}
+              </span>
             </div>
+          ))}
+        </div>
+      </RevealItem>
 
-            <form onSubmit={handleProceedToKyc} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {errorMessage && (
+        <RevealItem className="mt-5">
+          <div className="flex items-start justify-between gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <span>{errorMessage}</span>
+            <button
+              type="button"
+              onClick={() => setErrorMessage('')}
+              className="shrink-0 text-red-400 transition-colors hover:text-red-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </RevealItem>
+      )}
+
+      {successMessage && (
+        <RevealItem className="mt-5">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+            {successMessage}
+          </div>
+        </RevealItem>
+      )}
+
+      <RevealItem className="mt-6">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.3, ease: EASE }}
+          >
+            {currentStep === 1 && (
+              <form onSubmit={handleProceedToKyc} className="space-y-4">
+                <AuthField
+                  id="fullName"
+                  name="fullName"
+                  label="Full Legal Name"
+                  icon={User}
+                  type="text"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                />
+                <AuthField
+                  id="mobileNumber"
+                  name="mobileNumber"
+                  label="Mobile Number (for OTP)"
+                  icon={Phone}
+                  type="tel"
+                  maxLength={10}
+                  value={formData.mobileNumber}
+                  onChange={handleMobileChange}
+                />
+                <AuthField
+                  id="email"
+                  name="email"
+                  label="Email Address (Optional)"
+                  icon={Mail}
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                />
+                <AuthField
+                  id="experience"
+                  name="experience"
+                  label="Machinery Experience (Years)"
+                  icon={Award}
+                  type="number"
+                  min="0"
+                  max="50"
+                  value={formData.experience}
+                  onChange={handleInputChange}
+                />
+                <AuthField
+                  id="address"
+                  name="address"
+                  label="Service Area / Village Address"
+                  icon={MapPin}
+                  type="text"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                />
+
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Full Legal Name *
+                  <label className="mb-2 block text-xs font-semibold text-slate-600">
+                    Equipment Operating Skills
                   </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      placeholder="e.g. Suresh Shinde"
-                      className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none"
-                    />
+                  <div className="flex flex-wrap gap-2">
+                    {POPULAR_SKILLS.map((skill) => {
+                      const active = selectedSkills.includes(skill);
+                      return (
+                        <button
+                          key={skill}
+                          type="button"
+                          onClick={() => toggleSkill(skill)}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                            active
+                              ? 'bg-emerald-800 text-white shadow-sm'
+                              : 'bg-[#F0EFE9] text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {active ? '✓ ' : '+ '}
+                          {skill}
+                        </button>
+                      );
+                    })}
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Mobile Number (For OTP Verification) *
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-                    <input
-                      type="tel"
-                      name="mobileNumber"
-                      value={formData.mobileNumber}
-                      onChange={handleMobileChange}
-                      placeholder="10-digit mobile number"
-                      maxLength={10}
-                      className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Email Address (Optional)
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="suresh.shinde@example.com"
-                      className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Machinery Experience (Years) *
-                  </label>
-                  <div className="relative">
-                    <Award className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-                    <input
-                      type="number"
-                      name="experience"
-                      min="0"
-                      max="50"
-                      value={formData.experience}
-                      onChange={handleInputChange}
-                      placeholder="e.g. 5"
-                      className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Service Area / Village Address *
-                </label>
-                <div className="relative">
-                  <MapPin className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
                   <input
                     type="text"
-                    name="address"
-                    value={formData.address}
+                    name="skills"
+                    value={formData.skills}
                     onChange={handleInputChange}
-                    placeholder="Village, Taluka, District (e.g. Khed, Pune, Maharashtra)"
-                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none"
+                    placeholder="Or enter custom skills (comma separated)"
+                    className="mt-2.5 w-full rounded-xl border border-transparent bg-[#F7F6F0] px-3.5 py-2.5 text-xs font-medium text-slate-900 outline-none transition-all duration-300 ease-out focus:border-emerald-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(16,185,129,0.12)]"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Equipment Operating Skills *
-                </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {POPULAR_SKILLS.map((skill) => {
-                    const active = selectedSkills.includes(skill);
-                    return (
-                      <button
-                        key={skill}
-                        type="button"
-                        onClick={() => toggleSkill(skill)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                          active
-                            ? 'bg-[#142E1C] text-[#C1FF72] shadow-xs'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                      >
-                        {active ? '✓ ' : '+ '}
-                        {skill}
-                      </button>
-                    );
-                  })}
-                </div>
-                <input
-                  type="text"
-                  name="skills"
-                  value={formData.skills}
+                <AuthField
+                  id="password"
+                  name="password"
+                  label="Account Password (min. 8 characters)"
+                  icon={Lock}
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="Or enter custom skills (comma separated)"
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none"
+                  rightSlot={
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="text-slate-400 transition-colors hover:text-slate-600"
+                    >
+                      {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+                    </button>
+                  }
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Account Password * (Minimum 8 characters)
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="Create secure password"
-                    className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-3 text-gray-400 hover:text-gray-600"
+                <div className="pt-1 text-center">
+                  <Link to="/register" className="text-xs font-semibold text-slate-500 hover:text-slate-700">
+                    ← Select Different Role
+                  </Link>
+                </div>
+
+                <MagneticButton className="block w-full">
+                  <motion.button
+                    type="submit"
+                    animate={{
+                      boxShadow: [
+                        '0 0 20px 0px rgba(163,230,53,0.35)',
+                        '0 0 38px 6px rgba(163,230,53,0.6)',
+                        '0 0 20px 0px rgba(163,230,53,0.35)',
+                      ],
+                    }}
+                    transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                    className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-800 text-[15px] font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-900 active:scale-[0.98]"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+                    Proceed to KYC Details
+                    <ArrowRight className="h-4 w-4" />
+                  </motion.button>
+                </MagneticButton>
+              </form>
+            )}
 
-              <div className="pt-4 flex items-center justify-between">
-                <Link
-                  to="/register"
-                  className="text-xs font-bold text-gray-500 hover:text-gray-700"
-                >
-                  ← Select Different Role
-                </Link>
+            {currentStep === 2 && (
+              <form onSubmit={handleSubmitRegistration} className="space-y-4">
+                <AuthField
+                  id="aadhaarNumber"
+                  name="aadhaarNumber"
+                  label="Aadhaar Number (12 digits)"
+                  icon={ShieldCheck}
+                  type="text"
+                  maxLength={12}
+                  value={formData.aadhaarNumber}
+                  onChange={handleAadhaarChange}
+                  className="[&_input]:font-mono [&_input]:tracking-widest"
+                />
+                <AuthField
+                  id="drivingLicenseNumber"
+                  name="drivingLicenseNumber"
+                  label="Driving / Heavy Machine License No."
+                  icon={FileText}
+                  type="text"
+                  value={formData.drivingLicenseNumber}
+                  onChange={handleInputChange}
+                  className="[&_input]:font-mono"
+                />
 
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-2"
-                >
-                  <span>Proceed to KYC Details</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        )}
-
-        {/* Step 2: KYC & Compliance Details Form */}
-        {currentStep === 2 && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/70 shadow-sm space-y-6"
-          >
-            <div className="border-b border-gray-100 pb-3">
-              <h2 className="text-lg font-black text-[#142E1C]">
-                Step 2: Government KYC & Certification
-              </h2>
-              <p className="text-xs text-gray-500">
-                AgroRental requires identity and driving permit verification for equipment safety.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmitRegistration} className="space-y-5">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Aadhaar Number (12 Digits) *
-                  </label>
-                  <div className="relative">
-                    <ShieldCheck className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-                    <input
-                      type="text"
-                      name="aadhaarNumber"
-                      value={formData.aadhaarNumber}
-                      onChange={handleAadhaarChange}
-                      placeholder="12-digit Aadhaar number"
-                      maxLength={12}
-                      className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none tracking-widest font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Driving / Heavy Machine License Number *
-                  </label>
-                  <div className="relative">
-                    <FileText className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-                    <input
-                      type="text"
-                      name="drivingLicenseNumber"
-                      value={formData.drivingLicenseNumber}
-                      onChange={handleInputChange}
-                      placeholder="e.g. MH1220200012345"
-                      className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none font-mono"
-                    />
-                  </div>
-                </div>
-
-                {/* Optional Document Upload Previews */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div className="border border-dashed border-gray-300 rounded-2xl p-4 text-center bg-gray-50 space-y-1">
-                    <ShieldCheck className="w-6 h-6 text-gray-400 mx-auto" />
-                    <span className="block text-xs font-bold text-gray-800">
-                      Aadhaar Card Document
-                    </span>
-                    <span className="block text-[11px] text-gray-400">PDF, JPG (Max 5MB)</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-[#F7F6F0] p-4 text-center">
+                    <ShieldCheck className="mx-auto h-6 w-6 text-slate-400" />
+                    <span className="mt-1.5 block text-xs font-semibold text-slate-800">Aadhaar Card</span>
+                    <span className="block text-[10px] text-slate-400">PDF, JPG (Max 5MB)</span>
                     <input
                       type="file"
                       id="aadhaar-upload"
@@ -653,225 +554,209 @@ function RegisterOperator() {
                     />
                     <label
                       htmlFor="aadhaar-upload"
-                      className="mt-2 inline-block cursor-pointer px-3 py-1 bg-white border border-gray-200 rounded-lg text-[11px] font-bold text-[#3E7B27] hover:bg-gray-100"
+                      className="mt-2 inline-block cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
                     >
-                      {aadhaarDocFile ? `✓ ${aadhaarDocFile.name.slice(0, 15)}...` : '+ Attach File'}
+                      {aadhaarDocFile ? `✓ ${aadhaarDocFile.name.slice(0, 12)}…` : '+ Attach File'}
                     </label>
                   </div>
 
-                  <div className="border border-dashed border-gray-300 rounded-2xl p-4 text-center bg-gray-50 space-y-1">
-                    <FileText className="w-6 h-6 text-gray-400 mx-auto" />
-                    <span className="block text-xs font-bold text-gray-800">
-                      Driving License Copy
-                    </span>
-                    <span className="block text-[11px] text-gray-400">PDF, JPG (Max 5MB)</span>
-                    <input
-                      type="file"
-                      id="dl-upload"
-                      className="hidden"
-                      onChange={(e) => setDlDocFile(e.target.files[0])}
-                    />
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-[#F7F6F0] p-4 text-center">
+                    <FileText className="mx-auto h-6 w-6 text-slate-400" />
+                    <span className="mt-1.5 block text-xs font-semibold text-slate-800">License Copy</span>
+                    <span className="block text-[10px] text-slate-400">PDF, JPG (Max 5MB)</span>
+                    <input type="file" id="dl-upload" className="hidden" onChange={(e) => setDlDocFile(e.target.files[0])} />
                     <label
                       htmlFor="dl-upload"
-                      className="mt-2 inline-block cursor-pointer px-3 py-1 bg-white border border-gray-200 rounded-lg text-[11px] font-bold text-[#3E7B27] hover:bg-gray-100"
+                      className="mt-2 inline-block cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
                     >
-                      {dlDocFile ? `✓ ${dlDocFile.name.slice(0, 15)}...` : '+ Attach File'}
+                      {dlDocFile ? `✓ ${dlDocFile.name.slice(0, 12)}…` : '+ Attach File'}
                     </label>
                   </div>
                 </div>
-              </div>
 
-              <div className="pt-4 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(1)}
-                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition"
-                >
-                  ← Back to Profile
-                </button>
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(1)}
+                    className="flex min-h-[52px] items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition-all duration-200 ease-out hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Back
+                  </button>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-3 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-70"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Creating Account & Sending OTP...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Submit & Verify Mobile</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        )}
+                  <MagneticButton className="flex-1">
+                    <motion.button
+                      type="submit"
+                      disabled={loading}
+                      className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-800 text-sm font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-900 active:scale-[0.98] disabled:opacity-70"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Creating Account…
+                        </>
+                      ) : (
+                        <>
+                          Submit &amp; Verify Mobile
+                          <ArrowRight className="h-4 w-4" />
+                        </>
+                      )}
+                    </motion.button>
+                  </MagneticButton>
+                </div>
+              </form>
+            )}
 
-        {/* Step 3: Instant Mobile OTP Verification */}
-        {currentStep === 3 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/70 shadow-sm space-y-6 text-center"
-          >
-            <div className="w-14 h-14 bg-emerald-50 text-[#3E7B27] rounded-3xl flex items-center justify-center mx-auto shadow-inner">
-              <Phone className="w-7 h-7" />
-            </div>
+            {currentStep === 3 && (
+              <div className="text-center">
+                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                  <Phone className="h-6 w-6" />
+                </span>
+                <h2 className="mt-4 font-display text-xl font-bold text-slate-900">Verify Your Mobile Number</h2>
+                <p className="mt-1.5 text-sm text-slate-500">
+                  Enter the 6-digit OTP sent to <strong className="text-slate-800">+91 {formData.mobileNumber}</strong>.
+                </p>
 
-            <div className="space-y-1">
-              <h2 className="text-xl font-black text-[#142E1C]">
-                Verify Your Mobile Number
-              </h2>
-              <p className="text-xs text-gray-500">
-                Enter the 6-digit OTP code dispatched to{' '}
-                <strong className="text-gray-900">+91 {formData.mobileNumber}</strong>.
-              </p>
-            </div>
+                {devMockOtp && (
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900">
+                    <Sparkles className="h-4 w-4 text-amber-600" />
+                    <span>
+                      Dev OTP: <code className="rounded bg-amber-200 px-1.5 py-0.5 font-mono text-black">{devMockOtp}</code>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setOtp(devMockOtp.split(''))}
+                      className="font-semibold text-emerald-700 underline-offset-2 hover:underline"
+                    >
+                      Auto-fill
+                    </button>
+                  </div>
+                )}
 
-            {/* Dev Mock Auto-Fill Banner */}
-            {devMockOtp && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-xs font-bold text-amber-900 inline-flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-600" />
-                <span>Dev Mode Generated OTP: <code className="bg-amber-200 px-1.5 py-0.5 rounded text-black font-mono">{devMockOtp}</code></span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const digits = devMockOtp.split('');
-                    setOtp(digits);
-                  }}
-                  className="underline text-emerald-800 ml-1 hover:text-emerald-950"
-                >
-                  Auto-fill
-                </button>
+                <form onSubmit={handleVerifyOtp} className="mt-6 space-y-5">
+                  <div className="flex justify-center gap-2">
+                    {otp.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        id={`otp-input-${idx}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        className="h-14 w-11 rounded-2xl border border-transparent bg-[#F7F6F0] text-center text-xl font-bold text-slate-900 outline-none transition-all duration-300 ease-out focus:border-emerald-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(16,185,129,0.12),0_0_22px_-6px_rgba(132,204,22,0.55)]"
+                      />
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-center gap-1.5 text-xs">
+                    {canResend ? (
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        disabled={otpLoading}
+                        className="inline-flex items-center gap-1 font-semibold text-emerald-700 transition-colors hover:underline disabled:opacity-50"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Resend OTP
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 font-medium text-slate-400">
+                        <Clock className="h-3.5 w-3.5" />
+                        Resend in <strong className="text-slate-600">{resendTimer}s</strong>
+                      </span>
+                    )}
+                  </div>
+
+                  <MagneticButton className="block w-full">
+                    <motion.button
+                      type="submit"
+                      disabled={otpLoading || otp.join('').length !== 6}
+                      className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-800 text-[15px] font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-900 active:scale-[0.98] disabled:opacity-60"
+                    >
+                      {otpLoading ? (
+                        <>
+                          <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                          Verifying…
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-[18px] w-[18px]" />
+                          Verify &amp; Confirm
+                        </>
+                      )}
+                    </motion.button>
+                  </MagneticButton>
+                </form>
               </div>
             )}
 
-            <form onSubmit={handleVerifyOtp} className="space-y-6">
-              {/* 6-Digit PIN Boxes */}
-              <div className="flex justify-center gap-2 sm:gap-3">
-                {otp.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    id={`otp-input-${idx}`}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(idx, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-black font-mono bg-gray-50 border-2 border-gray-200 rounded-2xl focus:bg-white focus:border-[#3E7B27] focus:ring-4 focus:ring-emerald-100 focus:outline-none transition-all"
-                  />
-                ))}
-              </div>
+            {currentStep === 4 && (
+              <div className="text-center">
+                <motion.span
+                  initial={{ scale: 0.4, opacity: 0, rotate: -20 }}
+                  animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                  className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-lime-400/15 text-lime-600 shadow-[0_0_35px_-8px_rgba(132,204,22,0.5)]"
+                >
+                  <CheckCircle2 className="h-9 w-9" />
+                </motion.span>
 
-              <div className="flex items-center justify-center gap-2 text-xs">
-                {canResend ? (
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    disabled={otpLoading}
-                    className="font-bold text-[#3E7B27] hover:underline inline-flex items-center gap-1"
+                <span className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
+                  Pending Admin Approval
+                </span>
+
+                <h2 className="mt-3 font-display text-2xl font-bold text-slate-900">Registration Complete!</h2>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Thank you, <strong>{formData.fullName}</strong>. Your mobile number has been verified. Your
+                  application is queued for review by the AgroRent safety team.
+                </p>
+
+                <div className="mt-5 space-y-2 rounded-2xl border border-slate-200 bg-[#F7F6F0] p-4 text-left text-xs">
+                  <div className="flex justify-between border-b border-slate-200/70 pb-1.5">
+                    <span className="font-semibold uppercase tracking-wide text-slate-400">Operator ID</span>
+                    <span className="font-bold text-slate-800">#{registeredOperator?.id || 'NEW'}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-200/70 pb-1.5">
+                    <span className="font-semibold uppercase tracking-wide text-slate-400">Mobile</span>
+                    <span className="font-semibold text-emerald-700">✓ Verified</span>
+                  </div>
+                  <div className="flex justify-between gap-3 border-b border-slate-200/70 pb-1.5">
+                    <span className="shrink-0 font-semibold uppercase tracking-wide text-slate-400">
+                      Experience &amp; Skills
+                    </span>
+                    <span className="text-right font-medium text-slate-700">
+                      {formData.experience} yrs • {formData.skills || selectedSkills.join(', ')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-semibold uppercase tracking-wide text-slate-400">License No.</span>
+                    <span className="font-mono text-slate-700">{formData.drivingLicenseNumber}</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-3">
+                  <Link
+                    to="/login"
+                    className="flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-emerald-800 text-sm font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-900"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    Resend 6-Digit OTP
-                  </button>
-                ) : (
-                  <span className="text-gray-400 font-medium inline-flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    Resend OTP in <strong className="text-gray-700">{resendTimer}s</strong>
-                  </span>
-                )}
+                    Go to Login
+                  </Link>
+                  <Link
+                    to="/"
+                    className="flex min-h-[52px] w-full items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-all duration-200 ease-out hover:bg-slate-50"
+                  >
+                    Return to Home
+                  </Link>
+                </div>
               </div>
-
-              <button
-                type="submit"
-                disabled={otpLoading || otp.join('').length !== 6}
-                className="w-full py-3.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {otpLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Verifying Code...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Verify Mobile & Confirm Application</span>
-                  </>
-                )}
-              </button>
-            </form>
+            )}
           </motion.div>
-        )}
-
-        {/* Step 4: Submission Confirmation & Verification Pending Status */}
-        {currentStep === 4 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-lg space-y-6 text-center"
-          >
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
-              <CheckCircle2 className="w-8 h-8" />
-            </div>
-
-            <div className="space-y-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
-                Application Status: PENDING ADMIN APPROVAL
-              </span>
-              <h2 className="text-2xl font-black text-[#142E1C]">
-                Registration & Mobile Verification Complete!
-              </h2>
-              <p className="text-xs text-gray-600 max-w-md mx-auto leading-relaxed">
-                Thank you, <strong>{formData.fullName}</strong>. Your mobile number (+91 {formData.mobileNumber}) has been verified. Your application has been queued for verification review by the AgroRental safety team.
-              </p>
-            </div>
-
-            {/* Application Summary Card */}
-            <div className="bg-[#FAF8F5] border border-amber-100 rounded-2xl p-4 text-left text-xs space-y-2">
-              <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
-                <span className="text-gray-400 font-bold uppercase text-[10px]">Operator ID:</span>
-                <span className="font-extrabold text-gray-900">#{registeredOperator?.id || 'NEW'}</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
-                <span className="text-gray-400 font-bold uppercase text-[10px]">Mobile Verification:</span>
-                <span className="font-bold text-emerald-700">✓ Verified</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
-                <span className="text-gray-400 font-bold uppercase text-[10px]">Experience & Skills:</span>
-                <span className="font-semibold text-gray-800">{formData.experience} Years • {formData.skills || selectedSkills.join(', ')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400 font-bold uppercase text-[10px]">License Number:</span>
-                <span className="font-mono text-gray-700">{formData.drivingLicenseNumber}</span>
-              </div>
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                to="/login"
-                className="w-full sm:w-auto px-6 py-3 bg-[#142E1C] hover:bg-[#0E2013] text-white text-xs font-bold rounded-xl shadow transition text-center"
-              >
-                Go to Login Page
-              </Link>
-              <Link
-                to="/"
-                className="w-full sm:w-auto px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition text-center"
-              >
-                Return to Home
-              </Link>
-            </div>
-          </motion.div>
-        )}
-
-      </div>
-    </div>
+        </AnimatePresence>
+      </RevealItem>
+    </RevealGroup>
   );
 }
 
