@@ -397,15 +397,27 @@ function Login() {
         </button>
       </RevealItem>
 
-      <RevealItem className="mt-8 text-center text-sm text-slate-500">
-        Don&apos;t have an account?{' '}
-        <Link to="/register" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
-          Farmer Sign Up
-        </Link>
-        {' • '}
-        <Link to="/register/partner" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
-          Equipment Owner Sign Up
-        </Link>
+      <RevealItem className="mt-8 text-center text-sm text-slate-500 space-y-1.5">
+        <div>
+          Don&apos;t have an account?{' '}
+          <Link to="/register" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
+            Farmer Sign Up
+          </Link>
+          {' • '}
+          <Link to="/register/partner" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
+            Owner Sign Up
+          </Link>
+          {' • '}
+          <Link to="/register/operator" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
+            Operator Sign Up
+          </Link>
+        </div>
+        <div>
+          Machinery Operator?{' '}
+          <Link to="/login/operator" className="font-bold text-emerald-800 underline-offset-2 hover:underline">
+            Sign In to Operator Portal →
+          </Link>
+        </div>
       </RevealItem>
     </RevealGroup>
   );

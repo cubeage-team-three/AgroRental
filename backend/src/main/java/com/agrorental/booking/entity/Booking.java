@@ -63,9 +63,12 @@ public class Booking extends BaseEntity {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
     public Booking() {}
 
-    public Booking(Long farmerId, Farm farm, Equipment equipment, Partner partner, Operator operator, LocalDate startDate, LocalDate endDate, BigDecimal totalCost, BookingStatus status, String deliveryAddress, String notes) {
+    public Booking(Long farmerId, Farm farm, Equipment equipment, Partner partner, Operator operator, LocalDate startDate, LocalDate endDate, BigDecimal totalCost, BookingStatus status, String deliveryAddress, String notes, String rejectionReason) {
         this.farmerId = farmerId;
         this.farm = farm;
         this.equipment = equipment;
@@ -77,10 +80,15 @@ public class Booking extends BaseEntity {
         this.status = status;
         this.deliveryAddress = deliveryAddress;
         this.notes = notes;
+        this.rejectionReason = rejectionReason;
+    }
+
+    public Booking(Long farmerId, Farm farm, Equipment equipment, Partner partner, Operator operator, LocalDate startDate, LocalDate endDate, BigDecimal totalCost, BookingStatus status, String deliveryAddress, String notes) {
+        this(farmerId, farm, equipment, partner, operator, startDate, endDate, totalCost, status, deliveryAddress, notes, null);
     }
 
     public Booking(Long farmerId, Equipment equipment, Partner partner, Operator operator, LocalDate startDate, LocalDate endDate, BigDecimal totalCost, BookingStatus status, String deliveryAddress, String notes) {
-        this(farmerId, null, equipment, partner, operator, startDate, endDate, totalCost, status, deliveryAddress, notes);
+        this(farmerId, null, equipment, partner, operator, startDate, endDate, totalCost, status, deliveryAddress, notes, null);
     }
 
     public static BookingBuilder builder() {
@@ -99,6 +107,7 @@ public class Booking extends BaseEntity {
         private BookingStatus status;
         private String deliveryAddress;
         private String notes;
+        private String rejectionReason;
 
         BookingBuilder() {}
 
@@ -157,8 +166,13 @@ public class Booking extends BaseEntity {
             return this;
         }
 
+        public BookingBuilder rejectionReason(String rejectionReason) {
+            this.rejectionReason = rejectionReason;
+            return this;
+        }
+
         public Booking build() {
-            return new Booking(farmerId, farm, equipment, partner, operator, startDate, endDate, totalCost, status, deliveryAddress, notes);
+            return new Booking(farmerId, farm, equipment, partner, operator, startDate, endDate, totalCost, status, deliveryAddress, notes, rejectionReason);
         }
     }
 
@@ -194,4 +208,7 @@ public class Booking extends BaseEntity {
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 }

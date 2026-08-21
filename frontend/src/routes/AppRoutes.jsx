@@ -9,6 +9,7 @@ import Home from '../pages/Home';
 import NotFound from '../pages/NotFound';
 
 import Login from '../pages/auth/Login';
+import OperatorLogin from '../pages/auth/OperatorLogin';
 import Register from '../pages/auth/Register';
 import RegisterFarmer from '../pages/auth/RegisterFarmer';
 import RegisterPartner from '../pages/auth/RegisterPartner';
@@ -27,6 +28,7 @@ import CheckoutPayment from '../pages/farmer/CheckoutPayment';
 import WriteReview from '../pages/farmer/WriteReview';
 import FarmerPayments from '../pages/farmer/Payments';
 import Invoice from '../pages/farmer/Invoice';
+import LiveTracking from '../pages/farmer/LiveTracking';
 import FarmerComplaints from '../pages/farmer/Complaints';
 import FarmerNotifications from '../pages/farmer/Notifications';
 
@@ -77,6 +79,8 @@ function AppRoutes() {
       {/* Cinematic split-screen auth pages */}
       <Route element={<AuthLayout />}>
         <Route path="login" element={<Login />} />
+        <Route path="login/operator" element={<OperatorLogin />} />
+        <Route path="operator/login" element={<OperatorLogin />} />
         <Route path="register" element={<Register />} />
         <Route path="register/partner" element={<RegisterPartner />} />
         <Route path="register/operator" element={<RegisterOperator />} />
@@ -98,6 +102,8 @@ function AppRoutes() {
         <Route path="bookings/:id/pay" element={<CheckoutPayment />} />
         <Route path="bookings/:id/invoice" element={<Invoice />} />
         <Route path="bookings/:id/review" element={<WriteReview />} />
+        <Route path="bookings/:id/tracking" element={<LiveTracking />} />
+        <Route path="live-tracking" element={<LiveTracking />} />
         <Route path="payments" element={<FarmerPayments />} />
         <Route path="complaints" element={<FarmerComplaints />} />
         <Route path="notifications" element={<FarmerNotifications />} />

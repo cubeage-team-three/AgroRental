@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -100,6 +101,12 @@ public class Equipment extends BaseEntity {
     @Builder.Default
     private AvailabilityStatus availabilityStatus =
             AvailabilityStatus.AVAILABLE;
+
+    @Column(name = "available_from_date")
+    private LocalDate availableFromDate;
+
+    @Column(name = "available_to_date")
+    private LocalDate availableToDate;
 
     @Column(name = "maintenance_notes")
     private String maintenanceNotes;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, LayoutDashboard, Loader2, MessageCircle, Sprout, Tractor, User, Eye, EyeOff, X } from 'lucide-react';
+import { ArrowRight, LayoutDashboard, Loader2, MessageCircle, Sprout, Tractor, User, Eye, EyeOff, X, HardHat } from 'lucide-react';
 import { registerFarmer } from '../../services/farmerAuthService';
 import { useLanguage } from '../../context/LanguageContext';
 import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
@@ -11,13 +11,14 @@ import AuthField from '../../components/auth/AuthField';
 const ROLES = [
   { id: 'farmer', label: 'Farmer', icon: Sprout },
   { id: 'owner', label: 'Equipment Owner', icon: Tractor },
+  { id: 'operator', label: 'Machinery Operator', icon: HardHat },
   { id: 'admin', label: 'Admin', icon: LayoutDashboard },
 ];
 
 function Register() {
   const { t, setLanguage } = useLanguage();
   const navigate = useNavigate();
-  const [role, setRole] = useState('farmer'); // farmer, owner, admin
+  const [role, setRole] = useState('farmer'); // farmer, owner, operator, admin
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -55,6 +56,11 @@ function Register() {
     if (roleId === 'owner') {
       setRole('owner');
       navigate('/register/partner');
+      return;
+    }
+    if (roleId === 'operator') {
+      setRole('operator');
+      navigate('/register/operator');
       return;
     }
     setRole(roleId);

@@ -5,6 +5,10 @@ import com.agrorental.partner.entity.Partner;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(
     name = "operators",
@@ -50,13 +54,44 @@ public class Operator extends BaseEntity {
     @Column(name = "profile_photo")
     private String profilePhoto;
 
+    @Column(name = "hourly_rate")
+    @Builder.Default
+    private BigDecimal hourlyRate = new BigDecimal("500.00");
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     @Builder.Default
     private OperatorStatus status = OperatorStatus.PENDING;
 
+    @Column(name = "mobile_verified", nullable = false)
+    @Builder.Default
+    private boolean mobileVerified = false;
+
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "partner_id")
     @ToString.Exclude
     private Partner partner;
+
+    @OneToMany(mappedBy = "operator", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    @ToString.Exclude
+    private List<OperatorDocument> documents = new ArrayList<>();
+
+    public void addDocument(OperatorDocument document) {
+        if (documents == null) {
+            documents = new ArrayList<>();
+        }
+        documents.add(document);
+        document.setOperator(this);
+    }
+
+    public void removeDocument(OperatorDocument document) {
+        if (documents != null) {
+            documents.remove(document);
+            document.setOperator(null);
+        }
+    }
 }

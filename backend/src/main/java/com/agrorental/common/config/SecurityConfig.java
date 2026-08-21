@@ -1,5 +1,8 @@
 package com.agrorental.common.config;
 
+import com.agrorental.security.jwt.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -9,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -18,12 +22,15 @@ import java.util.List;
 /**
  * Central Spring Security configuration for AgroRental backend.
  * Configures HTTP security authorization rules, stateless session management,
- * CORS, and endpoint permissions.
+ * JWT authentication filter, CORS, and role-based endpoint permissions.
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,11 +38,41 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write("{\"success\":false,\"message\":\"Full authentication is required to access this resource\",\"data\":null}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.getWriter().write("{\"success\":false,\"message\":\"Access is denied. You do not have the required permissions.\",\"data\":null}");
+                        })
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Public Operator Endpoints (Registration, OTP, Login)
+                        .requestMatchers(HttpMethod.POST, "/api/operators/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/operators/login").permitAll()
+                        .requestMatchers("/api/operators/otp/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/operators/*/documents").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/operators/*/documents").permitAll()
+                        // Farmer Review submission on completed operator job
+                        .requestMatchers(HttpMethod.POST, "/api/operators/jobs/*/reviews").hasRole("FARMER")
+                        .requestMatchers(HttpMethod.GET, "/api/operators/jobs/*/review").authenticated()
+                        // Operator Protected Endpoints
+                        .requestMatchers("/api/operators/me").hasRole("OPERATOR")
+                        .requestMatchers("/api/operators/me/**").hasRole("OPERATOR")
+                        .requestMatchers("/api/operators/profile/**").hasRole("OPERATOR")
+                        .requestMatchers("/api/operators/jobs/**").hasRole("OPERATOR")
+                        .requestMatchers("/api/operators/dashboard/**").hasRole("OPERATOR")
+                        .requestMatchers("/api/operators/earnings/**").hasRole("OPERATOR")
+                        // Admin Protected Endpoints
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Existing Platform Public and Shared Endpoints
                         .requestMatchers(
                                 "/api/partners/register",
-                                "/api/operators/register",
                                 "/api/users/**",
                                 "/api/auth/**",
                                 "/api/farmers/**",
@@ -45,6 +82,7 @@ public class SecurityConfig {
                                 "/h2-console/**")
                         .permitAll()
                         .anyRequest().permitAll())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         return http.build();

@@ -44,6 +44,26 @@ export const notificationService = {
     });
     return data;
   },
+
+  /**
+   * Deletes a single notification.
+   */
+  async deleteNotification(notificationId, role, id) {
+    const data = await apiClient.delete(`/notifications/${notificationId}`, {
+      params: { role, id },
+    });
+    return data;
+  },
+
+  /**
+   * Clears all notifications for a recipient.
+   */
+  async clearAllNotifications(role, id) {
+    const data = await apiClient.delete('/notifications/clear-all', {
+      params: { role, id },
+    });
+    return data;
+  },
 };
 
 export default notificationService;
