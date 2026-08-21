@@ -6,6 +6,7 @@ import com.agrorental.booking.repository.BookingRepository;
 import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.common.exception.ResourceNotFoundException;
 import com.agrorental.equipment.entity.Equipment;
+import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.farmer.repository.FarmerRepository;
 import com.agrorental.notification.service.NotificationService;
 import com.agrorental.partner.entity.Partner;
@@ -93,6 +94,7 @@ class ReviewServiceTest {
         when(bookingRepository.findById(100L)).thenReturn(Optional.of(testBooking));
         when(reviewRepository.existsByBookingId(100L)).thenReturn(false);
         when(reviewRepository.save(any(Review.class))).thenReturn(testReview);
+        when(farmerRepository.findById(50L)).thenReturn(Optional.of(Farmer.builder().fullName("Farmer Name").build()));
 
         ReviewResponse response = reviewService.createReview(request);
 
@@ -116,6 +118,7 @@ class ReviewServiceTest {
         when(bookingRepository.findById(100L)).thenReturn(Optional.of(testBooking));
         when(reviewRepository.existsByBookingId(100L)).thenReturn(false);
         when(reviewRepository.save(any(Review.class))).thenReturn(testReview);
+        when(farmerRepository.findById(50L)).thenReturn(Optional.of(Farmer.builder().fullName("Farmer Name").build()));
 
         ReviewResponse response = reviewService.createReview(request);
 

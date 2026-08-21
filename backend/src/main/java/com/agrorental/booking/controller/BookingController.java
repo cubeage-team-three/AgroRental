@@ -140,4 +140,70 @@ public class BookingController {
         return ResponseEntity.ok(
                 ApiResponse.success("Booking status updated successfully", response));
     }
+
+    /**
+     * Partner accepts a pending booking request.
+     *
+     * @param id Booking identifier
+     * @param partnerIdHeader Optional X-Partner-Id header
+     * @return ResponseEntity containing HTTP 200 OK and updated BookingResponse
+     */
+    @PatchMapping("/{id}/accept")
+    public ResponseEntity<ApiResponse<BookingResponse>> acceptBooking(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Partner-Id", required = false) Long partnerIdHeader,
+            @RequestParam(value = "partnerId", required = false) Long partnerIdParam) {
+
+        Long partnerId = partnerIdHeader != null ? partnerIdHeader : partnerIdParam;
+        BookingResponse response = bookingService.acceptBooking(id, partnerId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Booking request accepted successfully", response));
+    }
+
+    /**
+     * Partner rejects a booking request with a mandatory reason.
+     *
+     * @param id Booking identifier
+     * @param payload Request body containing rejectionReason
+     * @param partnerIdHeader Optional X-Partner-Id header
+     * @return ResponseEntity containing HTTP 200 OK and updated BookingResponse
+     */
+    @PatchMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<BookingResponse>> rejectBooking(
+            @PathVariable Long id,
+            @RequestBody(required = false) BookingStatusUpdateRequest payload,
+            @RequestHeader(value = "X-Partner-Id", required = false) Long partnerIdHeader,
+            @RequestParam(value = "partnerId", required = false) Long partnerIdParam) {
+
+        Long partnerId = partnerIdHeader != null ? partnerIdHeader : partnerIdParam;
+        String reason = payload != null ? payload.getRejectionReason() : null;
+        BookingResponse response = bookingService.rejectBooking(id, partnerId, reason);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Booking request declined successfully", response));
+    }
+
+    /**
+     * Partner assigns a qualified operator to a booking.
+     *
+     * @param id Booking identifier
+     * @param payload Request body containing operatorId
+     * @param partnerIdHeader Optional X-Partner-Id header
+     * @return ResponseEntity containing HTTP 200 OK and updated BookingResponse
+     */
+    @PatchMapping("/{id}/assign-operator")
+    public ResponseEntity<ApiResponse<BookingResponse>> assignOperator(
+            @PathVariable Long id,
+            @RequestBody BookingStatusUpdateRequest payload,
+            @RequestHeader(value = "X-Partner-Id", required = false) Long partnerIdHeader,
+            @RequestParam(value = "partnerId", required = false) Long partnerIdParam) {
+
+        Long partnerId = partnerIdHeader != null ? partnerIdHeader : partnerIdParam;
+        Long operatorId = payload != null ? payload.getOperatorId() : null;
+        BookingResponse response = bookingService.assignOperator(id, partnerId, operatorId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Operator assigned successfully", response));
+    }
 }

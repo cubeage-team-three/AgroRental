@@ -16,10 +16,12 @@ import {
 } from 'lucide-react';
 import { bookingService } from '../../services/bookingService';
 import { operatorService } from '../../services/operatorService';
+import { getPartnerId } from '../../services/authService';
 
 function AssignOperator() {
   const { id } = useParams(); // Booking ID
   const navigate = useNavigate();
+  const partnerId = getPartnerId();
 
   const [booking, setBooking] = useState(null);
   const [currentAssignment, setCurrentAssignment] = useState(null);
@@ -98,12 +100,13 @@ function AssignOperator() {
 
   const handleConfirmAssignment = async () => {
     if (!selectedOperator || !id) return;
+    const opId = selectedOperator.operatorId || selectedOperator.id;
 
     setSubmitting(true);
     setError(null);
     try {
       await operatorService.assignOperator(id, {
-        operatorId: selectedOperator.operatorId,
+        operatorId: opId,
         notes: notes ? notes.trim() : `Assigned for ${booking?.equipmentName || 'machinery service'}`,
       });
 
@@ -138,8 +141,8 @@ function AssignOperator() {
           </div>
           <p className="text-xs sm:text-sm text-gray-500">
             {booking
-              ? `Assign a verified operator for Booking #${booking.id} (${booking.equipmentName || 'Equipment'})`
-              : `Select a certified operator for Booking #${id || 'BK-2026'}.`}
+              ? `Assigning operator for Booking #${booking.id} (${booking.equipmentName || 'Equipment'})`
+              : `Select an experienced driver or machinery operator for Booking #${id || ''}.`}
           </p>
         </div>
 
@@ -164,8 +167,16 @@ function AssignOperator() {
             <span>✓ Operator Assigned Successfully!</span>
           </div>
           <p className="text-xs text-emerald-800">
-            <strong>{selectedOperator?.fullName}</strong> has been assigned to Booking #{id}. The operator has been notified and task details are now available in their portal.
+            <strong>{selectedOperator?.fullName || selectedOperator?.name}</strong> has been assigned to Booking #{id}. The operator has been notified and task details are now available in their portal.
           </p>
+          <div className="pt-2">
+             <Link
+              to="/partner/bookings"
+              className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
+             >
+               Back to Bookings
+             </Link>
+          </div>
         </div>
       )}
 
@@ -254,11 +265,17 @@ function AssignOperator() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {operators.map((op) => {
-            const isCurrentlyAssigned = currentAssignment?.operatorId === op.operatorId;
+            const opId = op.operatorId || op.id;
+            const isCurrentlyAssigned = currentAssignment?.operatorId === opId;
+            const displayName = op.fullName || op.name;
+            const displayMobile = op.mobileNumber || op.phone;
+            const displayExperience = op.experience || op.experienceYears || 0;
+            const displaySkills = op.skills || op.specialty || 'Machinery Operator';
+            const displayAddress = op.address || op.location || 'Address on file';
 
             return (
               <div
-                key={op.operatorId}
+                key={opId}
                 className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col justify-between space-y-4"
               >
                 <div className="space-y-3">
@@ -270,29 +287,29 @@ function AssignOperator() {
                       <span className="text-xs font-black text-emerald-600 flex items-center gap-1 justify-end">
                         <BadgeCheck className="w-4 h-4 text-emerald-600" /> Verified
                       </span>
-                      <span className="text-[10px] text-gray-400 font-semibold block">ID #{op.operatorId}</span>
+                      <span className="text-[10px] text-gray-400 font-semibold block">ID #{opId}</span>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-base font-extrabold text-gray-900">{op.fullName}</h3>
+                    <h3 className="text-base font-extrabold text-gray-900">{displayName}</h3>
                     <p className="text-xs font-bold text-[#3E7B27] mt-0.5 line-clamp-1">
-                      {op.skills || 'Machinery Operator'}
+                      {displaySkills}
                     </p>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-gray-500 font-medium pt-2 border-t border-gray-100">
                     <p className="flex items-center gap-1.5">
                       <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span>{op.mobileNumber}</span>
+                      <span>{displayMobile}</span>
                     </p>
                     <p className="flex items-center gap-1.5">
                       <Briefcase className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span>{op.experience || 0} Years Operational Experience</span>
+                      <span>{displayExperience} Years Operational Experience</span>
                     </p>
                     <p className="flex items-center gap-1.5 truncate">
                       <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span>{op.address || 'Address on file'}</span>
+                      <span>{displayAddress}</span>
                     </p>
                   </div>
                 </div>
@@ -331,10 +348,10 @@ function AssignOperator() {
 
             <div className="p-4 bg-[#F0EFE9] rounded-2xl text-xs space-y-1 text-gray-700">
               <p>
-                Assign <strong>{selectedOperator.fullName}</strong> ({selectedOperator.mobileNumber}) to operate machinery for this booking?
+                Assign <strong>{selectedOperator.fullName || selectedOperator.name}</strong> ({selectedOperator.mobileNumber || selectedOperator.phone}) to operate machinery for this booking?
               </p>
               <p className="text-[11px] text-gray-500">
-                Experience: {selectedOperator.experience || 0} years • Skills: {selectedOperator.skills || 'All Machinery'}
+                Experience: {selectedOperator.experience || selectedOperator.experienceYears || 0} years • Skills: {selectedOperator.skills || selectedOperator.specialty || 'All Machinery'}
               </p>
             </div>
 
