@@ -110,23 +110,21 @@ public class DataInitializer implements CommandLineRunner {
                 .mobileNumber("9876543211")
                 .email("ramesh@agrorent.in")
                 .address("Plot 45, Shirur Village, Pune 412210")
-                .aadhaarNumber("987612345678")
                 .password(passwordEncoder.encode("Farmer@123"))
-                .profilePhoto("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80")
-                .isVerified(true)
+                .profileImage("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80")
+                .accountStatus("ACTIVE")
                 .build();
         farmer = farmerRepository.save(farmer);
 
         Farm farm = Farm.builder()
-                .farmer(farmer)
+                .farmerId(farmer.getId())
                 .farmName("Green Valley Farm")
                 .village("Shirur")
                 .taluka("Shirur")
                 .district("Pune")
                 .state("Maharashtra")
-                .totalAreaAcres(new BigDecimal("5.5"))
-                .soilType("Black Soil")
-                .irrigationType("Drip & Canal")
+                .farmArea(new BigDecimal("5.5"))
+                .cropType("Sugarcane & Wheat")
                 .build();
         farm = farmRepository.save(farm);
 
@@ -184,7 +182,7 @@ public class DataInitializer implements CommandLineRunner {
 
         Equipment rotavator = Equipment.builder()
                 .name("Shaktiman Regular Light Rotavator")
-                .category(EquipmentCategory.ROTAVATOR)
+                .category(EquipmentCategory.TILLER)
                 .rentalPrice(new BigDecimal("800.00"))
                 .availabilityStatus(AvailabilityStatus.AVAILABLE)
                 .partner(partner)
@@ -207,10 +205,11 @@ public class DataInitializer implements CommandLineRunner {
         op1.setAddress("Village Khed, Taluka Rajgurunagar, Pune");
         op1.setAadhaarNumber("654398761234");
         op1.setDrivingLicenseNumber("MH-14-2018-009876");
-        op1.setExperience("5 Years");
+        op1.setExperience(5);
         op1.setSkills("Tractor & Harvester Specialist");
         op1.setPassword(passwordEncoder.encode("Operator@123"));
         op1.setStatus(OperatorStatus.APPROVED);
+        op1.setMobileVerified(true);
         op1.setPartner(partner);
         op1 = operatorRepository.save(op1);
 
@@ -221,10 +220,11 @@ public class DataInitializer implements CommandLineRunner {
         op2.setAddress("Narayangaon, Junnar, Pune");
         op2.setAadhaarNumber("789012345678");
         op2.setDrivingLicenseNumber("MH-14-2016-004321");
-        op2.setExperience("7 Years");
+        op2.setExperience(7);
         op2.setSkills("Heavy Machinery & Rotavator");
         op2.setPassword(passwordEncoder.encode("Operator@123"));
         op2.setStatus(OperatorStatus.APPROVED);
+        op2.setMobileVerified(true);
         op2.setPartner(partner);
         op2 = operatorRepository.save(op2);
 
@@ -235,10 +235,11 @@ public class DataInitializer implements CommandLineRunner {
         op3.setAddress("Chakan, Pune");
         op3.setAadhaarNumber("890123456789");
         op3.setDrivingLicenseNumber("MH-14-2020-001234");
-        op3.setExperience("4 Years");
+        op3.setExperience(4);
         op3.setSkills("Tractor Driver & Land Preparation");
         op3.setPassword(passwordEncoder.encode("Operator@123"));
         op3.setStatus(OperatorStatus.APPROVED);
+        op3.setMobileVerified(true);
         op3.setPartner(partner);
         op3 = operatorRepository.save(op3);
 
