@@ -52,6 +52,13 @@ export const farmService = {
   },
 
   /**
+   * Alias for getFarms
+   */
+  async getFarmerFarms(farmerId = 1) {
+    return this.getFarms(farmerId);
+  },
+
+  /**
    * Fetch details for a specific farm by ID.
    */
   async getFarmById(id) {

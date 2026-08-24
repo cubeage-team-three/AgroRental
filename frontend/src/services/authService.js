@@ -39,8 +39,9 @@ export const getPartnerId = () => {
 
 export const getFarmerId = () => {
   const user = getCurrentUser();
-  if (user && user.farmerId) {
-    return user.farmerId;
+  if (user) {
+    if (user.farmerId) return user.farmerId;
+    if (user.role === 'FARMER' && user.id) return user.id;
   }
   const storedId = localStorage.getItem('farmerId');
   return storedId ? Number(storedId) : 1;

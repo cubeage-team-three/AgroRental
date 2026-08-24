@@ -10,57 +10,53 @@ export const bookingService = {
    * @returns {Promise<Object>} Created BookingResponse payload
    */
   createBooking: async (bookingData) => {
-    return await request('/bookings', {
-      method: 'POST',
-      body: JSON.stringify(bookingData),
-    });
+    try {
+      return await request('/bookings', {
+        method: 'POST',
+        body: JSON.stringify(bookingData),
+      });
+    } catch {
+      return await request('/farmers/bookings', {
+        method: 'POST',
+        body: JSON.stringify(bookingData),
+      });
+    }
   },
 
-  /**
-   * Retrieves booking details by ID.
-   * @param {number} id - Booking ID
-   * @returns {Promise<Object>} BookingResponse payload
-   */
   getBookingById: async (id) => {
-    return await request(`/bookings/${id}`);
+    try {
+      return await request(`/bookings/${id}`);
+    } catch {
+      return await request(`/farmers/bookings/${id}`);
+    }
   },
 
-  /**
-   * Retrieves all bookings for a specific farmer.
-   * @param {number} farmerId - Farmer ID
-   * @returns {Promise<Array>} Array of BookingResponse objects
-   */
   getBookingsByFarmer: async (farmerId) => {
-    return await request(`/bookings/farmer/${farmerId}`);
+    try {
+      return await request(`/bookings/farmer/${farmerId}`);
+    } catch {
+      return await request(`/farmers/bookings?farmerId=${farmerId}`);
+    }
   },
 
-  /**
-   * Retrieves all booking requests for a partner's equipment.
-   * @param {number} partnerId - Partner ID
-   * @returns {Promise<Array>} Array of BookingResponse objects
-   */
   getBookingsByPartner: async (partnerId) => {
     return await request(`/bookings/partner/${partnerId}`);
   },
 
-  /**
-   * Retrieves all booking requests assigned to a specific operator.
-   * @param {number} operatorId - Operator ID
-   * @returns {Promise<Array>} Array of BookingResponse objects
-   */
   getBookingsByOperator: async (operatorId) => {
     return await request(`/bookings/operator/${operatorId}`);
   },
 
-  /**
-   * Cancels an active booking reservation.
-   * @param {number} id - Booking ID
-   * @returns {Promise<Object>} Updated BookingResponse payload
-   */
   cancelBooking: async (id) => {
-    return await request(`/bookings/${id}/cancel`, {
-      method: 'PATCH',
-    });
+    try {
+      return await request(`/bookings/${id}/cancel`, {
+        method: 'PATCH',
+      });
+    } catch {
+      return await request(`/farmers/bookings/${id}/cancel`, {
+        method: 'PUT',
+      });
+    }
   },
 
   /**
