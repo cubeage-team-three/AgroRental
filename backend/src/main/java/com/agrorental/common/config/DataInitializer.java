@@ -20,9 +20,11 @@ import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.entity.OperatorJobAssignment;
 import com.agrorental.operator.enums.OperatorAssignmentStatus;
 import com.agrorental.operator.entity.OperatorJobPauseInterval;
+import com.agrorental.operator.entity.OperatorReview;
 import com.agrorental.operator.repository.OperatorJobPauseIntervalRepository;
 import com.agrorental.operator.repository.OperatorJobAssignmentRepository;
 import com.agrorental.operator.repository.OperatorRepository;
+import com.agrorental.operator.repository.OperatorReviewRepository;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
 import com.agrorental.payment.entity.Payment;
@@ -60,7 +62,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PaymentRepository paymentRepository;
     private final NotificationRepository notificationRepository;
     private final ReviewRepository reviewRepository;
-    private final com.agrorental.operator.repository.OperatorReviewRepository operatorReviewRepository;
+    private final OperatorReviewRepository operatorReviewRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(
@@ -75,7 +77,7 @@ public class DataInitializer implements CommandLineRunner {
             PaymentRepository paymentRepository,
             NotificationRepository notificationRepository,
             ReviewRepository reviewRepository,
-            com.agrorental.operator.repository.OperatorReviewRepository operatorReviewRepository,
+            OperatorReviewRepository operatorReviewRepository,
             PasswordEncoder passwordEncoder) {
         this.partnerRepository = partnerRepository;
         this.farmerRepository = farmerRepository;
@@ -490,7 +492,7 @@ public class DataInitializer implements CommandLineRunner {
         reviewRepository.save(r2);
 
         // 7b. Seed Operator Review for Completed Assignment #3 (Operator 1)
-        com.agrorental.operator.entity.OperatorReview opReview1 = com.agrorental.operator.entity.OperatorReview.builder()
+        OperatorReview opReview1 = OperatorReview.builder()
                 .assignment(assign3)
                 .operator(op1)
                 .booking(b5)

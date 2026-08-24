@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { bookingService } from '../../services/bookingService';
 import { operatorService } from '../../services/operatorService';
+import { getPartnerId } from '../../services/authService';
 
 function AssignOperator() {
   const { id } = useParams(); // Booking ID
@@ -160,7 +161,7 @@ function AssignOperator() {
 
       {/* Success Notification */}
       {assignedSuccess && (
-        <div className="p-5 bg-emerald-50 border border-emerald-300 rounded-3xl text-emerald-900 space-y-1 shadow-xs">
+        <div className="p-5 bg-emerald-50 border border-emerald-300 rounded-3xl text-emerald-900 space-y-2 shadow-xs">
           <div className="flex items-center gap-2 font-bold text-sm">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <span>✓ Operator Assigned Successfully!</span>
