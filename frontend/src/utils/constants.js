@@ -26,7 +26,23 @@ export const AVAILABILITY_STATUSES = [
   { value: 'INACTIVE', label: 'Inactive', badgeClass: 'bg-gray-100 text-gray-800 border-gray-300' },
 ];
 
-export const DEFAULT_EQUIPMENT_IMAGE = 'https://images.unsplash.com/photo-1592417817098-8f3d6ef23a28?auto=format&fit=crop&w=800&q=80';
+export const DEFAULT_EQUIPMENT_IMAGE = '/images/equipment/tractor-ploughing.jpg';
+
+export const CATEGORY_IMAGES = {
+  TRACTOR: '/images/equipment/tractor-ploughing.jpg',
+  HARVESTER: '/images/equipment/harvester-service.jpg',
+  SPRAYER: '/images/equipment/drone-spraying.jpg',
+  SEEDER: '/images/equipment/seeder-sowing.jpg',
+  IRRIGATION: '/images/equipment/irrigation-setup.jpg',
+  TILLER: '/images/equipment/rotavator-work.jpg',
+  OTHER: '/images/equipment/custom-field-jobs.jpg',
+};
+
+export function getCategoryEquipmentImage(category) {
+  if (!category) return DEFAULT_EQUIPMENT_IMAGE;
+  const upper = String(category).toUpperCase();
+  return CATEGORY_IMAGES[upper] || DEFAULT_EQUIPMENT_IMAGE;
+}
 
 export function formatCategoryLabel(category) {
   const item = EQUIPMENT_CATEGORIES.find((c) => c.value === category);
