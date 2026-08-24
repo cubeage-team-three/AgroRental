@@ -469,6 +469,3 @@ export const operatorService = {
 };
 
 export default operatorService;
-
-
-

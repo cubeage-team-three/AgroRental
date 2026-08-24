@@ -137,4 +137,129 @@ class PartnerControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Password changed successfully"));
     }
+
+    @Test
+    @DisplayName("POST /api/partners/register - Should return 201 Created on registration")
+    void shouldRegisterPartner() throws Exception {
+        Partner partner = Partner.builder()
+                .fullName("Rajesh Patel")
+                .mobileNumber("9876543210")
+                .email("rajesh.patel@example.com")
+                .build();
+        partner.setId(1L);
+
+        when(partnerService.registerPartner(any())).thenReturn(partner);
+        when(partnerService.toProfileResponse(any(Partner.class))).thenReturn(testProfile);
+
+        String jsonPayload = """
+                {
+                    "fullName": "Rajesh Patel",
+                    "mobileNumber": "9876543210",
+                    "email": "rajesh.patel@example.com",
+                    "password": "secret_password"
+                }
+                """;
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/partners/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Partner registered successfully"))
+                .andExpect(jsonPath("$.data.id").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /api/partners/{id}/dashboard - Should return 200 OK with dashboard metrics")
+    void shouldGetPartnerDashboard() throws Exception {
+        com.agrorental.partner.dto.PartnerDashboardResponse dashboard = com.agrorental.partner.dto.PartnerDashboardResponse.builder()
+                .id(1L)
+                .fullName("Rajesh Patel")
+                .totalMachines(5)
+                .activeMachines(4)
+                .pendingBookings(2)
+                .completedBookings(10)
+                .monthlyRevenue(java.math.BigDecimal.valueOf(25000))
+                .customerRatings(4.9)
+                .build();
+
+        when(partnerService.getPartnerDashboard(1L)).thenReturn(java.util.Optional.of(dashboard));
+
+        mockMvc.perform(get("/api/partners/1/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.fullName").value("Rajesh Patel"))
+                .andExpect(jsonPath("$.data.totalMachines").value(5))
+                .andExpect(jsonPath("$.data.activeMachines").value(4));
+    }
+
+    @Test
+    @DisplayName("POST /api/partners/{id}/otp/send - Should return 200 OK with OTP")
+    void shouldSendOtp() throws Exception {
+        when(partnerService.sendOtp(1L)).thenReturn("123456");
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/partners/1/otp/send"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value("123456"));
+    }
+
+    @Test
+    @DisplayName("POST /api/partners/{id}/otp/verify - Should return 200 OK on successful verification")
+    void shouldVerifyOtp() throws Exception {
+        when(partnerService.verifyOtp(eq(1L), eq("123456"))).thenReturn(testProfile);
+
+        String jsonPayload = """
+                {
+                    "otp": "123456"
+                }
+                """;
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/partners/1/otp/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("OTP verified successfully"));
+    }
+
+    @Test
+    @DisplayName("POST /api/partners/{id}/otp/resend - Should return 200 OK on OTP resend")
+    void shouldResendOtp() throws Exception {
+        when(partnerService.resendOtp(1L)).thenReturn("654321");
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/partners/1/otp/resend"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value("654321"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/partners/{id}/kyc/approve - Should return 200 OK on KYC approval")
+    void shouldApprovePartnerKyc() throws Exception {
+        when(partnerService.approvePartnerKyc(1L)).thenReturn(testProfile);
+
+        mockMvc.perform(put("/api/partners/1/kyc/approve"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Partner KYC approved successfully"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/partners/{id}/kyc/reject - Should return 200 OK on KYC rejection")
+    void shouldRejectPartnerKyc() throws Exception {
+        PartnerProfileResponse rejectedProfile = PartnerProfileResponse.builder()
+                .id(1L)
+                .fullName("Rajesh Patel")
+                .verificationStatus(Partner.VerificationStatus.REJECTED)
+                .active(false)
+                .build();
+
+        when(partnerService.rejectPartnerKyc(1L)).thenReturn(rejectedProfile);
+
+        mockMvc.perform(put("/api/partners/1/kyc/reject"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Partner KYC rejected successfully"));
+    }
 }
