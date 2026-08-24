@@ -77,7 +77,7 @@ public class BookingService {
 
         boolean hasOverlap = bookingRepository.existsOverlappingBooking(
                 equipment.getId(),
-                List.of(BookingStatus.PENDING, BookingStatus.CONFIRMED),
+                List.of(BookingStatus.PENDING, BookingStatus.ACCEPTED, BookingStatus.CONFIRMED, BookingStatus.OPERATOR_ASSIGNED, BookingStatus.WORK_STARTED),
                 request.getStartDate(),
                 request.getEndDate()
         );

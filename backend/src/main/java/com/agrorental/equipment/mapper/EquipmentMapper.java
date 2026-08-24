@@ -217,6 +217,7 @@ public class EquipmentMapper {
                 .category(equipment.getCategory())
                 .brand(equipment.getBrand())
                 .model(equipment.getModel())
+                .capacity(equipment.getCapacity())
                 .rentalPrice(equipment.getRentalPrice())
                 .fuelType(equipment.getFuelType())
                 .locationAddress(equipment.getLocationAddress())

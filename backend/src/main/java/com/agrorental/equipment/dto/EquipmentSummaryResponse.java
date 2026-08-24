@@ -23,6 +23,7 @@ public class EquipmentSummaryResponse {
     private EquipmentCategory category;
     private String brand;
     private String model;
+    private String capacity;
     private BigDecimal rentalPrice;
     private FuelType fuelType;
     private String locationAddress;
