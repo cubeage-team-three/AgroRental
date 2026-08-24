@@ -72,4 +72,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      * @return true if active booking exists
      */
     boolean existsByEquipmentIdAndStatusIn(Long equipmentId, List<BookingStatus> statuses);
+
+    /**
+     * Retrieves the most recently created bookings platform-wide, for the
+     * admin dashboard's recent activity feed.
+     *
+     * @return Up to 10 most recent bookings, newest first
+     */
+    List<Booking> findTop10ByOrderByCreatedAtDesc();
 }
