@@ -34,4 +34,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("SELECT COUNT(p) FROM Payment p WHERE p.partnerId = :partnerId AND p.paymentStatus = :status")
     long countByPartnerIdAndStatus(@Param("partnerId") Long partnerId, @Param("status") PaymentStatus status);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.paymentStatus = :status")
+    BigDecimal sumAmountByStatus(@Param("status") PaymentStatus status);
 }
