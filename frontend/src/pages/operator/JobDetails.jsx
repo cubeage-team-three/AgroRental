@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   HardHat,
@@ -21,6 +21,13 @@ import {
   Flag,
   HelpCircle,
   Info,
+  Radio,
+  Compass,
+  LocateFixed,
+  Signal,
+  Globe,
+  IndianRupee,
+  Wallet,
 } from 'lucide-react';
 import { operatorService } from '../../services/operatorService';
 import {
@@ -32,10 +39,20 @@ function JobDetails() {
   const { id } = useParams(); // Assignment ID
 
   const [job, setJob] = useState(null);
+  const [jobEarnings, setJobEarnings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+
+  // Phase 7: GPS Location Tracking States
+  const [isTracking, setIsTracking] = useState(false);
+  const [gpsLocation, setGpsLocation] = useState(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState(null);
+  const [lastGpsSync, setLastGpsSync] = useState(null);
+  const watchIdRef = useRef(null);
+  const lastSendTimeRef = useRef(0);
 
   // Modal Dialog States
   const [modalType, setModalType] = useState(null); // 'ACCEPT', 'REJECT', 'TRAVEL', 'REACHED', 'START_WORK', 'PAUSE', 'RESUME', 'COMPLETE'
@@ -51,6 +68,12 @@ function JobDetails() {
     try {
       const data = await operatorService.getAssignedJob(id);
       setJob(data);
+
+      if (['COMPLETED', 'IN_PROGRESS', 'PAUSED'].includes(data?.assignmentStatus)) {
+        operatorService.getJobEarnings(id)
+          .then((earnings) => setJobEarnings(earnings))
+          .catch((e) => console.warn('Could not load job earnings:', e));
+      }
     } catch (err) {
       console.error('Failed to load job details:', err);
       setError(err.message || 'Job assignment not found or access is denied.');
@@ -58,6 +81,143 @@ function JobDetails() {
       setLoading(false);
     }
   }, [id]);
+
+  // Is job in active trackable state
+  const isTrackableState = ['TRAVELING', 'REACHED', 'IN_PROGRESS', 'PAUSED'].includes(job?.assignmentStatus);
+
+  // Stop Geolocation watcher
+  const stopGpsWatcher = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+  }, []);
+
+  // Cleanup watcher on unmount
+  useEffect(() => {
+    return () => {
+      stopGpsWatcher();
+    };
+  }, [stopGpsWatcher]);
+
+  // Deactivate tracking if job status becomes terminal or unassigned
+  useEffect(() => {
+    if (job && !['TRAVELING', 'REACHED', 'IN_PROGRESS', 'PAUSED'].includes(job.assignmentStatus) && isTracking) {
+      stopGpsWatcher();
+      setIsTracking(false);
+    }
+  }, [job?.assignmentStatus, isTracking, stopGpsWatcher]);
+
+  // Load latest location if available
+  useEffect(() => {
+    if (id && isTrackableState) {
+      operatorService.getLatestLocation(id)
+        .then((loc) => {
+          if (loc) {
+            setGpsLocation(loc);
+            setIsTracking(loc.trackingActive);
+            if (loc.recordedAt) {
+              setLastGpsSync(new Date(loc.recordedAt));
+            }
+          }
+        })
+        .catch(() => {
+          // No prior location, normal state
+        });
+    }
+  }, [id, isTrackableState]);
+
+  const handleStartTracking = async () => {
+    if (!navigator.geolocation) {
+      setGpsError('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setGpsLoading(true);
+    setGpsError(null);
+
+    try {
+      const initialResponse = await operatorService.startLocationTracking(id);
+      setIsTracking(true);
+      setGpsLocation(initialResponse);
+      setLastGpsSync(new Date());
+
+      stopGpsWatcher();
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        async (position) => {
+          const { latitude, longitude, accuracy, speed, heading } = position.coords;
+          const now = Date.now();
+
+          // Throttle network dispatch: at most once every 6 seconds
+          if (now - lastSendTimeRef.current >= 6000) {
+            lastSendTimeRef.current = now;
+            try {
+              const updatedLoc = await operatorService.updateLocation(id, {
+                latitude,
+                longitude,
+                accuracy: accuracy != null ? Math.max(0, accuracy) : null,
+                speed: speed != null && speed > 0 ? speed * 3.6 : 0,
+                heading: heading != null && !isNaN(heading) && heading >= 0 ? heading : null,
+              });
+              setGpsLocation(updatedLoc);
+              setLastGpsSync(new Date());
+              setGpsError(null);
+            } catch (err) {
+              console.warn('Background GPS coordinate update failed:', err);
+            }
+          } else {
+            setGpsLocation((prev) => ({
+              ...(prev || {}),
+              latitude,
+              longitude,
+              accuracy,
+              speed: speed != null && speed > 0 ? speed * 3.6 : 0,
+              heading,
+            }));
+          }
+        },
+        (err) => {
+          let msg = 'Failed to acquire GPS coordinates.';
+          if (err.code === 1) {
+            msg = 'Location permission denied. Please allow GPS access in browser.';
+          } else if (err.code === 2) {
+            msg = 'GPS position unavailable. Check device location settings.';
+          } else if (err.code === 3) {
+            msg = 'Location request timed out. Retrying GPS lock...';
+          }
+          setGpsError(msg);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 5000,
+        }
+      );
+    } catch (err) {
+      console.error('Failed to start location tracking:', err);
+      setGpsError(err.message || 'Could not initiate GPS location tracking.');
+      setIsTracking(false);
+    } finally {
+      setGpsLoading(false);
+    }
+  };
+
+  const handleStopTracking = async () => {
+    setGpsLoading(true);
+    setGpsError(null);
+    try {
+      stopGpsWatcher();
+      const stopped = await operatorService.stopLocationTracking(id);
+      setIsTracking(false);
+      setGpsLocation(stopped);
+      setLastGpsSync(new Date());
+    } catch (err) {
+      console.error('Failed to stop location tracking:', err);
+      setGpsError(err.message || 'Failed to deactivate tracking on server.');
+    } finally {
+      setGpsLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchJobDetails();
@@ -509,6 +669,193 @@ function JobDetails() {
               )}
             </div>
           </div>
+
+          {/* Phase 7: Live GPS Location Tracking Card */}
+          {isTrackableState && (
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-5">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
+                    <Radio className={`w-4 h-4 text-[#3E7B27] ${isTracking ? 'animate-pulse' : ''}`} />
+                  </span>
+                  <h3 className="text-base font-black text-[#142E1C]">Real-Time GPS Location Tracking</h3>
+                </div>
+                <span
+                  className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
+                    isTracking
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      : 'bg-gray-100 text-gray-500 border-gray-200'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${isTracking ? 'bg-emerald-500 animate-ping' : 'bg-gray-400'}`} />
+                  <span>{isTracking ? 'GPS Broadcasting Active' : 'GPS Idle'}</span>
+                </span>
+              </div>
+
+              {gpsError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-xs font-semibold flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                    <span>{gpsError}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setGpsError(null)}
+                    className="text-[11px] underline font-bold text-red-800"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
+              {/* GPS Controls */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <p className="text-xs text-gray-500 font-medium">
+                  {isTracking
+                    ? 'Transmitting live coordinates to farmer dispatch and machinery logs every 6s.'
+                    : 'Start broadcasting your GPS coordinates for active fieldwork navigation and audit logging.'}
+                </p>
+
+                {isTracking ? (
+                  <button
+                    type="button"
+                    disabled={gpsLoading}
+                    onClick={handleStopTracking}
+                    className="w-full sm:w-auto px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0"
+                  >
+                    <LocateFixed className="w-4 h-4" />
+                    <span>{gpsLoading ? 'Stopping...' : 'Stop GPS Broadcast'}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={gpsLoading}
+                    onClick={handleStartTracking}
+                    className="w-full sm:w-auto px-5 py-2.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0"
+                  >
+                    <Radio className="w-4 h-4" />
+                    <span>{gpsLoading ? 'Acquiring GPS...' : 'Start Live GPS Broadcast'}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Coordinates Grid */}
+              {gpsLocation && (gpsLocation.latitude !== 0 || gpsLocation.longitude !== 0) && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-gray-100">
+                  <div className="p-3 bg-[#F0EFE9] rounded-2xl space-y-0.5">
+                    <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Latitude</span>
+                    <p className="text-xs font-black text-gray-900 truncate">
+                      {gpsLocation.latitude ? `${Number(gpsLocation.latitude).toFixed(5)}° N` : 'Acquiring...'}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-[#F0EFE9] rounded-2xl space-y-0.5">
+                    <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Longitude</span>
+                    <p className="text-xs font-black text-gray-900 truncate">
+                      {gpsLocation.longitude ? `${Number(gpsLocation.longitude).toFixed(5)}° E` : 'Acquiring...'}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-[#F0EFE9] rounded-2xl space-y-0.5">
+                    <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Accuracy / Speed</span>
+                    <p className="text-xs font-black text-gray-900 truncate">
+                      ±{gpsLocation.accuracy ? `${Number(gpsLocation.accuracy).toFixed(1)}m` : '0m'} • {gpsLocation.speed ? `${Number(gpsLocation.speed).toFixed(1)} km/h` : '0 km/h'}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-[#F0EFE9] rounded-2xl space-y-0.5">
+                    <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Last Sync</span>
+                    <p className="text-xs font-black text-emerald-800 truncate">
+                      {lastGpsSync ? lastGpsSync.toLocaleTimeString() : 'Just now'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Phase 8: Operator Work Hours & Gross Compensation Card (FR-EARNINGS-JOB) */}
+          {jobEarnings && (
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-emerald-100 space-y-5">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
+                    <IndianRupee className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-base font-black text-gray-900">
+                      {jobEarnings.isFinalized ? 'Finalized Job Compensation' : 'Estimated Work Compensation'}
+                    </h3>
+                    <p className="text-[11px] text-gray-500">
+                      Calculated from verified server-side lifecycle timestamps
+                    </p>
+                  </div>
+                </div>
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                  jobEarnings.isFinalized ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                }`}>
+                  {jobEarnings.isFinalized ? 'Finalized' : 'In-Progress Estimate'}
+                </span>
+              </div>
+
+              {/* 4-Stat Metric Box */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3.5 bg-[#F0EFE9] rounded-2xl">
+                  <span className="text-[10px] uppercase font-bold text-gray-500 block">Gross Earnings</span>
+                  <span className="text-lg sm:text-xl font-black text-emerald-800 mt-1 block">
+                    ₹{Number(jobEarnings.grossEarnings || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className="text-[10px] text-gray-400">Net billable pay</span>
+                </div>
+
+                <div className="p-3.5 bg-[#F0EFE9] rounded-2xl">
+                  <span className="text-[10px] uppercase font-bold text-gray-500 block">Net Work Hours</span>
+                  <span className="text-lg sm:text-xl font-black text-gray-900 mt-1 block">
+                    {jobEarnings.netWorkHours} hrs
+                  </span>
+                  <span className="text-[10px] text-gray-400">{jobEarnings.netWorkMinutes} minutes</span>
+                </div>
+
+                <div className="p-3.5 bg-[#F0EFE9] rounded-2xl">
+                  <span className="text-[10px] uppercase font-bold text-gray-500 block">Paused Duration</span>
+                  <span className="text-lg sm:text-xl font-black text-amber-800 mt-1 block">
+                    {jobEarnings.pausedMinutes} min
+                  </span>
+                  <span className="text-[10px] text-gray-400">Excluded from pay</span>
+                </div>
+
+                <div className="p-3.5 bg-[#F0EFE9] rounded-2xl">
+                  <span className="text-[10px] uppercase font-bold text-gray-500 block">Hourly Rate</span>
+                  <span className="text-lg sm:text-xl font-black text-gray-900 mt-1 block">
+                    ₹{Number(jobEarnings.hourlyRate || 500).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/hr
+                  </span>
+                  <span className="text-[10px] text-gray-400">Standard rate</span>
+                </div>
+              </div>
+
+              {/* Timestamp Audit Trail */}
+              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-2 text-xs">
+                <div className="font-bold text-gray-700 text-[11px] uppercase tracking-wider">
+                  Audit Trail & Work Intervals:
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-600">
+                  <div>
+                    <span className="font-semibold text-gray-500">Work Started: </span>
+                    <span>{jobEarnings.workStartedAt ? new Date(jobEarnings.workStartedAt).toLocaleString('en-IN') : 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Work Completed: </span>
+                    <span>{jobEarnings.completedAt ? new Date(jobEarnings.completedAt).toLocaleString('en-IN') : (jobEarnings.isFinalized ? 'Completed' : 'Active')}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Total Elapsed Duration: </span>
+                    <span>{jobEarnings.totalElapsedMinutes} minutes</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-500">Currency: </span>
+                    <span>{jobEarnings.currency} (Indian Rupee)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Service & Booking Information */}
           <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-5">

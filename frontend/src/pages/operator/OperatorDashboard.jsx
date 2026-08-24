@@ -20,6 +20,9 @@ import {
   Award,
   Activity,
   Layers,
+  IndianRupee,
+  Wallet,
+  Star,
 } from 'lucide-react';
 import { operatorService } from '../../services/operatorService';
 import { getStoredUser } from '../../utils/auth';
@@ -27,6 +30,8 @@ import { DEFAULT_EQUIPMENT_IMAGE, formatCategoryLabel } from '../../utils/consta
 
 function OperatorDashboard() {
   const [metrics, setMetrics] = useState(null);
+  const [earningsSummary, setEarningsSummary] = useState(null);
+  const [ratingSummary, setRatingSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -37,8 +42,22 @@ function OperatorDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const data = await operatorService.getDashboardMetrics();
+      const [data, earnings, ratings] = await Promise.all([
+        operatorService.getDashboardMetrics(),
+        operatorService.getEarningsSummary().catch((err) => {
+          console.warn('Unable to load earnings summary for dashboard:', err);
+          return null;
+        }),
+        operatorService.getMyRatingSummary().catch((err) => {
+          console.warn('Unable to load rating summary for dashboard:', err);
+          return null;
+        }),
+      ]);
       setMetrics(data);
+      setEarningsSummary(earnings);
+      if (ratings?.success && ratings.data) {
+        setRatingSummary(ratings.data);
+      }
     } catch (err) {
       console.error('Failed to load operator dashboard metrics:', err);
       setError(err.message || 'Unable to retrieve dashboard metrics.');
@@ -138,14 +157,24 @@ function OperatorDashboard() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={fetchMetrics}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-2xl border border-white/20 backdrop-blur-xs transition-all shadow-sm shrink-0 self-start sm:self-auto"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh Dashboard</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 z-10 self-start sm:self-auto">
+          <Link
+            to="/operator/ratings"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 text-xs font-bold rounded-2xl border border-amber-400/40 backdrop-blur-xs transition-all shadow-sm"
+          >
+            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+            <span>{ratingSummary?.averageRating ? Number(ratingSummary.averageRating).toFixed(1) : '0.0'} ★ ({ratingSummary?.totalReviews || 0} Reviews)</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={fetchMetrics}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-2xl border border-white/20 backdrop-blur-xs transition-all shadow-sm shrink-0"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Status Counts Grid */}
@@ -288,6 +317,72 @@ function OperatorDashboard() {
           </Link>
         </div>
 
+      </div>
+
+      {/* Earnings & Work Hours Summary Card (FR-EARNINGS-SUMMARY) */}
+      <div className="bg-linear-to-br from-emerald-950 via-[#142E1C] to-[#1F4529] rounded-3xl p-6 text-white shadow-md border border-emerald-800/40 relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-300">
+                <Wallet className="w-4 h-4" />
+              </span>
+              <span className="text-[10px] uppercase font-black tracking-widest text-emerald-400">
+                Compensation & Work Hours
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+              Operator Earnings Summary
+            </h2>
+            <p className="text-xs text-emerald-200/70">
+              Audited compensation derived from server-side lifecycle timestamps and hourly work logs.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              to="/operator/earnings"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 text-xs font-black rounded-2xl transition-all shadow-sm"
+            >
+              <span>View Earnings Breakdown</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-6 pt-6 border-t border-emerald-800/60 relative z-10">
+          <div className="bg-white/5 backdrop-blur-xs p-4 rounded-2xl border border-white/10">
+            <span className="text-[10px] uppercase font-bold text-emerald-300 block">Total Earnings</span>
+            <span className="text-xl sm:text-2xl font-black text-white mt-1 block">
+              ₹{Number(earningsSummary?.totalGrossEarnings || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span className="text-[10px] text-emerald-300/60 mt-0.5 block">Gross Compensation</span>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-xs p-4 rounded-2xl border border-white/10">
+            <span className="text-[10px] uppercase font-bold text-emerald-300 block">Logged Hours</span>
+            <span className="text-xl sm:text-2xl font-black text-white mt-1 block">
+              {earningsSummary?.totalWorkHours || 0} hrs
+            </span>
+            <span className="text-[10px] text-emerald-300/60 mt-0.5 block">Net Fieldwork Time</span>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-xs p-4 rounded-2xl border border-white/10">
+            <span className="text-[10px] uppercase font-bold text-emerald-300 block">Completed Jobs</span>
+            <span className="text-xl sm:text-2xl font-black text-white mt-1 block">
+              {earningsSummary?.totalCompletedJobs || 0}
+            </span>
+            <span className="text-[10px] text-emerald-300/60 mt-0.5 block">Delivered Assignments</span>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-xs p-4 rounded-2xl border border-white/10">
+            <span className="text-[10px] uppercase font-bold text-emerald-300 block">Base Hourly Rate</span>
+            <span className="text-xl sm:text-2xl font-black text-white mt-1 block">
+              ₹{Number(earningsSummary?.hourlyRate || 500).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/hr
+            </span>
+            <span className="text-[10px] text-emerald-300/60 mt-0.5 block">Standard Operator Tariff</span>
+          </div>
+        </div>
       </div>
 
       {/* Active Work Assignment Spotlight */}

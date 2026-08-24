@@ -18,6 +18,8 @@ import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.enums.OperatorAssignmentStatus;
 import com.agrorental.operator.mapper.OperatorJobAssignmentMapper;
 import com.agrorental.operator.repository.OperatorJobAssignmentRepository;
+import com.agrorental.operator.repository.OperatorJobPauseIntervalRepository;
+import com.agrorental.operator.repository.OperatorLocationRepository;
 import com.agrorental.operator.repository.OperatorRepository;
 import com.agrorental.operator.service.OperatorJobLifecycleService;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +51,12 @@ class OperatorJobLifecycleServiceTest {
 
     @Mock
     private OperatorJobAssignmentRepository assignmentRepository;
+
+    @Mock
+    private OperatorLocationRepository locationRepository;
+
+    @Mock
+    private OperatorJobPauseIntervalRepository pauseIntervalRepository;
 
     @Mock
     private NotificationService notificationService;
