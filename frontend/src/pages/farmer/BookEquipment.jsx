@@ -18,6 +18,7 @@ const WORK_TYPES = [
   'Crop Transport',
   'Custom Field Job',
 ];
+
 function BookEquipment() {
   const [searchParams] = useSearchParams();
   const { equipmentId: pathEquipmentId } = useParams();

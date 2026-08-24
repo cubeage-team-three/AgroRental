@@ -56,22 +56,31 @@ function EquipmentAvailability() {
     setSuccessToast('');
 
     try {
+      // Fetch full equipment details to ensure all required update fields are present
+      const fullItem = await equipmentService.getEquipmentById(item.id);
+      const primaryImage = fullItem.images && fullItem.images.length > 0
+        ? (fullItem.images.find((img) => img.isPrimary) || fullItem.images[0]).imageUrl
+        : (item.primaryImageUrl || '');
+
       const payload = {
-        name: item.name,
-        category: item.category,
-        brand: item.brand,
-        model: item.model,
-        manufacturingYear: item.manufacturingYear,
-        capacity: item.capacity,
-        rentalPrice: item.rentalPrice,
-        fuelType: item.fuelType,
-        description: item.description,
-        locationAddress: item.locationAddress,
-        latitude: item.latitude,
-        longitude: item.longitude,
+        name: fullItem.name,
+        category: fullItem.category,
+        brand: fullItem.brand,
+        model: fullItem.model,
+        manufacturingYear: fullItem.manufacturingYear,
+        capacity: fullItem.capacity,
+        rentalPrice: fullItem.rentalPrice,
+        fuelType: fullItem.fuelType,
+        description: fullItem.description,
+        locationAddress: fullItem.locationAddress,
+        latitude: fullItem.latitude,
+        longitude: fullItem.longitude,
         availabilityStatus: newStatus,
-        maintenanceNotes: item.maintenanceNotes,
-        images: item.images || [],
+        isDisabled: fullItem.isDisabled ?? false,
+        maintenanceNotes: fullItem.maintenanceNotes,
+        images: fullItem.images && fullItem.images.length > 0
+          ? fullItem.images.map((img) => ({ imageUrl: img.imageUrl, isPrimary: img.isPrimary, displayOrder: img.displayOrder ?? 0 }))
+          : [{ imageUrl: primaryImage, isPrimary: true, displayOrder: 0 }],
       };
 
       await equipmentService.updateEquipment(item.id, payload, partnerId);
