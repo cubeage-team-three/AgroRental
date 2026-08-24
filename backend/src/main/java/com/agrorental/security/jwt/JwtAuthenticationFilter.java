@@ -1,5 +1,7 @@
 package com.agrorental.security.jwt;
 
+import com.agrorental.admin.entity.Admin;
+import com.agrorental.admin.repository.AdminRepository;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.repository.OperatorRepository;
@@ -36,6 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final OperatorRepository operatorRepository;
+    private final AdminRepository adminRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -84,14 +87,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         log.warn("Operator ID {} from token not found in database", userId);
                     }
                 } else if (userId != null && "ADMIN".equalsIgnoreCase(role)) {
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            "ADMIN_" + userId,
-                            null,
-                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
-                    );
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.debug("Authenticated admin ID {} in SecurityContext", userId);
+                    // Database validation against stale/deactivated tokens
+                    Optional<Admin> adminOpt = adminRepository.findById(userId);
+
+                    if (adminOpt.isPresent() && adminOpt.get().isActive()) {
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                "ADMIN_" + userId,
+                                null,
+                                Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                        );
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        log.debug("Authenticated admin ID {} in SecurityContext", userId);
+                    } else {
+                        log.warn("Admin ID {} token rejected: not found or inactive", userId);
+                    }
                 } else if (userId != null && "PARTNER".equalsIgnoreCase(role)) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             "PARTNER_" + userId,
@@ -101,6 +111,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                     log.debug("Authenticated partner ID {} in SecurityContext", userId);
+                } else if (userId != null && "FARMER".equalsIgnoreCase(role)) {
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            "FARMER_" + userId,
+                            null,
+                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_FARMER"))
+                    );
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.debug("Authenticated farmer ID {} in SecurityContext", userId);
                 }
             }
         } catch (Exception ex) {

@@ -11,21 +11,24 @@ import com.agrorental.operator.dto.OperatorJobPauseRequest;
 import com.agrorental.operator.dto.OperatorJobRejectionRequest;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorJobAssignment;
+import com.agrorental.operator.entity.OperatorJobPauseInterval;
 import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.enums.OperatorAssignmentStatus;
 import com.agrorental.operator.mapper.OperatorJobAssignmentMapper;
 import com.agrorental.operator.repository.OperatorJobAssignmentRepository;
+import com.agrorental.operator.repository.OperatorJobPauseIntervalRepository;
+import com.agrorental.operator.repository.OperatorLocationRepository;
 import com.agrorental.operator.repository.OperatorRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
- * Service managing the Operator Active Work Lifecycle, status transitions,
- * server-side timestamps, and IDOR access validation.
+ * Service managing the Operator Active Work Lifecycle state machine transitions and audit trails.
  */
 @Slf4j
 @Service
@@ -36,6 +39,8 @@ public class OperatorJobLifecycleService {
     private final OperatorJobAssignmentRepository assignmentRepository;
     private final OperatorJobAssignmentMapper assignmentMapper;
     private final NotificationService notificationService;
+    private final OperatorLocationRepository locationRepository;
+    private final OperatorJobPauseIntervalRepository pauseIntervalRepository;
 
     /**
      * Validates that the requested status transition is permitted by the state machine.
@@ -134,6 +139,8 @@ public class OperatorJobLifecycleService {
         assignment.setRejectedAt(LocalDateTime.now());
         assignment.setRejectionReason(request.getRejectionReason().trim());
 
+        locationRepository.deactivateTrackingForAssignment(assignment.getId());
+
         OperatorJobAssignment saved = assignmentRepository.save(assignment);
         notifyStakeholders(saved, "Job Declined", "Operator " + saved.getOperator().getFullName() + " declined job #" + saved.getBooking().getId() + ". Reason: " + saved.getRejectionReason());
 
@@ -215,9 +222,18 @@ public class OperatorJobLifecycleService {
             throw new BadRequestException("Pause reason is required and must be at least 3 characters");
         }
 
+        LocalDateTime now = LocalDateTime.now();
         assignment.setAssignmentStatus(OperatorAssignmentStatus.PAUSED);
-        assignment.setPausedAt(LocalDateTime.now());
+        assignment.setPausedAt(now);
         assignment.setPauseReason(request.getPauseReason().trim());
+
+        OperatorJobPauseInterval interval = OperatorJobPauseInterval.builder()
+                .assignment(assignment)
+                .operator(assignment.getOperator())
+                .pausedAt(now)
+                .pauseReason(request.getPauseReason().trim())
+                .build();
+        pauseIntervalRepository.save(interval);
 
         OperatorJobAssignment saved = assignmentRepository.save(assignment);
         notifyStakeholders(saved, "Work Paused", "Operations temporarily paused for job #" + saved.getBooking().getId() + ". Reason: " + saved.getPauseReason());
@@ -236,8 +252,17 @@ public class OperatorJobLifecycleService {
 
         validateTransition(assignment.getAssignmentStatus(), OperatorAssignmentStatus.IN_PROGRESS);
 
+        LocalDateTime now = LocalDateTime.now();
         assignment.setAssignmentStatus(OperatorAssignmentStatus.IN_PROGRESS);
-        assignment.setResumedAt(LocalDateTime.now());
+        assignment.setResumedAt(now);
+
+        pauseIntervalRepository.findTopByAssignmentIdAndResumedAtIsNullOrderByPausedAtDesc(assignmentId)
+                .ifPresent(interval -> {
+                    interval.setResumedAt(now);
+                    long duration = Duration.between(interval.getPausedAt(), now).toMinutes();
+                    interval.setDurationMinutes(Math.max(0, duration));
+                    pauseIntervalRepository.save(interval);
+                });
 
         OperatorJobAssignment saved = assignmentRepository.save(assignment);
         notifyStakeholders(saved, "Work Resumed", "Machinery operations resumed for job #" + saved.getBooking().getId());
@@ -256,11 +281,23 @@ public class OperatorJobLifecycleService {
 
         validateTransition(assignment.getAssignmentStatus(), OperatorAssignmentStatus.COMPLETED);
 
+        LocalDateTime now = LocalDateTime.now();
         assignment.setAssignmentStatus(OperatorAssignmentStatus.COMPLETED);
-        assignment.setCompletedAt(LocalDateTime.now());
+        assignment.setCompletedAt(now);
         if (request != null && request.getCompletionNotes() != null) {
             assignment.setCompletionNotes(request.getCompletionNotes().trim());
         }
+
+        // Close any dangling open pause interval
+        pauseIntervalRepository.findTopByAssignmentIdAndResumedAtIsNullOrderByPausedAtDesc(assignmentId)
+                .ifPresent(interval -> {
+                    interval.setResumedAt(now);
+                    long duration = Duration.between(interval.getPausedAt(), now).toMinutes();
+                    interval.setDurationMinutes(Math.max(0, duration));
+                    pauseIntervalRepository.save(interval);
+                });
+
+        locationRepository.deactivateTrackingForAssignment(assignment.getId());
 
         OperatorJobAssignment saved = assignmentRepository.save(assignment);
         notifyStakeholders(saved, "Job Completed", "Machinery operations completed successfully for job #" + saved.getBooking().getId());
