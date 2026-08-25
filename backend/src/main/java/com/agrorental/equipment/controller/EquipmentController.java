@@ -7,6 +7,7 @@ import com.agrorental.equipment.dto.EquipmentSearchRequest;
 import com.agrorental.equipment.dto.EquipmentSummaryResponse;
 import com.agrorental.equipment.dto.EquipmentUpdateRequest;
 import com.agrorental.equipment.service.EquipmentService;
+import com.agrorental.security.principal.PartnerPrincipal;
 
 import jakarta.validation.Valid;
 
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -186,19 +188,17 @@ public class EquipmentController {
      * Updates mutable fields of an existing equipment listing.
      *
      * @param id Equipment primary key
-     * @param requestingPartnerId Optional X-Partner-Id header for partner ownership authorization
+     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header)
      * @param request Validated equipment update payload
      * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<EquipmentResponse>> updateEquipment(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Partner-Id", required = false) Long requestingPartnerId,
+            @AuthenticationPrincipal PartnerPrincipal principal,
             @Valid @RequestBody EquipmentUpdateRequest request) {
 
-        EquipmentResponse response = (requestingPartnerId != null)
-                ? equipmentService.updateEquipment(id, requestingPartnerId, request)
-                : equipmentService.updateEquipment(id, request);
+        EquipmentResponse response = equipmentService.updateEquipment(id, principal.getId(), request);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Equipment updated successfully", response));
@@ -208,17 +208,15 @@ public class EquipmentController {
      * Enables a previously disabled equipment listing.
      *
      * @param id Equipment primary key
-     * @param requestingPartnerId Optional X-Partner-Id header for partner ownership authorization
+     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header)
      * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
      */
     @PatchMapping("/{id}/enable")
     public ResponseEntity<ApiResponse<EquipmentResponse>> enableEquipment(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Partner-Id", required = false) Long requestingPartnerId) {
+            @AuthenticationPrincipal PartnerPrincipal principal) {
 
-        EquipmentResponse response = (requestingPartnerId != null)
-                ? equipmentService.enableEquipment(id, requestingPartnerId)
-                : equipmentService.enableEquipment(id);
+        EquipmentResponse response = equipmentService.enableEquipment(id, principal.getId());
 
         return ResponseEntity.ok(
                 ApiResponse.success("Equipment enabled successfully", response));
@@ -228,17 +226,15 @@ public class EquipmentController {
      * Disables an equipment listing for maintenance or administrative lockout.
      *
      * @param id Equipment primary key
-     * @param requestingPartnerId Optional X-Partner-Id header for partner ownership authorization
+     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header)
      * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
      */
     @PatchMapping("/{id}/disable")
     public ResponseEntity<ApiResponse<EquipmentResponse>> disableEquipment(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Partner-Id", required = false) Long requestingPartnerId) {
+            @AuthenticationPrincipal PartnerPrincipal principal) {
 
-        EquipmentResponse response = (requestingPartnerId != null)
-                ? equipmentService.disableEquipment(id, requestingPartnerId)
-                : equipmentService.disableEquipment(id);
+        EquipmentResponse response = equipmentService.disableEquipment(id, principal.getId());
 
         return ResponseEntity.ok(
                 ApiResponse.success("Equipment disabled successfully", response));
@@ -248,19 +244,15 @@ public class EquipmentController {
      * Removes an equipment listing from the system.
      *
      * @param id Equipment primary key
-     * @param requestingPartnerId Optional X-Partner-Id header for partner ownership authorization
+     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header)
      * @return ResponseEntity containing HTTP 204 No Content
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEquipment(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Partner-Id", required = false) Long requestingPartnerId) {
+            @AuthenticationPrincipal PartnerPrincipal principal) {
 
-        if (requestingPartnerId != null) {
-            equipmentService.deleteEquipment(id, requestingPartnerId);
-        } else {
-            equipmentService.deleteEquipment(id);
-        }
+        equipmentService.deleteEquipment(id, principal.getId());
 
         return ResponseEntity.noContent().build();
     }
@@ -270,16 +262,16 @@ public class EquipmentController {
      *
      * @param equipmentId Equipment primary key
      * @param imageId Image asset primary key
-     * @param requestingPartnerId Optional X-Partner-Id header for partner ownership authorization
+     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header)
      * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
      */
     @DeleteMapping("/{equipmentId}/images/{imageId}")
     public ResponseEntity<ApiResponse<EquipmentResponse>> deleteEquipmentImage(
             @PathVariable Long equipmentId,
             @PathVariable Long imageId,
-            @RequestHeader(value = "X-Partner-Id", required = false) Long requestingPartnerId) {
+            @AuthenticationPrincipal PartnerPrincipal principal) {
 
-        EquipmentResponse response = equipmentService.deleteEquipmentImage(equipmentId, imageId, requestingPartnerId);
+        EquipmentResponse response = equipmentService.deleteEquipmentImage(equipmentId, imageId, principal.getId());
 
         return ResponseEntity.ok(
                 ApiResponse.success("Equipment image deleted successfully", response));

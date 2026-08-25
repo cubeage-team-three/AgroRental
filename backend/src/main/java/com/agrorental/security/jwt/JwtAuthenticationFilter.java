@@ -2,10 +2,16 @@ package com.agrorental.security.jwt;
 
 import com.agrorental.admin.entity.Admin;
 import com.agrorental.admin.repository.AdminRepository;
+import com.agrorental.farmer.entity.Farmer;
+import com.agrorental.farmer.repository.FarmerRepository;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.repository.OperatorRepository;
+import com.agrorental.partner.entity.Partner;
+import com.agrorental.partner.repository.PartnerRepository;
+import com.agrorental.security.principal.FarmerPrincipal;
 import com.agrorental.security.principal.OperatorPrincipal;
+import com.agrorental.security.principal.PartnerPrincipal;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +45,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final OperatorRepository operatorRepository;
     private final AdminRepository adminRepository;
+    private final PartnerRepository partnerRepository;
+    private final FarmerRepository farmerRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -103,23 +111,53 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         log.warn("Admin ID {} token rejected: not found or inactive", userId);
                     }
                 } else if (userId != null && "PARTNER".equalsIgnoreCase(role)) {
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            "PARTNER_" + userId,
-                            null,
-                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_PARTNER"))
-                    );
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.debug("Authenticated partner ID {} in SecurityContext", userId);
+                    // Database validation against stale/deactivated tokens
+                    Optional<Partner> partnerOpt = partnerRepository.findById(userId);
+
+                    if (partnerOpt.isPresent() && partnerOpt.get().isActive()) {
+                        Partner partner = partnerOpt.get();
+                        PartnerPrincipal principal = PartnerPrincipal.builder()
+                                .id(partner.getId())
+                                .mobileNumber(partner.getMobileNumber())
+                                .fullName(partner.getFullName())
+                                .role("PARTNER")
+                                .build();
+
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                principal,
+                                null,
+                                Collections.singletonList(new SimpleGrantedAuthority("ROLE_PARTNER"))
+                        );
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        log.debug("Authenticated partner ID {} in SecurityContext", userId);
+                    } else {
+                        log.warn("Partner ID {} token rejected: not found or inactive", userId);
+                    }
                 } else if (userId != null && "FARMER".equalsIgnoreCase(role)) {
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            "FARMER_" + userId,
-                            null,
-                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_FARMER"))
-                    );
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.debug("Authenticated farmer ID {} in SecurityContext", userId);
+                    // Database validation against stale/deactivated tokens
+                    Optional<Farmer> farmerOpt = farmerRepository.findById(userId);
+
+                    if (farmerOpt.isPresent() && isFarmerLoginable(farmerOpt.get())) {
+                        Farmer farmer = farmerOpt.get();
+                        FarmerPrincipal principal = FarmerPrincipal.builder()
+                                .id(farmer.getFarmerId())
+                                .mobileNumber(farmer.getMobileNumber())
+                                .fullName(farmer.getFullName())
+                                .role("FARMER")
+                                .build();
+
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                principal,
+                                null,
+                                Collections.singletonList(new SimpleGrantedAuthority("ROLE_FARMER"))
+                        );
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        log.debug("Authenticated farmer ID {} in SecurityContext", userId);
+                    } else {
+                        log.warn("Farmer ID {} token rejected: not found or account not active", userId);
+                    }
                 }
             }
         } catch (Exception ex) {
@@ -127,6 +165,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isFarmerLoginable(Farmer farmer) {
+        String status = farmer.getAccountStatus();
+        return farmer.isActive()
+                && !"PENDING_OTP".equalsIgnoreCase(status)
+                && !"INACTIVE".equalsIgnoreCase(status);
     }
 
     private String resolveToken(HttpServletRequest request) {

@@ -8,7 +8,9 @@ import com.agrorental.equipment.dto.EquipmentSearchRequest;
 import com.agrorental.equipment.dto.EquipmentSummaryResponse;
 import com.agrorental.equipment.enums.AvailabilityStatus;
 import com.agrorental.equipment.service.EquipmentService;
+import com.agrorental.security.principal.PartnerPrincipal;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,9 +20,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -51,7 +58,13 @@ class EquipmentControllerTest {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(equipmentController)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -126,8 +139,11 @@ class EquipmentControllerTest {
     void shouldDeleteEquipment() throws Exception {
         doNothing().when(equipmentService).deleteEquipment(10L, 1L);
 
-        mockMvc.perform(delete("/api/equipment/10")
-                        .header("X-Partner-Id", "1"))
+        PartnerPrincipal principal = PartnerPrincipal.builder().id(1L).role("PARTNER").build();
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                principal, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_PARTNER"))));
+
+        mockMvc.perform(delete("/api/equipment/10"))
                 .andExpect(status().isNoContent());
 
         verify(equipmentService).deleteEquipment(10L, 1L);

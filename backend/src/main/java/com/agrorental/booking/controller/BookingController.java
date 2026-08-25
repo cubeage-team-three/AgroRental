@@ -5,9 +5,11 @@ import com.agrorental.booking.dto.BookingResponse;
 import com.agrorental.booking.dto.BookingStatusUpdateRequest;
 import com.agrorental.booking.service.BookingService;
 import com.agrorental.common.dto.ApiResponse;
+import com.agrorental.security.principal.PartnerPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -145,17 +147,15 @@ public class BookingController {
      * Partner accepts a pending booking request.
      *
      * @param id Booking identifier
-     * @param partnerIdHeader Optional X-Partner-Id header
+     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header/param)
      * @return ResponseEntity containing HTTP 200 OK and updated BookingResponse
      */
     @PatchMapping("/{id}/accept")
     public ResponseEntity<ApiResponse<BookingResponse>> acceptBooking(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Partner-Id", required = false) Long partnerIdHeader,
-            @RequestParam(value = "partnerId", required = false) Long partnerIdParam) {
+            @AuthenticationPrincipal PartnerPrincipal principal) {
 
-        Long partnerId = partnerIdHeader != null ? partnerIdHeader : partnerIdParam;
-        BookingResponse response = bookingService.acceptBooking(id, partnerId);
+        BookingResponse response = bookingService.acceptBooking(id, principal.getId());
 
         return ResponseEntity.ok(
                 ApiResponse.success("Booking request accepted successfully", response));
@@ -166,19 +166,17 @@ public class BookingController {
      *
      * @param id Booking identifier
      * @param payload Request body containing rejectionReason
-     * @param partnerIdHeader Optional X-Partner-Id header
+     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header/param)
      * @return ResponseEntity containing HTTP 200 OK and updated BookingResponse
      */
     @PatchMapping("/{id}/reject")
     public ResponseEntity<ApiResponse<BookingResponse>> rejectBooking(
             @PathVariable Long id,
             @RequestBody(required = false) BookingStatusUpdateRequest payload,
-            @RequestHeader(value = "X-Partner-Id", required = false) Long partnerIdHeader,
-            @RequestParam(value = "partnerId", required = false) Long partnerIdParam) {
+            @AuthenticationPrincipal PartnerPrincipal principal) {
 
-        Long partnerId = partnerIdHeader != null ? partnerIdHeader : partnerIdParam;
         String reason = payload != null ? payload.getRejectionReason() : null;
-        BookingResponse response = bookingService.rejectBooking(id, partnerId, reason);
+        BookingResponse response = bookingService.rejectBooking(id, principal.getId(), reason);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Booking request declined successfully", response));
@@ -189,19 +187,17 @@ public class BookingController {
      *
      * @param id Booking identifier
      * @param payload Request body containing operatorId
-     * @param partnerIdHeader Optional X-Partner-Id header
+     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header/param)
      * @return ResponseEntity containing HTTP 200 OK and updated BookingResponse
      */
     @PatchMapping("/{id}/assign-operator")
     public ResponseEntity<ApiResponse<BookingResponse>> assignOperator(
             @PathVariable Long id,
             @RequestBody BookingStatusUpdateRequest payload,
-            @RequestHeader(value = "X-Partner-Id", required = false) Long partnerIdHeader,
-            @RequestParam(value = "partnerId", required = false) Long partnerIdParam) {
+            @AuthenticationPrincipal PartnerPrincipal principal) {
 
-        Long partnerId = partnerIdHeader != null ? partnerIdHeader : partnerIdParam;
         Long operatorId = payload != null ? payload.getOperatorId() : null;
-        BookingResponse response = bookingService.assignOperator(id, partnerId, operatorId);
+        BookingResponse response = bookingService.assignOperator(id, principal.getId(), operatorId);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Operator assigned successfully", response));
