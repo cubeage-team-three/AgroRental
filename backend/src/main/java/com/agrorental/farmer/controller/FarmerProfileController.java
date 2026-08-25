@@ -5,10 +5,12 @@ import com.agrorental.farmer.dto.ChangePasswordRequest;
 import com.agrorental.farmer.dto.FarmerProfileResponse;
 import com.agrorental.farmer.dto.UpdateFarmerProfileRequest;
 import com.agrorental.farmer.service.FarmerProfileService;
+import com.agrorental.security.principal.FarmerPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -20,18 +22,9 @@ public class FarmerProfileController {
     private final FarmerProfileService farmerProfileService;
 
     @GetMapping("/profile")
-    public ResponseEntity<ApiResponse<FarmerProfileResponse>> getProfile(@RequestParam(required = false) Long farmerId,
-                                                                         @RequestParam(required = false) String mobileNumber) {
-        log.info("REST request to fetch farmer profile. farmerId: {}, mobileNumber: {}", farmerId, mobileNumber);
-        FarmerProfileResponse profile;
-        if (farmerId != null) {
-            profile = farmerProfileService.getProfile(farmerId);
-        } else if (mobileNumber != null && !mobileNumber.trim().isEmpty()) {
-            profile = farmerProfileService.getProfileByMobile(mobileNumber.trim());
-        } else {
-            // Default fallback for demo / dev when query param is not passed
-            profile = farmerProfileService.getProfile(1L);
-        }
+    public ResponseEntity<ApiResponse<FarmerProfileResponse>> getProfile(@AuthenticationPrincipal FarmerPrincipal principal) {
+        log.info("REST request to fetch own farmer profile. farmerId: {}", principal.getId());
+        FarmerProfileResponse profile = farmerProfileService.getProfile(principal.getId());
         return ResponseEntity.ok(ApiResponse.success("Farmer profile retrieved successfully.", profile));
     }
 
@@ -43,10 +36,10 @@ public class FarmerProfileController {
     }
 
     @PutMapping("/profile")
-    public ResponseEntity<ApiResponse<FarmerProfileResponse>> updateProfile(@RequestParam(required = false, defaultValue = "1") Long farmerId,
+    public ResponseEntity<ApiResponse<FarmerProfileResponse>> updateProfile(@AuthenticationPrincipal FarmerPrincipal principal,
                                                                             @Valid @RequestBody UpdateFarmerProfileRequest request) {
-        log.info("REST request to update farmer profile for ID: {}", farmerId);
-        FarmerProfileResponse response = farmerProfileService.updateProfile(farmerId, request);
+        log.info("REST request to update own farmer profile for ID: {}", principal.getId());
+        FarmerProfileResponse response = farmerProfileService.updateProfile(principal.getId(), request);
         return ResponseEntity.ok(ApiResponse.success("Farmer profile updated successfully.", response));
     }
 
@@ -59,10 +52,10 @@ public class FarmerProfileController {
     }
 
     @PutMapping("/change-password")
-    public ResponseEntity<ApiResponse<String>> changePassword(@RequestParam(required = false, defaultValue = "1") Long farmerId,
+    public ResponseEntity<ApiResponse<String>> changePassword(@AuthenticationPrincipal FarmerPrincipal principal,
                                                                @Valid @RequestBody ChangePasswordRequest request) {
-        log.info("REST request to change password for farmer ID: {}", farmerId);
-        farmerProfileService.changePassword(farmerId, request);
+        log.info("REST request to change password for own farmer ID: {}", principal.getId());
+        farmerProfileService.changePassword(principal.getId(), request);
         return ResponseEntity.ok(ApiResponse.success("Password changed successfully.", "Password updated."));
     }
 
