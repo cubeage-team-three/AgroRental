@@ -5,10 +5,7 @@ import com.agrorental.operator.controller.OperatorLocationController;
 import com.agrorental.operator.dto.OperatorLocationResponse;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
-<<<<<<< HEAD
-=======
 import com.agrorental.admin.repository.AdminRepository;
->>>>>>> origin/development
 import com.agrorental.operator.repository.OperatorRepository;
 import com.agrorental.operator.service.OperatorLocationService;
 import com.agrorental.security.jwt.JwtAuthenticationFilter;
@@ -54,12 +51,9 @@ class OperatorLocationSecurityIntegrationTest {
     private OperatorRepository operatorRepository;
 
     @Mock
-<<<<<<< HEAD
-=======
     private AdminRepository adminRepository;
 
     @Mock
->>>>>>> origin/development
     private OperatorLocationService locationService;
 
     @InjectMocks
@@ -69,11 +63,7 @@ class OperatorLocationSecurityIntegrationTest {
 
     @BeforeEach
     void setUp() {
-<<<<<<< HEAD
-        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, operatorRepository);
-=======
         jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, operatorRepository, adminRepository);
->>>>>>> origin/development
 
         HandlerMethodArgumentResolver principalResolver = new HandlerMethodArgumentResolver() {
             @Override
