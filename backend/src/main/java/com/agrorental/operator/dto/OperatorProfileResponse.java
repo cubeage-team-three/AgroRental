@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -26,6 +27,7 @@ public class OperatorProfileResponse {
     private Integer experience;
     private String skills;
     private String profilePhoto;
+    private BigDecimal hourlyRate;
 
     // Masked KYC Identifiers
     private String maskedAadhaarNumber;

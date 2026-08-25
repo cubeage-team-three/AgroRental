@@ -58,11 +58,12 @@ function MyBookings() {
     if (!window.confirm('Are you sure you want to cancel this equipment reservation?')) return;
 
     try {
+      setError(null);
       await bookingService.cancelBooking(id);
       setActionMessage(`Booking #${id} has been cancelled successfully.`);
       fetchBookings();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to cancel booking.');
+      setError(err.data?.message || err.message || 'Failed to cancel booking.');
     }
   };
 
@@ -266,6 +267,7 @@ function MyBookings() {
 
                     {booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
                       <button
+                        type="button"
                         onClick={() => handleCancel(booking.id)}
                         className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:border-red-300"
                       >
