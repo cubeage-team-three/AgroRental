@@ -109,17 +109,21 @@ function PartnerLayout() {
           {/* Brand Header */}
           <div className="flex items-center justify-between px-2 py-2 border-b border-emerald-800/60">
             <Link to="/partner/dashboard" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#3E7B27] to-[#1B4D3E] text-white flex items-center justify-center font-bold text-xl shadow-md border border-white/20 group-hover:scale-105 transition-transform">
-                🚜
+              <div className="flex items-center overflow-hidden rounded-xl bg-white px-2 py-1 shadow-sm ring-1 ring-slate-900/5 h-11 shrink-0">
+                <img
+                  src={agroRentLogo}
+                  alt="AgroRent Marketplace"
+                  className="h-full w-auto object-contain"
+                />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h1 className="text-xl font-extrabold tracking-tight text-white">AgroRent</h1>
+                  <h1 className="text-lg font-extrabold tracking-tight text-white">AgroRent</h1>
                   <span className="px-1.5 py-0.5 bg-lime-400 text-emerald-950 rounded text-[9px] font-black uppercase tracking-wider">
                     Partner
                   </span>
                 </div>
-                <span className="text-[11px] font-semibold text-emerald-300 block -mt-0.5">
+                <span className="text-[10px] font-semibold text-emerald-300 block -mt-0.5">
                   Equipment Hub
                 </span>
               </div>
