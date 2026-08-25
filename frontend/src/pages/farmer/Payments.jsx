@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CreditCard, FileText, CheckCircle, AlertCircle, Search, RefreshCw } from 'lucide-react';
 import { getFarmerId } from '../../services/authService';
 import { paymentService } from '../../services/paymentService';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 function FarmerPayments() {
   const farmerId = getFarmerId() || 1;
@@ -57,13 +58,18 @@ function FarmerPayments() {
     <div className="mx-auto max-w-6xl px-4 py-8 space-y-6 font-sans">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Payments & Invoices
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            View transaction receipts, rental payment statuses, and GST tax invoices.
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-sm border border-slate-200 h-11 shrink-0">
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Payments & Invoices
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              View transaction receipts, rental payment statuses, and GST tax invoices.
+            </p>
+          </div>
         </div>
 
         <button

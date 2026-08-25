@@ -4,6 +4,7 @@ import heroGoldenHour from "../assets/images/hero-golden-hour.jpg";
 import farmerImage from "../assets/images/ModuleService Images/Farmer.jpeg";
 import equipmentOwnerImage from "../assets/images/ModuleService Images/Equipment Owner.jpeg";
 import operatorImage from "../assets/images/ModuleService Images/Operator.jpeg";
+import agroRentLogo from "../assets/images/agrorent-logo.jpeg";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -85,10 +86,9 @@ function AuthLayout() {
         <div className="absolute inset-0 hidden bg-gradient-to-r from-transparent via-transparent to-emerald-950/20 lg:block" />
 
         <Link to="/" className="absolute left-6 top-6 z-10 flex items-center gap-2 sm:left-8 sm:top-8">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-lime-400 text-base font-bold text-emerald-950 shadow-lg">
-            🌱
-          </span>
-          <span className="font-display text-lg font-bold text-white drop-shadow-md">AgroRent</span>
+          <div className="flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-lg ring-1 ring-slate-900/10 h-11">
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
+          </div>
         </Link>
 
         <div className="absolute inset-x-0 bottom-0 z-10 p-6 sm:p-8 lg:p-12 xl:p-16">
