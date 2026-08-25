@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Bell, CalendarCheck, CheckCircle2, AlertCircle, RefreshCw, Sparkles, ArrowRight } from 'lucide-react';
 import { getFarmerId } from '../../services/authService';
 import { notificationService } from '../../services/notificationService';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 function FarmerNotifications() {
   const farmerId = getFarmerId();
@@ -82,9 +83,14 @@ function FarmerNotifications() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 font-sans space-y-6">
       <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Farmer Notifications</h1>
-          <p className="text-sm text-slate-600 mt-1">Real-time alerts for machine bookings and operator assignments</p>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-sm border border-slate-200 h-11 shrink-0">
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Farmer Notifications</h1>
+            <p className="text-sm text-slate-600 mt-1">Real-time alerts for machine bookings and operator assignments</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
