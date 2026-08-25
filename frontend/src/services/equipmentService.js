@@ -18,10 +18,10 @@ const MOCK_EQUIPMENT = [
     longitude: 73.9100,
     partnerId: 1,
     partnerName: 'Krushi Agro Services',
-    primaryImageUrl: '/src/assets/images/services Image/Tractor Ploughing.jpeg',
+    primaryImageUrl: '/images/equipment/tractor-ploughing.jpg',
     description: 'High torque 50 HP tractor suitable for heavy ploughing, rotavator operations, and haulage across medium to large farms.',
     images: [
-      { id: 101, imageUrl: '/src/assets/images/services Image/Tractor Ploughing.jpeg', isPrimary: true },
+      { id: 101, imageUrl: '/images/equipment/tractor-ploughing.jpg', isPrimary: true },
     ],
   },
   {
@@ -41,10 +41,10 @@ const MOCK_EQUIPMENT = [
     longitude: 73.9439,
     partnerId: 1,
     partnerName: 'Sahyadri Agri Rentals',
-    primaryImageUrl: '/src/assets/images/services Image/Harvester Service.jpeg',
+    primaryImageUrl: '/images/equipment/harvester-service.jpg',
     description: 'Advanced paddy and wheat combine harvester with rubber crawler tracks for wet field maneuverability and grain cleaning.',
     images: [
-      { id: 102, imageUrl: '/src/assets/images/services Image/Harvester Service.jpeg', isPrimary: true },
+      { id: 102, imageUrl: '/images/equipment/harvester-service.jpg', isPrimary: true },
     ],
   },
   {
@@ -64,10 +64,10 @@ const MOCK_EQUIPMENT = [
     longitude: 74.5772,
     partnerId: 2,
     partnerName: 'TechCrop Aero Solutions',
-    primaryImageUrl: '/src/assets/images/services Image/Drone Spraying.jpeg',
+    primaryImageUrl: '/images/equipment/drone-spraying.jpg',
     description: 'Precision autonomous drone for uniform pesticide, liquid fertilizer, and micronutrient spraying with active phased array radar.',
     images: [
-      { id: 103, imageUrl: '/src/assets/images/services Image/Drone Spraying.jpeg', isPrimary: true },
+      { id: 103, imageUrl: '/images/equipment/drone-spraying.jpg', isPrimary: true },
     ],
   },
   {
@@ -87,10 +87,10 @@ const MOCK_EQUIPMENT = [
     longitude: 74.3774,
     partnerId: 2,
     partnerName: 'GreenField Implements',
-    primaryImageUrl: '/src/assets/images/services Image/Seeder _ Sowing.jpeg',
+    primaryImageUrl: '/images/equipment/seeder-sowing.jpg',
     description: 'Pneumatic seed drill for uniform spacing and depth during maize, cotton, and soybean sowing.',
     images: [
-      { id: 104, imageUrl: '/src/assets/images/services Image/Seeder _ Sowing.jpeg', isPrimary: true },
+      { id: 104, imageUrl: '/images/equipment/seeder-sowing.jpg', isPrimary: true },
     ],
   },
   {
@@ -110,10 +110,10 @@ const MOCK_EQUIPMENT = [
     longitude: 73.7898,
     partnerId: 3,
     partnerName: 'SuryaAgri Irrigation',
-    primaryImageUrl: '/src/assets/images/services Image/Irrigation Setup.jpeg',
+    primaryImageUrl: '/images/equipment/irrigation-setup.jpg',
     description: 'Complete portable solar pumping system with micro-drip filtration for orchard and vegetable field irrigation.',
     images: [
-      { id: 105, imageUrl: '/src/assets/images/services Image/Irrigation Setup.jpeg', isPrimary: true },
+      { id: 105, imageUrl: '/images/equipment/irrigation-setup.jpg', isPrimary: true },
     ],
   },
   {
@@ -133,10 +133,10 @@ const MOCK_EQUIPMENT = [
     longitude: 75.9064,
     partnerId: 3,
     partnerName: 'Solapur Machinery Depot',
-    primaryImageUrl: '/src/assets/images/services Image/Rotavator Work.jpeg',
+    primaryImageUrl: '/images/equipment/rotavator-work.jpg',
     description: 'High performance rotavator for fine seedbed preparation, stubble incorporation, and soil aeration.',
     images: [
-      { id: 106, imageUrl: '/src/assets/images/services Image/Rotavator Work.jpeg', isPrimary: true },
+      { id: 106, imageUrl: '/images/equipment/rotavator-work.jpg', isPrimary: true },
     ],
   },
 ];
