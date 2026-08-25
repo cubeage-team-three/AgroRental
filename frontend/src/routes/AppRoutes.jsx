@@ -13,6 +13,10 @@ import NotFound from '../pages/NotFound';
 
 import Login from '../pages/auth/Login';
 import OperatorLogin from '../pages/auth/OperatorLogin';
+import OperatorAuthChoice from '../pages/auth/OperatorAuthChoice';
+import OperatorOtpVerification from '../pages/auth/OperatorOtpVerification';
+import OperatorKyc from '../pages/auth/OperatorKyc';
+import OperatorVerificationPending from '../pages/auth/OperatorVerificationPending';
 import Register from '../pages/auth/Register';
 import RegisterFarmer from '../pages/auth/RegisterFarmer';
 import RegisterPartner from '../pages/auth/RegisterPartner';
@@ -84,9 +88,14 @@ function AppRoutes() {
         <Route path="login" element={<Login />} />
         <Route path="login/operator" element={<OperatorLogin />} />
         <Route path="operator/login" element={<OperatorLogin />} />
+        <Route path="auth/operator" element={<OperatorAuthChoice />} />
+        <Route path="operator/auth" element={<OperatorAuthChoice />} />
+        <Route path="verify-otp/operator" element={<OperatorOtpVerification />} />
         <Route path="register" element={<Register />} />
         <Route path="register/partner" element={<RegisterPartner />} />
         <Route path="register/operator" element={<RegisterOperator />} />
+        <Route path="register/operator/kyc" element={<OperatorKyc />} />
+        <Route path="register/operator/pending" element={<OperatorVerificationPending />} />
       </Route>
 
       {/* Farmer routes */}

@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  HardHat,
-  Phone,
-  Lock,
+  ArrowRight,
   Eye,
   EyeOff,
+  HardHat,
   Loader2,
-  ArrowRight,
-  ShieldCheck,
+  Lock,
+  Phone,
   X,
 } from 'lucide-react';
 import { operatorService } from '../../services/operatorService';
@@ -19,26 +18,35 @@ import AuthField from '../../components/auth/AuthField';
 
 function OperatorLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [formData, setFormData] = useState({
-    mobileNumber: '',
+    mobileNumber: location.state?.mobileNumber || '',
     password: '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(
+    location.state?.message || ''
+  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
     if (errorMessage) setErrorMessage('');
   };
 
   const handleMobileChange = (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-    setFormData((prev) => ({ ...prev, mobileNumber: val }));
+    setFormData((prev) => ({
+      ...prev,
+      mobileNumber: val,
+    }));
     if (errorMessage) setErrorMessage('');
   };
 
@@ -65,16 +73,35 @@ function OperatorLogin() {
         password: formData.password,
       });
 
+      const operatorData = response?.data || response;
+      if (operatorData?.token) {
+        localStorage.setItem('agro_operator_token', operatorData.token);
+      }
+      if (operatorData) {
+        localStorage.setItem('agro_operator_user', JSON.stringify(operatorData));
+      }
+
       setSuccessMessage(
-        `Welcome back, ${response?.operator?.fullName || 'Operator'}! Redirecting to Operator Portal...`
+        `✓ Welcome back, ${operatorData?.operator?.fullName || operatorData?.fullName || 'Operator'}! Redirecting to dashboard...`
       );
 
       setTimeout(() => {
         navigate('/operator/dashboard');
       }, 1000);
     } catch (err) {
-      console.error('Operator login error:', err);
-      setErrorMessage(err.message || 'Login failed. Please check your credentials.');
+      console.error('Operator Login error:', err);
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('suspended') || msg.toLowerCase().includes('inactive')) {
+        setErrorMessage('Your operator account has been suspended. Please contact support.');
+      } else if (msg.toLowerCase().includes('pending')) {
+        setErrorMessage('Your operator account is currently pending verification. You can log in once approved by an administrator.');
+      } else if (msg.toLowerCase().includes('rejected')) {
+        setErrorMessage(msg);
+      } else if (msg.toLowerCase().includes('not found')) {
+        setErrorMessage('No operator account found with this mobile number. Please register first.');
+      } else {
+        setErrorMessage(msg || 'Login failed. Please check your mobile number and password.');
+      }
     } finally {
       setLoading(false);
     }
@@ -161,12 +188,12 @@ function OperatorLogin() {
                 loading
                   ? {}
                   : {
-                      boxShadow: [
-                        '0 0 20px 0px rgba(163,230,53,0.35)',
-                        '0 0 38px 6px rgba(163,230,53,0.6)',
-                        '0 0 20px 0px rgba(163,230,53,0.35)',
-                      ],
-                    }
+                    boxShadow: [
+                      '0 0 20px 0px rgba(163,230,53,0.35)',
+                      '0 0 38px 6px rgba(163,230,53,0.6)',
+                      '0 0 20px 0px rgba(163,230,53,0.35)',
+                    ],
+                  }
               }
               transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
               className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-800 text-[15px] font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-900 active:scale-[0.98] disabled:opacity-70"
@@ -187,7 +214,7 @@ function OperatorLogin() {
         </form>
       </RevealItem>
 
-      <RevealItem className="mt-8 text-center text-sm text-slate-500 space-y-2">
+      <RevealItem className="mt-8 space-y-2 text-center text-sm text-slate-500">
         <div>
           New machinery operator?{' '}
           <Link to="/register/operator" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
