@@ -13,12 +13,19 @@ function ManageEquipment() {
     setLoading(true);
     setError(null);
     try {
-      const pageData = await equipmentService.searchEquipmentPage(
-        { locationAddress: searchQuery },
-        0,
-        50
-      );
-      setEquipmentList(pageData?.content || []);
+      const pageData = await equipmentService.getAllEquipment(0, 50);
+      let content = pageData?.content || [];
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        content = content.filter(
+          (item) =>
+            item.name?.toLowerCase().includes(q) ||
+            item.locationAddress?.toLowerCase().includes(q) ||
+            item.brand?.toLowerCase().includes(q) ||
+            item.category?.toLowerCase().includes(q)
+        );
+      }
+      setEquipmentList(content);
     } catch (err) {
       console.error('Failed to load admin equipment list:', err);
       setError(err.message || 'Failed to load equipment catalog');
