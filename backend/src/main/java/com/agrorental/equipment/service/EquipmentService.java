@@ -96,6 +96,34 @@ public class EquipmentService {
     }
 
     /**
+     * Retrieves all equipment listings for administrative catalog management (FR-39),
+     * including both active and administratively disabled equipment.
+     *
+     * @return List of compact EquipmentSummaryResponse DTOs
+     */
+    public List<EquipmentSummaryResponse> getAllEquipment() {
+        List<Equipment> equipmentList = equipmentRepository.findAll();
+
+        return equipmentList.stream()
+                .map(equipmentMapper::toSummaryResponse)
+                .toList();
+    }
+
+    /**
+     * Retrieves all equipment listings with database-side pagination for administrative catalog management (FR-39),
+     * including both active and administratively disabled equipment.
+     *
+     * @param pageable Pagination request
+     * @return Page of compact EquipmentSummaryResponse DTOs
+     */
+    public Page<EquipmentSummaryResponse> getAllEquipment(Pageable pageable) {
+        Pageable safePageable = sanitizePageable(pageable);
+        Page<Equipment> equipmentPage = equipmentRepository.findAll(safePageable);
+
+        return equipmentPage.map(equipmentMapper::toSummaryResponse);
+    }
+
+    /**
      * Retrieves all equipment listings that are currently available and not administratively disabled.
      *
      * @return List of compact EquipmentSummaryResponse DTOs for discovery

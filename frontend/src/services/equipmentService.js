@@ -249,11 +249,34 @@ export const equipmentService = {
   },
 
   /**
+   * Retrieves all equipment in the catalog (including disabled ones) for administrative management (FR-39).
+   */
+  async getAllEquipment(page = 0, size = 50) {
+    try {
+      const res = await request(`/api/equipment/page?page=${page}&size=${size}`, { method: 'GET' });
+      if (res && res.content) {
+        return res;
+      }
+    } catch (e) {
+      console.warn('Backend all equipment API fallback active:', e);
+    }
+    return {
+      content: MOCK_EQUIPMENT,
+      number: 0,
+      size: size,
+      totalPages: 1,
+      totalElements: MOCK_EQUIPMENT.length,
+      first: true,
+      last: true,
+    };
+  },
+
+  /**
    * Retrieves all equipment owned by a specific partner.
    */
   async getPartnerEquipment(partnerId = 1) {
   try {
-    const res = await request(`/equipment/partner/${partnerId}`, {
+    const res = await request(`/api/equipment/partner/${partnerId}`, {
       method: 'GET',
       partnerId,
     });
