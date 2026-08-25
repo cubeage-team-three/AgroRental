@@ -491,9 +491,12 @@ function RegisterOperator() {
                   }
                 />
 
-                <div className="pt-1 text-center">
-                  <Link to="/register" className="text-xs font-semibold text-slate-500 hover:text-slate-700">
+                <div className="flex items-center justify-between pt-1 text-xs font-semibold text-slate-500">
+                  <Link to="/register" className="hover:text-slate-700">
                     ← Select Different Role
+                  </Link>
+                  <Link to="/login/operator" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
+                    Already registered? Log In →
                   </Link>
                 </div>
 
@@ -739,10 +742,10 @@ function RegisterOperator() {
 
                 <div className="mt-6 space-y-3">
                   <Link
-                    to="/login"
+                    to="/login/operator"
                     className="flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-emerald-800 text-sm font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-900"
                   >
-                    Go to Login
+                    Go to Operator Login
                   </Link>
                   <Link
                     to="/"
@@ -755,6 +758,13 @@ function RegisterOperator() {
             )}
           </motion.div>
         </AnimatePresence>
+      </RevealItem>
+
+      <RevealItem className="mt-8 text-center text-sm text-slate-500">
+        Already have an equipment operator account?{' '}
+        <Link to="/login/operator" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
+          Log In Here
+        </Link>
       </RevealItem>
     </RevealGroup>
   );

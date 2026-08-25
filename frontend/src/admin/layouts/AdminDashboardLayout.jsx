@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { adminAuthService } from '../services/adminAuthService';
 import { getCurrentUser } from '../../services/authService';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 const NAV_ITEMS = [
   { label: 'Overview', to: '/admin/overview', icon: LayoutDashboard, end: true },
@@ -57,8 +58,12 @@ function AdminDashboardLayout() {
     <>
       <div className="flex items-center justify-between px-1">
         <Link to="/admin/overview" className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-300">
-            <ShieldCheck className="h-4.5 w-4.5" />
+          <span className="flex items-center overflow-hidden rounded-xl bg-white px-2 py-1 shadow-sm ring-1 ring-slate-900/5 h-9 shrink-0">
+            <img
+              src={agroRentLogo}
+              alt="AgroRent Admin"
+              className="h-full w-auto object-contain"
+            />
           </span>
           <span className="font-display text-base font-bold text-white">AgroRent Admin</span>
         </Link>
@@ -151,7 +156,16 @@ function AdminDashboardLayout() {
             >
               <Menu className="h-4.5 w-4.5" />
             </button>
-            <span className="font-display text-sm font-bold text-white">AgroRent Admin</span>
+            <span className="flex items-center gap-2">
+              <span className="flex items-center overflow-hidden rounded-lg bg-white px-1.5 py-0.5 shadow-xs h-7 shrink-0">
+                <img
+                  src={agroRentLogo}
+                  alt="AgroRent Admin"
+                  className="h-full w-auto object-contain"
+                />
+              </span>
+              <span className="font-display text-sm font-bold text-white">AgroRent Admin</span>
+            </span>
           </div>
 
           <main className="p-5 sm:p-8">

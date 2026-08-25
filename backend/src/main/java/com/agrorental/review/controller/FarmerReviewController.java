@@ -4,9 +4,11 @@ import com.agrorental.common.dto.ApiResponse;
 import com.agrorental.review.dto.ReviewCreateRequest;
 import com.agrorental.review.dto.ReviewResponse;
 import com.agrorental.review.service.ReviewService;
+import com.agrorental.security.principal.FarmerPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,17 +23,19 @@ public class FarmerReviewController {
 
     @PostMapping("/bookings/{bookingId}/review")
     public ResponseEntity<ApiResponse<ReviewResponse>> createBookingReview(
+            @AuthenticationPrincipal FarmerPrincipal principal,
             @PathVariable Long bookingId,
             @Valid @RequestBody ReviewCreateRequest request) {
         request.setBookingId(bookingId);
+        request.setFarmerId(principal.getId());
         ReviewResponse response = reviewService.createReview(request);
         return ResponseEntity.ok(ApiResponse.success("Review submitted successfully", response));
     }
 
     @GetMapping("/reviews")
     public ResponseEntity<ApiResponse<List<ReviewResponse>>> getFarmerReviews(
-            @RequestParam(defaultValue = "1") Long farmerId) {
-        List<ReviewResponse> response = reviewService.getReviewsForFarmer(farmerId);
+            @AuthenticationPrincipal FarmerPrincipal principal) {
+        List<ReviewResponse> response = reviewService.getReviewsForFarmer(principal.getId());
         return ResponseEntity.ok(ApiResponse.success("Farmer reviews retrieved successfully", response));
     }
 }

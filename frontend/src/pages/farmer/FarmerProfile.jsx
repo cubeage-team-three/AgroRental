@@ -5,6 +5,7 @@ import {
   Globe, Landmark, FileText, Camera, Sprout, Layers, ArrowRight, Eye, EyeOff,
   Sparkles, CreditCard, Shield, HeartHandshake, Check, AlertCircle
 } from 'lucide-react';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 import { getCurrentUser, getFarmerId } from '../../services/authService';
 import { getFarmerProfile, updateFarmerProfile, changeFarmerPassword } from '../../services/farmerAuthService';
 import { useLanguage } from '../../context/LanguageContext';
@@ -210,9 +211,14 @@ function FarmerProfile() {
               className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-overlay"
             />
             <div className="absolute top-4 left-6 right-6 flex items-center justify-between z-10">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/20 px-3.5 py-1 text-xs font-bold text-white backdrop-blur-md">
-                <Sparkles className="h-3.5 w-3.5 text-amber-300" /> AgroRent Verified Farmer
-              </span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center overflow-hidden rounded-xl bg-white px-2 py-1 shadow-md h-9 shrink-0">
+                  <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur-md">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-300" /> AgroRent Verified Farmer
+                </span>
+              </div>
               <span className="rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-bold text-white shadow-sm">
                 {profileData.accountStatus || 'ACTIVE'} Status
               </span>

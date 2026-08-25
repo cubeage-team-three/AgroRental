@@ -7,6 +7,7 @@ import com.agrorental.operator.dto.OperatorRatingSummaryResponse;
 import com.agrorental.operator.dto.OperatorReviewCreateRequest;
 import com.agrorental.operator.dto.OperatorReviewResponse;
 import com.agrorental.operator.service.OperatorReviewService;
+import com.agrorental.security.principal.FarmerPrincipal;
 import com.agrorental.security.principal.OperatorPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +62,9 @@ public class OperatorReviewController {
             throw new ForbiddenException("Operators cannot submit reviews for assignments");
         }
         Object principal = activeAuth.getPrincipal();
+        if (principal instanceof FarmerPrincipal farmerPrincipal) {
+            return farmerPrincipal.getId();
+        }
         if (principal instanceof String pStr) {
             if (pStr.startsWith("FARMER_")) {
                 try {

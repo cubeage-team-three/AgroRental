@@ -4,9 +4,11 @@ import com.agrorental.booking.dto.BookingCreateRequest;
 import com.agrorental.booking.dto.BookingResponse;
 import com.agrorental.booking.service.BookingService;
 import com.agrorental.common.dto.ApiResponse;
+import com.agrorental.security.principal.FarmerPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,8 +26,10 @@ public class FarmerBookingController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
+            @AuthenticationPrincipal FarmerPrincipal principal,
             @Valid @RequestBody BookingCreateRequest request) {
 
+        request.setFarmerId(principal.getId());
         BookingResponse response = bookingService.createBooking(request);
 
         return ResponseEntity
@@ -45,9 +49,9 @@ public class FarmerBookingController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getFarmerBookings(
-            @RequestParam(defaultValue = "1") Long farmerId) {
+            @AuthenticationPrincipal FarmerPrincipal principal) {
 
-        List<BookingResponse> response = bookingService.getBookingsByFarmer(farmerId);
+        List<BookingResponse> response = bookingService.getBookingsByFarmer(principal.getId());
 
         return ResponseEntity.ok(
                 ApiResponse.success("Farmer bookings retrieved successfully", response));

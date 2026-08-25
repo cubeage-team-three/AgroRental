@@ -16,6 +16,7 @@ import {
 import { complaintService } from '../../services/complaintService';
 import { bookingService } from '../../services/bookingService';
 import { getFarmerId } from '../../services/authService';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 function FarmerComplaints() {
   const [searchParams] = useSearchParams();
@@ -131,13 +132,18 @@ function FarmerComplaints() {
       
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
-            Farmer Complaint Management
-          </h1>
-          <p className="text-xs text-gray-500 font-medium">
-            Report machinery issues, operator disputes, or billing concerns for fast resolution
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-sm border border-slate-200 h-11 shrink-0">
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+              Farmer Complaint Management
+            </h1>
+            <p className="text-xs text-gray-500 font-medium">
+              Report machinery issues, operator disputes, or billing concerns for fast resolution
+            </p>
+          </div>
         </div>
 
         <button

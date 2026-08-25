@@ -10,6 +10,8 @@ import com.agrorental.partner.dto.PartnerRegistrationRequest;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.service.PartnerService;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +62,24 @@ public class PartnerController {
                         "Partner registered successfully",
                         response
                 ));
+    }
+
+    // =========================
+    // GET ALL PARTNERS (ADMIN / KYC)
+    // =========================
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<PartnerProfileResponse>>> getAllPartners() {
+        log.info("Fetching all registered partners");
+
+        List<PartnerProfileResponse> responses = partnerService.getAllPartners();
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Partners fetched successfully",
+                        responses
+                )
+        );
     }
 
     // =========================
