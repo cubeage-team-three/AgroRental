@@ -4,10 +4,12 @@ import com.agrorental.common.dto.ApiResponse;
 import com.agrorental.complaint.dto.ComplaintCreateRequest;
 import com.agrorental.complaint.dto.ComplaintResponse;
 import com.agrorental.complaint.service.ComplaintService;
+import com.agrorental.security.principal.FarmerPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,7 +24,9 @@ public class FarmerComplaintController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<ComplaintResponse>> createComplaint(
+            @AuthenticationPrincipal FarmerPrincipal principal,
             @Valid @RequestBody ComplaintCreateRequest request) {
+        request.setFarmerId(principal.getId());
         ComplaintResponse response = complaintService.createComplaint(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -31,8 +35,8 @@ public class FarmerComplaintController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<ComplaintResponse>>> getFarmerComplaints(
-            @RequestParam(defaultValue = "1") Long farmerId) {
-        List<ComplaintResponse> response = complaintService.getComplaintsByFarmerId(farmerId);
+            @AuthenticationPrincipal FarmerPrincipal principal) {
+        List<ComplaintResponse> response = complaintService.getComplaintsByFarmerId(principal.getId());
         return ResponseEntity.ok(ApiResponse.success("Farmer complaints retrieved successfully", response));
     }
 

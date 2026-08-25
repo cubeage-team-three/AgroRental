@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -123,8 +122,8 @@ public class AuthService {
             }
         }
 
-        // Generate session bearer token
-        String token = "agro-token-" + farmer.getFarmerId() + "-" + UUID.randomUUID().toString().substring(0, 8);
+        // Generate a real signed JWT so JwtAuthenticationFilter can authenticate this farmer on later requests
+        String token = jwtService.generateToken(farmer.getFarmerId(), "FARMER", farmer.getMobileNumber(), new HashMap<>());
         log.info("Login successful for farmer ID: {} ({})", farmer.getFarmerId(), farmer.getFullName());
 
         return LoginResponse.builder()
@@ -152,7 +151,7 @@ public class AuthService {
             throw new BadRequestException("Invalid mobile/email or password.");
         }
 
-        String token = "agro-token-partner-" + partner.getId() + "-" + UUID.randomUUID().toString().substring(0, 8);
+        String token = jwtService.generateToken(partner.getId(), "PARTNER", partner.getMobileNumber(), new HashMap<>());
         log.info("Partner login successful for partner ID: {} ({})", partner.getId(), partner.getFullName());
 
         return LoginResponse.builder()
