@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 import { equipmentService } from '../../services/equipmentService';
 import {
   EQUIPMENT_CATEGORIES,
@@ -108,9 +109,14 @@ function SearchEquipment() {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-4">
-        <div>
-          <h1 className="text-3xl font-bold text-green-800 tracking-tight">Explore Rental Machinery</h1>
-          <p className="text-gray-600 mt-1">Browse verified farm equipment available for rental in your region.</p>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center overflow-hidden rounded-2xl bg-white px-3 py-1.5 shadow-sm border border-slate-200 h-12 shrink-0">
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-green-800 tracking-tight">Explore Rental Machinery</h1>
+            <p className="text-gray-600 mt-1">Browse verified farm equipment available for rental in your region.</p>
+          </div>
         </div>
       </div>
 

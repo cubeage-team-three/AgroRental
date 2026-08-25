@@ -15,6 +15,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { trackingService } from '../../services/trackingService';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 import { bookingService } from '../../services/bookingService';
 
 function LiveTracking() {
@@ -73,6 +74,9 @@ function LiveTracking() {
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
+          <div className="hidden sm:flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-sm border border-slate-200 h-11 shrink-0">
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
+          </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
