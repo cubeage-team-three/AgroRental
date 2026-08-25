@@ -30,11 +30,12 @@ export const isPartner = () => {
 
 export const getPartnerId = () => {
   const user = getCurrentUser();
-  if (user && user.partnerId) {
-    return user.partnerId;
+  if (user) {
+    if (user.partnerId) return user.partnerId;
+    if (user.role === 'PARTNER' && user.id) return user.id;
   }
   const storedId = localStorage.getItem('partnerId');
-  return storedId ? Number(storedId) : 1;
+  return storedId ? Number(storedId) : null;
 };
 
 export const getFarmerId = () => {

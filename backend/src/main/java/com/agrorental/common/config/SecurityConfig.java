@@ -80,10 +80,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/farmers/send-otp", "/api/farmers/verify-otp", "/api/farmers/resend-otp").permitAll()
                         .requestMatchers("/api/farmers/**").hasRole("FARMER")
 
-                        // Partner: registration + OTP are public; KYC approval is an admin action, not partner self-service
+                        // Partner: registration + OTP are public; Admin manages partners & KYC; Partner manages own profile/dashboard
                         .requestMatchers(HttpMethod.POST, "/api/partners/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/partners/*/otp/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/partners", "/api/partners/").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/partners/*/kyc/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/partners/*").hasAnyRole("ADMIN", "PARTNER")
                         .requestMatchers("/api/partners/**").hasRole("PARTNER")
 
                         // Equipment: browsing/search is public, listing management is partner-only
