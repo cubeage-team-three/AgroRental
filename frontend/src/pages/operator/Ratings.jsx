@@ -35,11 +35,13 @@ function OperatorRatings() {
         operatorService.getMyReviews({ page, size: pageSize })
       ]);
 
-      if (summaryRes?.success && summaryRes.data) {
-        setSummary(summaryRes.data);
+      const summaryData = summaryRes?.data || summaryRes;
+      if (summaryData && typeof summaryData === 'object') {
+        setSummary(summaryData);
       }
-      if (reviewsRes?.success && reviewsRes.data) {
-        setReviewsPage(reviewsRes.data);
+      const reviewsData = reviewsRes?.data || reviewsRes;
+      if (reviewsData && (reviewsData.content || Array.isArray(reviewsData))) {
+        setReviewsPage(reviewsData);
       }
     } catch (err) {
       console.error('Failed to load ratings data:', err);
