@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { equipmentService } from '../../services/equipmentService';
 import {
   DEFAULT_EQUIPMENT_IMAGE,
+  getCategoryEquipmentImage,
   formatCategoryLabel,
   formatFuelTypeLabel,
   getStatusBadgeInfo,
@@ -25,11 +26,12 @@ function EquipmentDetails() {
       try {
         const data = await equipmentService.getEquipmentById(id);
         setEquipment(data);
+        const fallback = getCategoryEquipmentImage(data?.category);
         if (data && data.images && data.images.length > 0) {
           const primary = data.images.find((img) => img.isPrimary) || data.images[0];
-          setActiveImage(primary.imageUrl);
+          setActiveImage(primary.imageUrl || data.primaryImageUrl || fallback);
         } else {
-          setActiveImage(DEFAULT_EQUIPMENT_IMAGE);
+          setActiveImage(data?.primaryImageUrl || fallback);
         }
       } catch (err) {
         console.error('Failed to load equipment details:', err);
@@ -95,12 +97,12 @@ function EquipmentDetails() {
         <div className="space-y-4">
           <div className="relative h-96 w-full bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
             <img
-              src={activeImage || DEFAULT_EQUIPMENT_IMAGE}
+              src={activeImage || getCategoryEquipmentImage(equipment.category)}
               alt={equipment.name}
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = DEFAULT_EQUIPMENT_IMAGE;
+                e.target.src = getCategoryEquipmentImage(equipment.category);
               }}
             />
             <span

@@ -57,6 +57,36 @@ public class EquipmentController {
     }
 
     /**
+     * Retrieves all equipment listings (including disabled) for administrative catalog management (FR-39).
+     *
+     * @return ResponseEntity containing HTTP 200 OK and List of EquipmentSummaryResponse
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<EquipmentSummaryResponse>>> getAllEquipment() {
+
+        List<EquipmentSummaryResponse> response = equipmentService.getAllEquipment();
+
+        return ResponseEntity.ok(
+                ApiResponse.success("All equipment retrieved successfully", response));
+    }
+
+    /**
+     * Retrieves all equipment listings with database-side pagination for administrative catalog management (FR-39).
+     *
+     * @param pageable Spring Data Pageable pagination request
+     * @return ResponseEntity containing HTTP 200 OK and Page of EquipmentSummaryResponse
+     */
+    @GetMapping("/page")
+    public ResponseEntity<ApiResponse<Page<EquipmentSummaryResponse>>> getAllEquipmentPaginated(
+            @PageableDefault(size = 20) Pageable pageable) {
+
+        Page<EquipmentSummaryResponse> response = equipmentService.getAllEquipment(pageable);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("All equipment retrieved successfully", response));
+    }
+
+    /**
      * Retrieves an equipment listing by its unique identifier.
      *
      * @param id Equipment primary key

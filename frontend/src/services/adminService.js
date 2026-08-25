@@ -50,6 +50,22 @@ export const adminService = {
       body: JSON.stringify(verificationData),
     });
   },
+
+  /**
+   * Retrieves aggregate platform-wide metrics for the Admin Overview bento cards.
+   * @returns {Promise<Object>} AdminDashboardStatsResponse
+   */
+  getDashboardStats: async () => {
+    return await request('/admin/dashboard/stats');
+  },
+
+  /**
+   * Retrieves the most recent bookings platform-wide for the recent activity table.
+   * @returns {Promise<Array>} List of BookingResponse
+   */
+  getRecentBookings: async () => {
+    return await request('/admin/dashboard/recent-bookings');
+  },
 };
 
 export default adminService;

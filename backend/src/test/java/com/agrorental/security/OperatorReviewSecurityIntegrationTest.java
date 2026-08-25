@@ -7,6 +7,10 @@ import com.agrorental.operator.dto.OperatorReviewCreateRequest;
 import com.agrorental.operator.dto.OperatorReviewResponse;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
+<<<<<<< HEAD
+=======
+import com.agrorental.admin.repository.AdminRepository;
+>>>>>>> origin/development
 import com.agrorental.operator.repository.OperatorRepository;
 import com.agrorental.operator.service.OperatorReviewService;
 import com.agrorental.security.jwt.JwtAuthenticationFilter;
@@ -54,6 +58,12 @@ class OperatorReviewSecurityIntegrationTest {
     private OperatorRepository operatorRepository;
 
     @Mock
+<<<<<<< HEAD
+=======
+    private AdminRepository adminRepository;
+
+    @Mock
+>>>>>>> origin/development
     private OperatorReviewService reviewService;
 
     @InjectMocks
@@ -64,7 +74,11 @@ class OperatorReviewSecurityIntegrationTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
+<<<<<<< HEAD
         jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, operatorRepository);
+=======
+        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, operatorRepository, adminRepository);
+>>>>>>> origin/development
 
         HandlerMethodArgumentResolver principalResolver = new HandlerMethodArgumentResolver() {
             @Override

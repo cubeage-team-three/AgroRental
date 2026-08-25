@@ -466,44 +466,6 @@ export const operatorService = {
   getAssignmentReview: async (assignmentId) => {
     return await request(`/operators/jobs/${assignmentId}/review`);
   },
-
-  // ==========================================
-  // PHASE 10: JOB HISTORY & ANALYTICS METHODS
-  // ==========================================
-
-  /**
-   * Retrieves a paginated, filterable archive of historical jobs (GET /api/operators/jobs/history).
-   * @param {Object} params - { page, size, startDate, endDate, status, equipmentCategory, search }
-   * @returns {Promise<Object>} Page<OperatorJobHistoryResponse>
-   */
-  getJobHistory: async (params = {}) => {
-    const query = new URLSearchParams();
-    if (params.page !== undefined) query.append('page', params.page);
-    if (params.size !== undefined) query.append('size', params.size);
-    if (params.startDate) query.append('startDate', params.startDate);
-    if (params.endDate) query.append('endDate', params.endDate);
-    if (params.status && params.status !== 'ALL') query.append('status', params.status);
-    if (params.equipmentCategory && params.equipmentCategory !== 'ALL') query.append('equipmentCategory', params.equipmentCategory);
-    if (params.search && params.search.trim()) query.append('search', params.search.trim());
-
-    const queryString = query.toString() ? `?${query.toString()}` : '';
-    return await request(`/operators/jobs/history${queryString}`);
-  },
-
-  /**
-   * Retrieves aggregate historical field performance analytics (GET /api/operators/jobs/history/summary).
-   * @param {Object} params - { startDate, endDate, equipmentCategory }
-   * @returns {Promise<Object>} OperatorJobHistorySummaryResponse
-   */
-  getJobHistorySummary: async (params = {}) => {
-    const query = new URLSearchParams();
-    if (params.startDate) query.append('startDate', params.startDate);
-    if (params.endDate) query.append('endDate', params.endDate);
-    if (params.equipmentCategory && params.equipmentCategory !== 'ALL') query.append('equipmentCategory', params.equipmentCategory);
-
-    const queryString = query.toString() ? `?${query.toString()}` : '';
-    return await request(`/operators/jobs/history/summary${queryString}`);
-  },
 };
 
 export default operatorService;

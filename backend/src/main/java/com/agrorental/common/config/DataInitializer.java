@@ -20,9 +20,14 @@ import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.entity.OperatorJobAssignment;
 import com.agrorental.operator.enums.OperatorAssignmentStatus;
 import com.agrorental.operator.entity.OperatorJobPauseInterval;
+<<<<<<< HEAD
+=======
+import com.agrorental.operator.entity.OperatorReview;
+>>>>>>> origin/development
 import com.agrorental.operator.repository.OperatorJobPauseIntervalRepository;
 import com.agrorental.operator.repository.OperatorJobAssignmentRepository;
 import com.agrorental.operator.repository.OperatorRepository;
+import com.agrorental.operator.repository.OperatorReviewRepository;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
 import com.agrorental.payment.entity.Payment;
@@ -60,7 +65,11 @@ public class DataInitializer implements CommandLineRunner {
     private final PaymentRepository paymentRepository;
     private final NotificationRepository notificationRepository;
     private final ReviewRepository reviewRepository;
+<<<<<<< HEAD
     private final com.agrorental.operator.repository.OperatorReviewRepository operatorReviewRepository;
+=======
+    private final OperatorReviewRepository operatorReviewRepository;
+>>>>>>> origin/development
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(
@@ -75,7 +84,11 @@ public class DataInitializer implements CommandLineRunner {
             PaymentRepository paymentRepository,
             NotificationRepository notificationRepository,
             ReviewRepository reviewRepository,
+<<<<<<< HEAD
             com.agrorental.operator.repository.OperatorReviewRepository operatorReviewRepository,
+=======
+            OperatorReviewRepository operatorReviewRepository,
+>>>>>>> origin/development
             PasswordEncoder passwordEncoder) {
         this.partnerRepository = partnerRepository;
         this.farmerRepository = farmerRepository;
@@ -162,7 +175,7 @@ public class DataInitializer implements CommandLineRunner {
                 .isDisabled(false)
                 .build();
         EquipmentImage img1 = EquipmentImage.builder()
-                .imageUrl("https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=600&auto=format&fit=crop&q=80")
+                .imageUrl("/images/equipment/tractor-ploughing.jpg")
                 .isPrimary(true)
                 .equipment(tractor1)
                 .build();
@@ -187,7 +200,7 @@ public class DataInitializer implements CommandLineRunner {
                 .isDisabled(false)
                 .build();
         EquipmentImage img2 = EquipmentImage.builder()
-                .imageUrl("https://images.unsplash.com/photo-1589923188900-85dae523342b?w=600&auto=format&fit=crop&q=80")
+                .imageUrl("/images/equipment/tractor-ploughing.jpg")
                 .isPrimary(true)
                 .equipment(tractor2)
                 .build();
@@ -212,7 +225,7 @@ public class DataInitializer implements CommandLineRunner {
                 .isDisabled(false)
                 .build();
         EquipmentImage img3 = EquipmentImage.builder()
-                .imageUrl("https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=600&auto=format&fit=crop&q=80")
+                .imageUrl("/images/equipment/harvester-service.jpg")
                 .isPrimary(true)
                 .equipment(harvester)
                 .build();
@@ -237,7 +250,7 @@ public class DataInitializer implements CommandLineRunner {
                 .isDisabled(false)
                 .build();
         EquipmentImage img4 = EquipmentImage.builder()
-                .imageUrl("https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=600&auto=format&fit=crop&q=80")
+                .imageUrl("/images/equipment/rotavator-work.jpg")
                 .isPrimary(true)
                 .equipment(rotavator)
                 .build();
@@ -490,7 +503,11 @@ public class DataInitializer implements CommandLineRunner {
         reviewRepository.save(r2);
 
         // 7b. Seed Operator Review for Completed Assignment #3 (Operator 1)
+<<<<<<< HEAD
         com.agrorental.operator.entity.OperatorReview opReview1 = com.agrorental.operator.entity.OperatorReview.builder()
+=======
+        OperatorReview opReview1 = OperatorReview.builder()
+>>>>>>> origin/development
                 .assignment(assign3)
                 .operator(op1)
                 .booking(b5)

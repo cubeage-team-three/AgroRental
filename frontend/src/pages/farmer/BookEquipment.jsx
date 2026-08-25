@@ -18,6 +18,7 @@ const WORK_TYPES = [
   'Crop Transport',
   'Custom Field Job',
 ];
+
 function BookEquipment() {
   const [searchParams] = useSearchParams();
   const { equipmentId: pathEquipmentId } = useParams();
@@ -70,12 +71,7 @@ function BookEquipment() {
             console.warn('Live equipment rating summary unavailable (using fallback UI):', rErr);
           }
         }
-        let farmList = [];
-        try {
-          farmList = await farmService.getFarmerFarms(farmerId);
-        } catch {
-          farmList = await farmService.getFarms(farmerId);
-        }
+        const farmList = await farmService.getFarms(farmerId);
         setFarms(farmList || []);
         if (farmList && farmList.length > 0) {
           setSelectedFarmId(farmList[0].id);
