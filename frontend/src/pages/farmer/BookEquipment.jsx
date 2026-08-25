@@ -5,6 +5,7 @@ import { equipmentService } from '../../services/equipmentService';
 import { bookingService } from '../../services/bookingService';
 import { farmService } from '../../services/farmService';
 import { getFarmerId } from '../../services/authService';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 import { reviewService } from '../../services/reviewService';
 
@@ -179,12 +180,17 @@ function BookEquipment() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <Link to="/farmer/equipment" className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-2">
-            <ArrowLeft className="h-4 w-4" /> Back to Search
-          </Link>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Reserve Farm Machinery</h1>
-          <p className="text-sm text-slate-600">Select farm, dates, and work type to request equipment reservation</p>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-sm border border-slate-200 h-11 shrink-0">
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
+          </div>
+          <div>
+            <Link to="/farmer/equipment" className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-1">
+              <ArrowLeft className="h-4 w-4" /> Back to Search
+            </Link>
+            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Reserve Farm Machinery</h1>
+            <p className="text-sm text-slate-600">Select farm, dates, and work type to request equipment reservation</p>
+          </div>
         </div>
       </div>
 

@@ -49,11 +49,7 @@ public class AuthService {
         }
 
         // 3. Try finding in Partner repository
-        Optional<Partner> partnerOpt = partnerRepository.findByMobileNumber(input);
-        if (partnerOpt.isEmpty()) {
-            partnerOpt = partnerRepository.findByEmail(input);
-        }
-
+        Optional<Partner> partnerOpt = partnerRepository.findByMobileNumberOrEmailIgnoreCase(input, input);
         if (partnerOpt.isPresent()) {
             return loginPartner(partnerOpt.get(), request);
         }
@@ -145,6 +141,16 @@ public class AuthService {
             throw new BadRequestException("Partner account is currently deactivated. Please contact support.");
         }
 
+        if (partner.getVerificationStatus() == Partner.VerificationStatus.PENDING) {
+            log.warn("Login blocked for partner ID {}: Verification pending", partner.getId());
+            throw new BadRequestException("Your account verification is currently pending admin approval. Please check back later.");
+        }
+
+        if (partner.getVerificationStatus() == Partner.VerificationStatus.REJECTED) {
+            log.warn("Login blocked for partner ID {}: Verification rejected", partner.getId());
+            throw new BadRequestException("Your partner account verification has been rejected. Please contact customer support.");
+        }
+
         if (request.getPassword() == null || request.getPassword().isEmpty()
                 || !passwordEncoder.matches(request.getPassword(), partner.getPassword())) {
             log.warn("Login failed for partner ID {}: Invalid password provided", partner.getId());
@@ -162,7 +168,7 @@ public class AuthService {
                 .mobileNumber(partner.getMobileNumber())
                 .email(partner.getEmail())
                 .role("PARTNER")
-                .accountStatus(partner.getVerificationStatus() != null ? partner.getVerificationStatus().name() : "PENDING")
+                .accountStatus(partner.getVerificationStatus() != null ? partner.getVerificationStatus().name() : "APPROVED")
                 .message("Partner login successful. Welcome back, " + partner.getFullName() + "!")
                 .build();
     }

@@ -6,12 +6,9 @@ import {
   Building2,
   Eye,
   EyeOff,
-  LayoutDashboard,
   Loader2,
   Lock,
   Mail,
-  Sprout,
-  Tractor,
   User,
   X,
 } from 'lucide-react';
@@ -19,12 +16,6 @@ import { partnerService } from '../../services/partnerService';
 import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
 import MagneticButton from '../../components/ui/MagneticButton';
 import AuthField from '../../components/auth/AuthField';
-
-const ROLES = [
-  { id: 'farmer', label: 'Farmer', icon: Sprout },
-  { id: 'owner', label: 'Equipment Owner', icon: Tractor },
-  { id: 'admin', label: 'Admin', icon: LayoutDashboard },
-];
 
 function RegisterPartner() {
   const navigate = useNavigate();
@@ -61,16 +52,6 @@ function RegisterPartner() {
       mobileNumber: val,
     }));
     if (errorMessage) setErrorMessage('');
-  };
-
-  const handleRoleSelect = (roleId) => {
-    if (roleId === 'farmer') {
-      navigate('/register');
-      return;
-    }
-    if (roleId === 'admin') {
-      alert('Admin registration is restricted to system administrators.');
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -145,35 +126,6 @@ function RegisterPartner() {
           Register as Machinery Owner
         </h1>
         <p className="mt-2 text-[15px] text-slate-500">List your equipment and start earning on AgroRent.</p>
-      </RevealItem>
-
-      <RevealItem className="mt-7">
-        <span className="mb-3 block text-xs font-semibold uppercase tracking-wide text-slate-400">I am a</span>
-        <div className="grid grid-cols-3 gap-2.5">
-          {ROLES.map((r) => {
-            const active = r.id === 'owner';
-            return (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => handleRoleSelect(r.id)}
-                className="relative flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-transparent p-3.5 transition-colors duration-200"
-              >
-                {active && (
-                  <motion.span
-                    layoutId="partner-role-highlight"
-                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                    className="absolute inset-0 rounded-2xl border-2 border-emerald-600 bg-emerald-50"
-                  />
-                )}
-                <r.icon className={`relative h-5 w-5 ${active ? 'text-emerald-700' : 'text-slate-400'}`} />
-                <span className={`relative text-xs font-semibold ${active ? 'text-emerald-800' : 'text-slate-500'}`}>
-                  {r.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </RevealItem>
 
       {errorMessage && (

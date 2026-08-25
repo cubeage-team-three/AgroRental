@@ -14,6 +14,7 @@ import {
 import { getFarmerId } from '../../services/authService';
 import { bookingService } from '../../services/bookingService';
 import { reviewService } from '../../services/reviewService';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 function WriteReview() {
   const { id } = useParams();
@@ -124,6 +125,9 @@ function WriteReview() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
+        <div className="hidden sm:flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-sm border border-slate-200 h-11 shrink-0">
+          <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
+        </div>
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
             Rate Your Rental Experience
