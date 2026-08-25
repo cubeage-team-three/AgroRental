@@ -6,6 +6,7 @@ import {
   Building2,
   Eye,
   EyeOff,
+  HardHat,
   LayoutDashboard,
   Loader2,
   Lock,
@@ -23,6 +24,7 @@ import AuthField from '../../components/auth/AuthField';
 const ROLES = [
   { id: 'farmer', label: 'Farmer', icon: Sprout },
   { id: 'owner', label: 'Equipment Owner', icon: Tractor },
+  { id: 'operator', label: 'Operator', icon: HardHat },
   { id: 'admin', label: 'Admin', icon: LayoutDashboard },
 ];
 
@@ -66,6 +68,10 @@ function RegisterPartner() {
   const handleRoleSelect = (roleId) => {
     if (roleId === 'farmer') {
       navigate('/register');
+      return;
+    }
+    if (roleId === 'operator') {
+      navigate('/register/operator');
       return;
     }
     if (roleId === 'admin') {
@@ -149,7 +155,7 @@ function RegisterPartner() {
 
       <RevealItem className="mt-7">
         <span className="mb-3 block text-xs font-semibold uppercase tracking-wide text-slate-400">I am a</span>
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-4 gap-2">
           {ROLES.map((r) => {
             const active = r.id === 'owner';
             return (

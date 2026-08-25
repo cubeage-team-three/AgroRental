@@ -62,6 +62,13 @@ export const operatorService = {
     });
   },
 
+  sendOperatorOtp: async (mobileNumber, purpose = 'MOBILE_VERIFICATION') => {
+    return await request('/operators/otp/send', {
+      method: 'POST',
+      body: JSON.stringify({ mobileNumber, purpose }),
+    });
+  },
+
   /**
    * Verifies the submitted OTP for the Operator's mobile number.
    * @param {string} mobileNumber - 10-digit mobile number
@@ -74,6 +81,35 @@ export const operatorService = {
       method: 'POST',
       body: JSON.stringify({ mobileNumber, otp, purpose }),
     });
+  },
+
+  verifyOperatorOtp: async (mobileNumber, otp, purpose = 'MOBILE_VERIFICATION') => {
+    return await request('/operators/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ mobileNumber, otp, purpose }),
+    });
+  },
+
+  /**
+   * Submits a KYC or certification document for an Operator.
+   * @param {number|string} operatorId - Operator ID
+   * @param {Object} documentData - { documentType, documentNumber, fileName, fileUrl, fileSize, mimeType }
+   * @returns {Promise<Object>} OperatorDocumentResponse payload
+   */
+  uploadOperatorDocument: async (operatorId, documentData) => {
+    return await request(`/operators/${operatorId}/documents`, {
+      method: 'POST',
+      body: JSON.stringify(documentData),
+    });
+  },
+
+  /**
+   * Retrieves all submitted KYC documents for an Operator.
+   * @param {number|string} operatorId - Operator ID
+   * @returns {Promise<Array>} Array of OperatorDocumentResponse objects
+   */
+  getOperatorDocuments: async (operatorId) => {
+    return await request(`/operators/${operatorId}/documents`);
   },
 
   /**

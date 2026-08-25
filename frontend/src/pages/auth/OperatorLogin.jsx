@@ -1,44 +1,78 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
-  HardHat,
-  Phone,
-  Lock,
+  ArrowRight,
   Eye,
   EyeOff,
+  HardHat,
+  LayoutDashboard,
   Loader2,
-  AlertCircle,
-  CheckCircle2,
-  ArrowRight,
-  ShieldCheck,
-  Wrench,
+  Lock,
+  Phone,
+  Sprout,
+  Tractor,
+  X,
 } from 'lucide-react';
 import { operatorService } from '../../services/operatorService';
+import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
+import MagneticButton from '../../components/ui/MagneticButton';
+import AuthField from '../../components/auth/AuthField';
+
+const ROLES = [
+  { id: 'farmer', label: 'Farmer', icon: Sprout },
+  { id: 'owner', label: 'Equipment Owner', icon: Tractor },
+  { id: 'operator', label: 'Operator', icon: HardHat },
+  { id: 'admin', label: 'Admin', icon: LayoutDashboard },
+];
 
 function OperatorLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [formData, setFormData] = useState({
-    mobileNumber: '',
+    mobileNumber: location.state?.mobileNumber || '',
     password: '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(
+    location.state?.message || ''
+  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
     if (errorMessage) setErrorMessage('');
   };
 
   const handleMobileChange = (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-    setFormData((prev) => ({ ...prev, mobileNumber: val }));
+    setFormData((prev) => ({
+      ...prev,
+      mobileNumber: val,
+    }));
     if (errorMessage) setErrorMessage('');
+  };
+
+  const handleRoleSelect = (roleId) => {
+    if (roleId === 'farmer') {
+      navigate('/login');
+      return;
+    }
+    if (roleId === 'owner') {
+      navigate('/login');
+      return;
+    }
+    if (roleId === 'admin') {
+      navigate('/admin/login');
+      return;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -65,182 +99,179 @@ function OperatorLogin() {
       });
 
       setSuccessMessage(
-        `Welcome back, ${response?.operator?.fullName || 'Operator'}! Redirecting to Operator Portal...`
+        `✓ Welcome back, ${response?.operator?.fullName || 'Operator'}! Redirecting to dashboard...`
       );
 
       setTimeout(() => {
         navigate('/operator/dashboard');
       }, 1000);
     } catch (err) {
-      console.error('Operator login error:', err);
-      setErrorMessage(err.message || 'Login failed. Please check your credentials.');
+      console.error('Operator Login error:', err);
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('suspended') || msg.toLowerCase().includes('inactive')) {
+        setErrorMessage('Your operator account has been suspended. Please contact support.');
+      } else if (msg.toLowerCase().includes('pending')) {
+        setErrorMessage('Your operator account is currently pending verification. You can log in once approved by an administrator.');
+      } else if (msg.toLowerCase().includes('rejected')) {
+        setErrorMessage(msg);
+      } else if (msg.toLowerCase().includes('not found')) {
+        setErrorMessage('No operator account found with this mobile number. Please register first.');
+      } else {
+        setErrorMessage(msg || 'Login failed. Please check your mobile number and password.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md space-y-4">
-        {/* Brand Icon & Heading */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-[#142E1C] text-[#C1FF72] shadow-md">
-            <HardHat className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#142E1C] tracking-tight">
-            Machinery Operator Login
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-500 font-medium">
-            Sign in to access your deployed field jobs, machinery schedules, and earnings.
-          </p>
-        </div>
+    <RevealGroup stagger={0.06} delayChildren={0.05}>
+      <RevealItem>
+        <h1 className="font-display text-[28px] font-bold tracking-tight text-slate-900 sm:text-[32px]">
+          Sign in as Machinery Operator
+        </h1>
+        <p className="mt-2 text-[15px] text-slate-500">
+          Enter your registered mobile number and password to access your field jobs.
+        </p>
+      </RevealItem>
 
-        {/* Login Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/70 shadow-sm space-y-6"
-        >
-          {/* Error / Success Notifications */}
-          <AnimatePresence>
-            {errorMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-xs font-bold flex items-center justify-between shadow-xs"
+      <RevealItem className="mt-7">
+        <span className="mb-3 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+          I am a
+        </span>
+        <div className="grid grid-cols-4 gap-2">
+          {ROLES.map((r) => {
+            const active = r.id === 'operator';
+            return (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => handleRoleSelect(r.id)}
+                className="relative flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-transparent p-3 transition-colors duration-200"
               >
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                  <span>{errorMessage}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setErrorMessage('')}
-                  className="text-red-500 hover:text-red-700 font-black text-sm"
-                >
-                  ✕
-                </button>
-              </motion.div>
-            )}
-
-            {successMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-950 text-xs font-bold flex items-center justify-between shadow-xs"
-              >
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>{successMessage}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSuccessMessage('')}
-                  className="text-emerald-700 hover:text-emerald-950 font-black text-sm"
-                >
-                  ✕
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Registered Mobile Number *
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-3 text-xs font-bold text-gray-400">
-                  +91
+                {active && (
+                  <motion.span
+                    layoutId="operator-login-role-highlight"
+                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    className="absolute inset-0 rounded-2xl border-2 border-emerald-600 bg-emerald-50"
+                  />
+                )}
+                <r.icon className={`relative h-5 w-5 ${active ? 'text-emerald-700' : 'text-slate-400'}`} />
+                <span className={`relative text-[11px] font-semibold ${active ? 'text-emerald-800' : 'text-slate-500'}`}>
+                  {r.label}
                 </span>
-                <input
-                  type="tel"
-                  name="mobileNumber"
-                  value={formData.mobileNumber}
-                  onChange={handleMobileChange}
-                  placeholder="10-digit mobile number"
-                  maxLength={10}
-                  className="w-full pl-12 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none tracking-wide"
-                />
-              </div>
-            </div>
+              </button>
+            );
+          })}
+        </div>
+      </RevealItem>
 
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Account Password *
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="Enter your password"
-                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
+      {errorMessage && (
+        <RevealItem className="mt-5">
+          <div className="flex items-start justify-between gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <span>{errorMessage}</span>
             <button
+              type="button"
+              onClick={() => setErrorMessage('')}
+              className="shrink-0 text-red-400 transition-colors hover:text-red-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </RevealItem>
+      )}
+
+      {successMessage && (
+        <RevealItem className="mt-5">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+            {successMessage}
+          </div>
+        </RevealItem>
+      )}
+
+      <RevealItem className="mt-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <AuthField
+            id="mobileNumber"
+            name="mobileNumber"
+            label="Mobile Number"
+            type="tel"
+            maxLength={10}
+            prefix="+91"
+            value={formData.mobileNumber}
+            onChange={handleMobileChange}
+          />
+
+          <AuthField
+            id="password"
+            name="password"
+            label="Password"
+            icon={Lock}
+            type={showPassword ? 'text' : 'password'}
+            value={formData.password}
+            onChange={handleInputChange}
+            rightSlot={
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="text-slate-400 transition-colors hover:text-slate-600"
+              >
+                {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+              </button>
+            }
+          />
+
+          <MagneticButton className="block w-full pt-2">
+            <motion.button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              animate={
+                loading
+                  ? {}
+                  : {
+                      boxShadow: [
+                        '0 0 20px 0px rgba(163,230,53,0.35)',
+                        '0 0 38px 6px rgba(163,230,53,0.6)',
+                        '0 0 20px 0px rgba(163,230,53,0.35)',
+                      ],
+                    }
+              }
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-800 text-[15px] font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-900 active:scale-[0.98] disabled:opacity-70"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying Credentials & Token...</span>
+                  <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                  Signing in to Operator Console...
                 </>
               ) : (
                 <>
-                  <span>Sign In as Operator</span>
-                  <ArrowRight className="w-4 h-4" />
+                  Login to Operator Account
+                  <ArrowRight className="h-4 w-4" />
                 </>
               )}
-            </button>
-          </form>
+            </motion.button>
+          </MagneticButton>
+        </form>
+      </RevealItem>
 
-          {/* Registration & Alternative Role Links */}
-          <div className="border-t border-gray-100 pt-5 space-y-3 text-center text-xs">
-            <p className="text-gray-500 font-medium">
-              New machinery operator?{' '}
-              <Link
-                to="/register/operator"
-                className="font-extrabold text-[#3E7B27] hover:underline"
-              >
-                Register & Verify Credentials →
-              </Link>
-            </p>
-
-            <p className="text-gray-400 text-[11px]">
-              Farmer or Fleet Owner?{' '}
-              <Link
-                to="/login"
-                className="font-bold text-gray-700 hover:underline"
-              >
-                Standard Portal Login
-              </Link>
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Security Assurance Badge */}
-        <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-gray-400">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>AgroRental Safe Authentication • 256-Bit Encrypted Sessions</span>
+      <RevealItem className="mt-8 text-center text-sm text-slate-500 space-y-2">
+        <div>
+          Don&apos;t have an Operator account?{' '}
+          <Link
+            to="/register/operator"
+            className="font-bold text-emerald-700 underline-offset-2 hover:underline"
+          >
+            Create Operator Account
+          </Link>
         </div>
-      </div>
-    </div>
+        <div>
+          <Link to="/" className="text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors">
+            ← Back to Home
+          </Link>
+        </div>
+      </RevealItem>
+    </RevealGroup>
   );
 }
 

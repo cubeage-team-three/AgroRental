@@ -46,6 +46,78 @@ const HERO_CONTENT = {
     ),
     subtext: "Join 12,000+ verified operators earning steady income with live job alerts and fast payouts.",
   },
+  "/login/operator": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Field Machinery,
+        <br />
+        Under Your Control.
+      </>
+    ),
+    subtext: "Access your assigned farm machinery tasks, live GPS check-ins, and daily payout records.",
+  },
+  "/operator/login": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Field Machinery,
+        <br />
+        Under Your Control.
+      </>
+    ),
+    subtext: "Access your assigned farm machinery tasks, live GPS check-ins, and daily payout records.",
+  },
+  "/auth/operator": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Get Matched to Jobs,
+        <br />
+        Near You.
+      </>
+    ),
+    subtext: "Join 12,000+ verified operators earning steady income with live job alerts and fast payouts.",
+  },
+  "/verify-otp/operator": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Secure Identity,
+        <br />
+        Instant Verification.
+      </>
+    ),
+    subtext: "Verify your phone number with instant OTP to secure your machinery operations profile.",
+  },
+  "/register/operator/kyc": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Certified Skills,
+        <br />
+        Guaranteed Payouts.
+      </>
+    ),
+    subtext: "Upload your driving license and Aadhaar credentials for fast administrative review.",
+  },
+  "/register/operator/pending": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Application Received,
+        <br />
+        Review in Progress.
+      </>
+    ),
+    subtext: "Your operator credentials are being reviewed by fleet administrators. You will be notified once active.",
+  },
 };
 
 const DEFAULT_HERO = {
