@@ -6,11 +6,6 @@ import {
   Building2,
   Eye,
   EyeOff,
-<<<<<<< HEAD
-  HardHat,
-  LayoutDashboard,
-=======
->>>>>>> origin/dev-DhananjayTarange-operator-management1
   Loader2,
   Lock,
   Mail,
@@ -22,16 +17,6 @@ import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
 import MagneticButton from '../../components/ui/MagneticButton';
 import AuthField from '../../components/auth/AuthField';
 
-<<<<<<< HEAD
-const ROLES = [
-  { id: 'farmer', label: 'Farmer', icon: Sprout },
-  { id: 'owner', label: 'Equipment Owner', icon: Tractor },
-  { id: 'operator', label: 'Operator', icon: HardHat },
-  { id: 'admin', label: 'Admin', icon: LayoutDashboard },
-];
-
-=======
->>>>>>> origin/dev-DhananjayTarange-operator-management1
 function RegisterPartner() {
   const navigate = useNavigate();
 
@@ -69,23 +54,6 @@ function RegisterPartner() {
     if (errorMessage) setErrorMessage('');
   };
 
-<<<<<<< HEAD
-  const handleRoleSelect = (roleId) => {
-    if (roleId === 'farmer') {
-      navigate('/register');
-      return;
-    }
-    if (roleId === 'operator') {
-      navigate('/register/operator');
-      return;
-    }
-    if (roleId === 'admin') {
-      alert('Admin registration is restricted to system administrators.');
-    }
-  };
-
-=======
->>>>>>> origin/dev-DhananjayTarange-operator-management1
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -160,38 +128,6 @@ function RegisterPartner() {
         <p className="mt-2 text-[15px] text-slate-500">List your equipment and start earning on AgroRent.</p>
       </RevealItem>
 
-<<<<<<< HEAD
-      <RevealItem className="mt-7">
-        <span className="mb-3 block text-xs font-semibold uppercase tracking-wide text-slate-400">I am a</span>
-        <div className="grid grid-cols-4 gap-2">
-          {ROLES.map((r) => {
-            const active = r.id === 'owner';
-            return (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => handleRoleSelect(r.id)}
-                className="relative flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-transparent p-3.5 transition-colors duration-200"
-              >
-                {active && (
-                  <motion.span
-                    layoutId="partner-role-highlight"
-                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                    className="absolute inset-0 rounded-2xl border-2 border-emerald-600 bg-emerald-50"
-                  />
-                )}
-                <r.icon className={`relative h-5 w-5 ${active ? 'text-emerald-700' : 'text-slate-400'}`} />
-                <span className={`relative text-xs font-semibold ${active ? 'text-emerald-800' : 'text-slate-500'}`}>
-                  {r.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </RevealItem>
-
-=======
->>>>>>> origin/dev-DhananjayTarange-operator-management1
       {errorMessage && (
         <RevealItem className="mt-5">
           <div className="flex items-start justify-between gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
@@ -309,12 +245,12 @@ function RegisterPartner() {
                 loading
                   ? {}
                   : {
-                      boxShadow: [
-                        '0 0 20px 0px rgba(163,230,53,0.35)',
-                        '0 0 38px 6px rgba(163,230,53,0.6)',
-                        '0 0 20px 0px rgba(163,230,53,0.35)',
-                      ],
-                    }
+                    boxShadow: [
+                      '0 0 20px 0px rgba(163,230,53,0.35)',
+                      '0 0 38px 6px rgba(163,230,53,0.6)',
+                      '0 0 20px 0px rgba(163,230,53,0.35)',
+                    ],
+                  }
               }
               transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
               className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-800 text-[15px] font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-900 active:scale-[0.98] disabled:opacity-70"
