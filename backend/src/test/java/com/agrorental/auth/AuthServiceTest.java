@@ -24,6 +24,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -92,6 +93,8 @@ class AuthServiceTest {
         when(partnerRepository.findByMobileNumberOrEmailIgnoreCase("ramesh@agro.com", "ramesh@agro.com"))
                 .thenReturn(Optional.of(approvedPartner));
         when(passwordEncoder.matches("plain_password", "encoded_password")).thenReturn(true);
+        when(jwtService.generateToken(anyLong(), anyString(), anyString(), any()))
+                .thenReturn("mock.jwt.token");
 
         LoginResponse response = authService.login(request);
 
