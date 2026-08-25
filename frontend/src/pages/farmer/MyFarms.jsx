@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { farmService } from '../../services/farmService';
 import { getFarmerId } from '../../services/authService';
 import { Plus, MapPin, Sprout, Edit2, Trash2, X, Check, Globe, Layers, Navigation } from 'lucide-react';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 function MyFarms() {
   const [farms, setFarms] = useState([]);
@@ -156,14 +157,19 @@ function MyFarms() {
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-emerald-800 to-green-700 text-white rounded-2xl p-6 shadow-md">
-        <div>
-          <div className="flex items-center gap-2">
-            <Sprout className="h-7 w-7 text-lime-300" />
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">My Farms & Plots</h1>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-sm h-12 shrink-0">
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
           </div>
-          <p className="text-emerald-100 text-sm mt-1">
-            Register and manage your agricultural land parcels to book tailored machinery and services.
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <Sprout className="h-7 w-7 text-lime-300" />
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">My Farms & Plots</h1>
+            </div>
+            <p className="text-emerald-100 text-sm mt-1">
+              Register and manage your agricultural land parcels to book tailored machinery and services.
+            </p>
+          </div>
         </div>
         <button
           onClick={handleOpenAddModal}

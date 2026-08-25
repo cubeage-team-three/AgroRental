@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -50,11 +49,7 @@ public class AuthService {
         }
 
         // 3. Try finding in Partner repository
-        Optional<Partner> partnerOpt = partnerRepository.findByMobileNumber(input);
-        if (partnerOpt.isEmpty()) {
-            partnerOpt = partnerRepository.findByEmail(input);
-        }
-
+        Optional<Partner> partnerOpt = partnerRepository.findByMobileNumberOrEmailIgnoreCase(input, input);
         if (partnerOpt.isPresent()) {
             return loginPartner(partnerOpt.get(), request);
         }
@@ -123,8 +118,8 @@ public class AuthService {
             }
         }
 
-        // Generate session bearer token
-        String token = "agro-token-" + farmer.getFarmerId() + "-" + UUID.randomUUID().toString().substring(0, 8);
+        // Generate a real signed JWT so JwtAuthenticationFilter can authenticate this farmer on later requests
+        String token = jwtService.generateToken(farmer.getFarmerId(), "FARMER", farmer.getMobileNumber(), new HashMap<>());
         log.info("Login successful for farmer ID: {} ({})", farmer.getFarmerId(), farmer.getFullName());
 
         return LoginResponse.builder()
@@ -146,13 +141,23 @@ public class AuthService {
             throw new BadRequestException("Partner account is currently deactivated. Please contact support.");
         }
 
+        if (partner.getVerificationStatus() == Partner.VerificationStatus.PENDING) {
+            log.warn("Login blocked for partner ID {}: Verification pending", partner.getId());
+            throw new BadRequestException("Your account verification is currently pending admin approval. Please check back later.");
+        }
+
+        if (partner.getVerificationStatus() == Partner.VerificationStatus.REJECTED) {
+            log.warn("Login blocked for partner ID {}: Verification rejected", partner.getId());
+            throw new BadRequestException("Your partner account verification has been rejected. Please contact customer support.");
+        }
+
         if (request.getPassword() == null || request.getPassword().isEmpty()
                 || !passwordEncoder.matches(request.getPassword(), partner.getPassword())) {
             log.warn("Login failed for partner ID {}: Invalid password provided", partner.getId());
             throw new BadRequestException("Invalid mobile/email or password.");
         }
 
-        String token = "agro-token-partner-" + partner.getId() + "-" + UUID.randomUUID().toString().substring(0, 8);
+        String token = jwtService.generateToken(partner.getId(), "PARTNER", partner.getMobileNumber(), new HashMap<>());
         log.info("Partner login successful for partner ID: {} ({})", partner.getId(), partner.getFullName());
 
         return LoginResponse.builder()
@@ -163,7 +168,7 @@ public class AuthService {
                 .mobileNumber(partner.getMobileNumber())
                 .email(partner.getEmail())
                 .role("PARTNER")
-                .accountStatus(partner.getVerificationStatus() != null ? partner.getVerificationStatus().name() : "PENDING")
+                .accountStatus(partner.getVerificationStatus() != null ? partner.getVerificationStatus().name() : "APPROVED")
                 .message("Partner login successful. Welcome back, " + partner.getFullName() + "!")
                 .build();
     }
