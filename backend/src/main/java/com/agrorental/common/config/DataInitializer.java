@@ -20,10 +20,7 @@ import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.entity.OperatorJobAssignment;
 import com.agrorental.operator.enums.OperatorAssignmentStatus;
 import com.agrorental.operator.entity.OperatorJobPauseInterval;
-<<<<<<< HEAD
-=======
 import com.agrorental.operator.entity.OperatorReview;
->>>>>>> origin/development
 import com.agrorental.operator.repository.OperatorJobPauseIntervalRepository;
 import com.agrorental.operator.repository.OperatorJobAssignmentRepository;
 import com.agrorental.operator.repository.OperatorRepository;
@@ -65,11 +62,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PaymentRepository paymentRepository;
     private final NotificationRepository notificationRepository;
     private final ReviewRepository reviewRepository;
-<<<<<<< HEAD
-    private final com.agrorental.operator.repository.OperatorReviewRepository operatorReviewRepository;
-=======
     private final OperatorReviewRepository operatorReviewRepository;
->>>>>>> origin/development
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(
@@ -84,11 +77,7 @@ public class DataInitializer implements CommandLineRunner {
             PaymentRepository paymentRepository,
             NotificationRepository notificationRepository,
             ReviewRepository reviewRepository,
-<<<<<<< HEAD
-            com.agrorental.operator.repository.OperatorReviewRepository operatorReviewRepository,
-=======
             OperatorReviewRepository operatorReviewRepository,
->>>>>>> origin/development
             PasswordEncoder passwordEncoder) {
         this.partnerRepository = partnerRepository;
         this.farmerRepository = farmerRepository;
@@ -503,11 +492,7 @@ public class DataInitializer implements CommandLineRunner {
         reviewRepository.save(r2);
 
         // 7b. Seed Operator Review for Completed Assignment #3 (Operator 1)
-<<<<<<< HEAD
-        com.agrorental.operator.entity.OperatorReview opReview1 = com.agrorental.operator.entity.OperatorReview.builder()
-=======
         OperatorReview opReview1 = OperatorReview.builder()
->>>>>>> origin/development
                 .assignment(assign3)
                 .operator(op1)
                 .booking(b5)
