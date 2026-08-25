@@ -4,6 +4,7 @@ import { equipmentService } from '../../services/equipmentService';
 import {
   EQUIPMENT_CATEGORIES,
   DEFAULT_EQUIPMENT_IMAGE,
+  getCategoryEquipmentImage,
   formatCategoryLabel,
   getStatusBadgeInfo,
 } from '../../utils/constants';
@@ -283,7 +284,8 @@ function SearchEquipment() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {equipmentList.map((item) => {
             const badge = getStatusBadgeInfo(item.availabilityStatus);
-            const imageSrc = item.primaryImageUrl || DEFAULT_EQUIPMENT_IMAGE;
+            const categoryFallback = getCategoryEquipmentImage(item.category);
+            const imageSrc = item.primaryImageUrl || (item.images && item.images.length > 0 ? item.images[0].imageUrl : null) || categoryFallback;
 
             return (
               <div
@@ -298,7 +300,7 @@ function SearchEquipment() {
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src = DEFAULT_EQUIPMENT_IMAGE;
+                      e.target.src = categoryFallback;
                     }}
                   />
                   <span
