@@ -47,6 +47,46 @@ export const partnerService = {
   getDashboard: async (partnerId) => {
     return await apiRequest(`/partners/${partnerId}/dashboard`, 'GET');
   },
+
+  /**
+   * Fetch all registered partners (Admin / KYC oversight).
+   */
+  getAllPartners: async () => {
+    const res = await apiRequest('/partners', 'GET');
+    return res.data || res;
+  },
+
+  /**
+   * Approve a partner's KYC verification.
+   */
+  approveKyc: async (partnerId) => {
+    const res = await apiRequest(`/partners/${partnerId}/kyc/approve`, 'PUT');
+    return res.data || res;
+  },
+
+  /**
+   * Reject a partner's KYC verification.
+   */
+  rejectKyc: async (partnerId) => {
+    const res = await apiRequest(`/partners/${partnerId}/kyc/reject`, 'PUT');
+    return res.data || res;
+  },
+
+  /**
+   * Send OTP for partner verification.
+   */
+  sendOtp: async (partnerId) => {
+    const res = await apiRequest(`/partners/${partnerId}/otp/send`, 'POST');
+    return res.data || res;
+  },
+
+  /**
+   * Verify partner OTP code.
+   */
+  verifyOtp: async (partnerId, otp) => {
+    const res = await apiRequest(`/partners/${partnerId}/otp/verify`, 'POST', { otp });
+    return res.data || res;
+  },
 };
 
 export default partnerService;

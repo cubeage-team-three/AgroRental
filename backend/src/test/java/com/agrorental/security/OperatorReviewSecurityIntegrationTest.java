@@ -8,6 +8,8 @@ import com.agrorental.operator.dto.OperatorReviewResponse;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.admin.repository.AdminRepository;
+import com.agrorental.partner.repository.PartnerRepository;
+import com.agrorental.farmer.repository.FarmerRepository;
 import com.agrorental.operator.repository.OperatorRepository;
 import com.agrorental.operator.service.OperatorReviewService;
 import com.agrorental.security.jwt.JwtAuthenticationFilter;
@@ -58,6 +60,12 @@ class OperatorReviewSecurityIntegrationTest {
     private AdminRepository adminRepository;
 
     @Mock
+    private PartnerRepository partnerRepository;
+
+    @Mock
+    private FarmerRepository farmerRepository;
+
+    @Mock
     private OperatorReviewService reviewService;
 
     @InjectMocks
@@ -68,7 +76,7 @@ class OperatorReviewSecurityIntegrationTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
-        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, operatorRepository, adminRepository);
+        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, operatorRepository, adminRepository, partnerRepository, farmerRepository);
 
         HandlerMethodArgumentResolver principalResolver = new HandlerMethodArgumentResolver() {
             @Override
@@ -127,6 +135,11 @@ class OperatorReviewSecurityIntegrationTest {
         when(jwtService.extractUserId(token)).thenReturn(10L);
         when(jwtService.extractRole(token)).thenReturn("FARMER");
         when(jwtService.extractMobileNumber(token)).thenReturn("9876500001");
+
+        com.agrorental.farmer.entity.Farmer farmer = new com.agrorental.farmer.entity.Farmer();
+        farmer.setId(10L);
+        farmer.setAccountStatus("ACTIVE");
+        when(farmerRepository.findById(10L)).thenReturn(Optional.of(farmer));
 
         String json = "{\"rating\":5,\"comment\":\"Great harvesting service!\"}";
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, XCircle, Search, Sprout, CreditCard, FileText, Star, Eye } from 'lucide-react';
 import { bookingService } from '../../services/bookingService';
 import { getFarmerId } from '../../services/authService';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -57,11 +58,12 @@ function MyBookings() {
     if (!window.confirm('Are you sure you want to cancel this equipment reservation?')) return;
 
     try {
+      setError(null);
       await bookingService.cancelBooking(id);
       setActionMessage(`Booking #${id} has been cancelled successfully.`);
       fetchBookings();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to cancel booking.');
+      setError(err.data?.message || err.message || 'Failed to cancel booking.');
     }
   };
 
@@ -96,9 +98,14 @@ function MyBookings() {
     <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Page Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Booking History</h1>
-          <p className="text-sm text-slate-600">Track current and past agricultural machinery rental requests</p>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-sm border border-slate-200 h-11 shrink-0">
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Booking History</h1>
+            <p className="text-sm text-slate-600">Track current and past agricultural machinery rental requests</p>
+          </div>
         </div>
         <Link
           to="/farmer/equipment"
@@ -260,6 +267,7 @@ function MyBookings() {
 
                     {booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
                       <button
+                        type="button"
                         onClick={() => handleCancel(booking.id)}
                         className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:border-red-300"
                       >

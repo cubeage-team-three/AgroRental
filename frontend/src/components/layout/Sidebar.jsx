@@ -81,7 +81,7 @@ function Sidebar() {
         
         {/* Official Brand Logo Header */}
         <div className="flex items-center gap-3 px-2 py-2 border-b border-emerald-800/60">
-          <div className="flex items-center overflow-hidden rounded-xl bg-white px-2 py-1 shadow-sm ring-1 ring-slate-900/5 h-11 shrink-0">
+          <div className="flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1.5 shadow-md ring-1 ring-slate-900/10 h-12 shrink-0">
             <img
               src={agroRentLogo}
               alt="AgroRent Marketplace"
@@ -89,7 +89,7 @@ function Sidebar() {
             />
           </div>
           <div>
-            <h1 className="text-lg font-extrabold tracking-tight text-white drop-shadow-sm">AgroRent</h1>
+            <h1 className="text-base font-extrabold tracking-tight text-white drop-shadow-sm">AgroRent</h1>
             <span className="text-[10px] font-extrabold text-lime-400 uppercase tracking-wider block -mt-0.5">
               {portalTitle}
             </span>

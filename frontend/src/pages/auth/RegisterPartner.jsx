@@ -6,13 +6,14 @@ import {
   Building2,
   Eye,
   EyeOff,
+<<<<<<< HEAD
   HardHat,
   LayoutDashboard,
+=======
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
   Loader2,
   Lock,
   Mail,
-  Sprout,
-  Tractor,
   User,
   X,
 } from 'lucide-react';
@@ -21,6 +22,7 @@ import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
 import MagneticButton from '../../components/ui/MagneticButton';
 import AuthField from '../../components/auth/AuthField';
 
+<<<<<<< HEAD
 const ROLES = [
   { id: 'farmer', label: 'Farmer', icon: Sprout },
   { id: 'owner', label: 'Equipment Owner', icon: Tractor },
@@ -28,6 +30,8 @@ const ROLES = [
   { id: 'admin', label: 'Admin', icon: LayoutDashboard },
 ];
 
+=======
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
 function RegisterPartner() {
   const navigate = useNavigate();
 
@@ -65,6 +69,7 @@ function RegisterPartner() {
     if (errorMessage) setErrorMessage('');
   };
 
+<<<<<<< HEAD
   const handleRoleSelect = (roleId) => {
     if (roleId === 'farmer') {
       navigate('/register');
@@ -79,6 +84,8 @@ function RegisterPartner() {
     }
   };
 
+=======
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -153,6 +160,7 @@ function RegisterPartner() {
         <p className="mt-2 text-[15px] text-slate-500">List your equipment and start earning on AgroRent.</p>
       </RevealItem>
 
+<<<<<<< HEAD
       <RevealItem className="mt-7">
         <span className="mb-3 block text-xs font-semibold uppercase tracking-wide text-slate-400">I am a</span>
         <div className="grid grid-cols-4 gap-2">
@@ -182,6 +190,8 @@ function RegisterPartner() {
         </div>
       </RevealItem>
 
+=======
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
       {errorMessage && (
         <RevealItem className="mt-5">
           <div className="flex items-start justify-between gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">

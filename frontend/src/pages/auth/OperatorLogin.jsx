@@ -1,5 +1,9 @@
 import { useState } from 'react';
+<<<<<<< HEAD
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+=======
+import { Link, useNavigate } from 'react-router-dom';
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -8,16 +12,22 @@ import {
   HardHat,
   LayoutDashboard,
   Loader2,
+<<<<<<< HEAD
   Lock,
   Phone,
   Sprout,
   Tractor,
+=======
+  ArrowRight,
+  ShieldCheck,
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
   X,
 } from 'lucide-react';
 import { operatorService } from '../../services/operatorService';
 import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
 import MagneticButton from '../../components/ui/MagneticButton';
 import AuthField from '../../components/auth/AuthField';
+<<<<<<< HEAD
 
 const ROLES = [
   { id: 'farmer', label: 'Farmer', icon: Sprout },
@@ -25,6 +35,8 @@ const ROLES = [
   { id: 'operator', label: 'Operator', icon: HardHat },
   { id: 'admin', label: 'Admin', icon: LayoutDashboard },
 ];
+=======
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
 
 function OperatorLogin() {
   const navigate = useNavigate();
@@ -125,6 +137,7 @@ function OperatorLogin() {
   };
 
   return (
+<<<<<<< HEAD
     <RevealGroup stagger={0.06} delayChildren={0.05}>
       <RevealItem>
         <h1 className="font-display text-[28px] font-bold tracking-tight text-slate-900 sm:text-[32px]">
@@ -164,6 +177,22 @@ function OperatorLogin() {
             );
           })}
         </div>
+=======
+    <RevealGroup stagger={0.07} delayChildren={0.05}>
+      <RevealItem className="flex justify-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700">
+          <HardHat className="h-6 w-6" />
+        </span>
+      </RevealItem>
+
+      <RevealItem className="mt-5 text-center">
+        <h1 className="font-display text-[26px] font-bold tracking-tight text-slate-900 sm:text-[30px]">
+          Operator Portal Login
+        </h1>
+        <p className="mt-2 text-[15px] text-slate-500">
+          Sign in to access your deployed field jobs, machinery schedules, and earnings.
+        </p>
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
       </RevealItem>
 
       {errorMessage && (
@@ -194,7 +223,12 @@ function OperatorLogin() {
           <AuthField
             id="mobileNumber"
             name="mobileNumber"
+<<<<<<< HEAD
             label="Mobile Number"
+=======
+            label="Registered Mobile Number"
+            icon={Phone}
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
             type="tel"
             maxLength={10}
             prefix="+91"
@@ -205,7 +239,11 @@ function OperatorLogin() {
           <AuthField
             id="password"
             name="password"
+<<<<<<< HEAD
             label="Password"
+=======
+            label="Account Password"
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
             icon={Lock}
             type={showPassword ? 'text' : 'password'}
             value={formData.password}
@@ -221,7 +259,11 @@ function OperatorLogin() {
             }
           />
 
+<<<<<<< HEAD
           <MagneticButton className="block w-full pt-2">
+=======
+          <MagneticButton className="block w-full pt-1">
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
             <motion.button
               type="submit"
               disabled={loading}
@@ -242,11 +284,19 @@ function OperatorLogin() {
               {loading ? (
                 <>
                   <Loader2 className="h-[18px] w-[18px] animate-spin" />
+<<<<<<< HEAD
                   Signing in to Operator Console...
                 </>
               ) : (
                 <>
                   Login to Operator Account
+=======
+                  Verifying Operator Credentials...
+                </>
+              ) : (
+                <>
+                  Sign In to Operator Console
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
@@ -257,6 +307,7 @@ function OperatorLogin() {
 
       <RevealItem className="mt-8 text-center text-sm text-slate-500 space-y-2">
         <div>
+<<<<<<< HEAD
           Don&apos;t have an Operator account?{' '}
           <Link
             to="/register/operator"
@@ -268,6 +319,17 @@ function OperatorLogin() {
         <div>
           <Link to="/" className="text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors">
             ← Back to Home
+=======
+          New machinery operator?{' '}
+          <Link to="/register/operator" className="font-bold text-emerald-700 underline-offset-2 hover:underline">
+            Register &amp; Verify Credentials →
+          </Link>
+        </div>
+        <div>
+          Farmer or Equipment Owner?{' '}
+          <Link to="/login" className="font-semibold text-slate-600 underline-offset-2 hover:underline">
+            Standard Portal Login
+>>>>>>> origin/dev-DhananjayTarange-operator-management1
           </Link>
         </div>
       </RevealItem>
