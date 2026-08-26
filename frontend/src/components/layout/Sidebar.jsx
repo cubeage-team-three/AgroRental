@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
-import { getCurrentUser, logoutUser, getFarmerId, getPartnerId, getOperatorId } from '../../services/authService';
+import { getFarmerId, getOperatorId } from '../../services/authService';
 import { notificationService } from '../../services/notificationService';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -19,9 +19,8 @@ function Sidebar() {
   }
   const t = langCtx?.t || ((k, d) => d || k);
 
-  const currentUser = auth.user || getCurrentUser();
-  const userName = currentUser?.fullName || currentUser?.name || currentUser?.businessName || 'AgroRental User';
-  const mobileNumber = currentUser?.mobileNumber || '9876543210';
+  const userName = auth.user?.fullName || 'Loading...';
+  const mobileNumber = auth.user?.mobileNumber || '';
   const [unreadCount, setUnreadCount] = useState(0);
 
   const handleLogout = () => {
@@ -105,7 +104,9 @@ function Sidebar() {
           </div>
           <div className="overflow-hidden">
             <h3 className="text-sm font-extrabold text-white truncate">{userName}</h3>
-            <p className="text-[11px] text-emerald-200 font-medium truncate">+91 {mobileNumber}</p>
+            <p className="text-[11px] text-emerald-200 font-medium truncate">
+              {mobileNumber ? `+91 ${mobileNumber}` : 'No mobile on file'}
+            </p>
             <span className="inline-block mt-0.5 px-2 py-0.2 bg-lime-400/20 text-lime-300 rounded text-[9px] font-extrabold border border-lime-400/30">
               ✓ Active Account
             </span>

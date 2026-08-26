@@ -31,7 +31,7 @@ export default function ProtectedRoute({ allowedRoles = [] }) {
     if (role === 'FARMER') {
       return <Navigate to="/farmer/dashboard" replace />;
     } else if (role === 'ADMIN') {
-      return <Navigate to="/admin/dashboard" replace />;
+      return <Navigate to="/admin/overview" replace />;
     } else if (role === 'PARTNER') {
       return <Navigate to="/partner/dashboard" replace />;
     } else if (role === 'OPERATOR') {
