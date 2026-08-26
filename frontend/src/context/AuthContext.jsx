@@ -1,37 +1,45 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../utils/constants';
-import { getCurrentUser, logoutUser } from '../services/authService';
-import { getAuthToken } from '../utils/auth';
+import {
+  loginUser as loginApi,
+  loginWithOtp as loginOtpApi,
+  saveUserSession,
+  logoutUser,
+  getCurrentUser,
+} from '../services/authService';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Re-derives auth state from localStorage, and for farmers also re-fetches
+  // the authoritative profile from the backend — farmer accounts verified via
+  // OTP land on the dashboard with only whatever the OTP-verify response
+  // carried, so this keeps name/mobile/email fresh without a full reload.
   const refreshUser = useCallback(async () => {
-    const token = getAuthToken();
-    const cachedUser = getCurrentUser();
+    const storedToken = localStorage.getItem('agro_token') || localStorage.getItem('accessToken');
+    const storedUser = getCurrentUser();
 
-    if (!token || !cachedUser) {
+    if (!storedToken || !storedUser) {
+      setToken(null);
       setUser(null);
-      setLoading(false);
+      setIsLoading(false);
       return;
     }
 
     // Show cached session data immediately so the UI never has to wait on
     // the network before it can render a real name/mobile/email.
-    setUser(cachedUser);
+    setToken(storedToken);
+    setUser(storedUser);
 
-    // Farmer accounts verified via OTP land on the dashboard with only
-    // whatever the OTP-verify response carried; re-fetch the authoritative
-    // record from the backend so any fields entered after that (or edited
-    // elsewhere) are reflected here too.
-    if (cachedUser.role === 'FARMER') {
+    if (storedUser.role === 'FARMER') {
       try {
         const res = await axios.get(`${API_BASE_URL}/farmers/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${storedToken}` },
         });
         const fresh = res.data?.data;
         if (fresh) {
@@ -44,25 +52,70 @@ export function AuthProvider({ children }) {
           // network hiccup) — clear it instead of leaving a phantom "logged
           // in" session that fails on every subsequent authenticated request.
           logoutUser();
+          setToken(null);
           setUser(null);
         } else {
           // Network/server issue — keep showing the cached session data;
-          // a failed refresh shouldn't blank out a user who is otherwise
-          // validly logged in just because the backend hiccupped.
+          // a failed refresh shouldn't blank out an otherwise validly
+          // logged-in user just because the backend hiccupped.
           console.warn('AuthContext: failed to refresh farmer profile:', err.message);
         }
       }
     }
 
-    setLoading(false);
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
 
+  const login = async (credentials) => {
+    setIsLoading(true);
+    try {
+      let response;
+      if (credentials.loginType === 'OTP') {
+        response = await loginOtpApi(credentials);
+      } else {
+        response = await loginApi(credentials);
+      }
+
+      const userData = response.data || response;
+      saveUserSession(userData);
+
+      const newToken = localStorage.getItem('agro_token') || userData.token;
+      const currentUser = getCurrentUser() || userData;
+
+      setToken(newToken);
+      setUser(currentUser);
+
+      return response;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = () => {
+    logoutUser();
+    setToken(null);
+    setUser(null);
+  };
+
+  const value = {
+    user,
+    setUser,
+    token,
+    role: user?.role || null,
+    isAuthenticated: Boolean(token && user),
+    isLoading,
+    loading: isLoading, // alias for callers written against the older name
+    login,
+    logout,
+    refreshUser,
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, refreshUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

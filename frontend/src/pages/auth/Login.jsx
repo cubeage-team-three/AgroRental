@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Eye, EyeOff, Loader2, MessageCircle, Smartphone, Lock, X } from 'lucide-react';
-import { loginUser, loginWithOtp, saveUserSession } from '../../services/authService';
 import { sendOtp } from '../../services/farmerAuthService';
 import { operatorService } from '../../services/operatorService';
 import { useLanguage } from '../../context/LanguageContext';
@@ -24,8 +23,9 @@ function GoogleIcon() {
 
 function Login() {
   const { t } = useLanguage();
+  const auth = useAuth();
+  const { refreshUser } = auth;
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
 
   // Mode: "PASSWORD" or "OTP"
   const [loginMode, setLoginMode] = useState('PASSWORD');
@@ -116,21 +116,20 @@ function Login() {
     try {
       let response;
       if (loginMode === 'OTP') {
-        response = await loginWithOtp({
+        response = await auth.login({
           mobileOrEmail: formData.mobileOrEmail.trim(),
           otp: formData.otp.trim(),
+          loginType: 'OTP',
         });
       } else {
-        response = await loginUser({
+        response = await auth.login({
           mobileOrEmail: formData.mobileOrEmail.trim(),
           password: formData.password,
           loginType: 'PASSWORD',
         });
       }
 
-      const userData = response.data;
-      saveUserSession(userData);
-      refreshUser();
+      const userData = response.data || response;
       if (userData && (userData.role === 'PARTNER' || userData.partnerId)) {
         setSuccessMessage('Partner login successful! Redirecting to Partner Portal...');
         setTimeout(() => {

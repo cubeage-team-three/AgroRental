@@ -61,6 +61,9 @@ class OperatorSecurityIntegrationTest {
     private FarmerRepository farmerRepository;
 
     @Mock
+    private com.agrorental.user.repository.UserRepository userRepository;
+
+    @Mock
     private OperatorAuthService operatorAuthService;
 
     @InjectMocks
@@ -71,7 +74,7 @@ class OperatorSecurityIntegrationTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
-        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, operatorRepository, adminRepository, partnerRepository, farmerRepository);
+        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, userRepository, operatorRepository, adminRepository, partnerRepository, farmerRepository);
 
         HandlerMethodArgumentResolver principalResolver = new HandlerMethodArgumentResolver() {
             @Override

@@ -75,7 +75,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
 
-                        // Farmer: registration + OTP are public, everything else requires the farmer's own JWT
+                        // Farmer: registration + OTP are public; farms, profile, dashboard, and management require authentication
                         .requestMatchers(HttpMethod.POST, "/api/farmers/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/farmers/send-otp", "/api/farmers/verify-otp", "/api/farmers/resend-otp").permitAll()
                         .requestMatchers("/api/farmers/**").hasRole("FARMER")
