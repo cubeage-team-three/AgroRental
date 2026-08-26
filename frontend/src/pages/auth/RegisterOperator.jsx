@@ -12,6 +12,7 @@ import {
   Loader2,
   Lock,
   Mail,
+  MapPin,
   ShieldCheck,
   Sprout,
   Tractor,
@@ -370,6 +371,17 @@ function RegisterOperator() {
             icon={Mail}
             type="email"
             value={formData.email}
+            onChange={handleInputChange}
+          />
+
+          <AuthField
+            id="address"
+            name="address"
+            label="Address"
+            placeholder="Enter Full Address"
+            icon={MapPin}
+            type="text"
+            value={formData.address}
             onChange={handleInputChange}
           />
 
