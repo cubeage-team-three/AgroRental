@@ -4,9 +4,11 @@ import com.agrorental.common.dto.ApiResponse;
 import com.agrorental.farmer.dto.FarmCreateRequest;
 import com.agrorental.farmer.dto.FarmResponse;
 import com.agrorental.farmer.service.FarmService;
+import com.agrorental.security.principal.FarmerPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,7 +32,12 @@ public class FarmController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<FarmResponse>> createFarm(
+            @AuthenticationPrincipal FarmerPrincipal principal,
             @Valid @RequestBody FarmCreateRequest request) {
+
+        if (principal != null && principal.getId() != null) {
+            request.setFarmerId(principal.getId());
+        }
 
         FarmResponse response = farmService.createFarm(request);
         return ResponseEntity
@@ -43,9 +50,11 @@ public class FarmController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<List<FarmResponse>>> getFarms(
+            @AuthenticationPrincipal FarmerPrincipal principal,
             @RequestParam(required = false) Long farmerId) {
 
-        List<FarmResponse> response = farmService.getFarmsByFarmerId(farmerId);
+        Long targetFarmerId = (principal != null && principal.getId() != null) ? principal.getId() : farmerId;
+        List<FarmResponse> response = farmService.getFarmsByFarmerId(targetFarmerId);
         return ResponseEntity.ok(ApiResponse.success("Farms retrieved successfully", response));
     }
 
@@ -64,7 +73,12 @@ public class FarmController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<FarmResponse>> updateFarm(
             @PathVariable Long id,
+            @AuthenticationPrincipal FarmerPrincipal principal,
             @Valid @RequestBody FarmCreateRequest request) {
+
+        if (principal != null && principal.getId() != null) {
+            request.setFarmerId(principal.getId());
+        }
 
         FarmResponse response = farmService.updateFarm(id, request);
         return ResponseEntity.ok(ApiResponse.success("Farm updated successfully", response));
