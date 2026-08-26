@@ -6,6 +6,10 @@ import com.agrorental.booking.dto.BookingStatusUpdateRequest;
 import com.agrorental.booking.service.BookingService;
 import com.agrorental.common.dto.ApiResponse;
 import com.agrorental.security.principal.PartnerPrincipal;
+import com.agrorental.common.exception.ForbiddenException;
+import com.agrorental.common.exception.UnauthorizedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +30,29 @@ public class BookingController {
 
     public BookingController(BookingService bookingService) {
         this.bookingService = bookingService;
+    }
+
+    private void validatePartnerOwnership(Long partnerId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("Full authentication is required to access this resource");
+        }
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            return;
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof PartnerPrincipal partnerPrincipal) {
+            if (partnerPrincipal.getId().equals(partnerId)) {
+                return;
+            }
+        }
+
+        throw new ForbiddenException("Access is denied. You do not have the required permissions.");
     }
 
     /**
@@ -87,6 +114,7 @@ public class BookingController {
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookingsByPartner(
             @PathVariable Long partnerId) {
 
+        validatePartnerOwnership(partnerId);
         List<BookingResponse> response = bookingService.getBookingsByPartner(partnerId);
 
         return ResponseEntity.ok(

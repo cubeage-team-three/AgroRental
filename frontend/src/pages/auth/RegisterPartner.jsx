@@ -106,14 +106,7 @@ function RegisterPartner() {
       }, 1500);
     } catch (err) {
       console.error('Partner Registration error:', err);
-      if (err.message && err.message.includes('Network error')) {
-        setSuccessMessage('Demo Mode: Account draft created! Redirecting to login...');
-        setTimeout(() => {
-          navigate('/login');
-        }, 1500);
-      } else {
-        setErrorMessage(err.message || 'Failed to register partner. Please check all fields.');
-      }
+      setErrorMessage(err.message || 'Failed to register partner. Please check all fields.');
     } finally {
       setLoading(false);
     }
