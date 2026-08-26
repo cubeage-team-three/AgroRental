@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.agrorental.user.entity.User;
+import com.agrorental.user.repository.UserRepository;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -25,6 +27,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private final UserRepository userRepository;
     private final FarmerRepository farmerRepository;
     private final PartnerRepository partnerRepository;
     private final AdminRepository adminRepository;
@@ -36,25 +39,62 @@ public class AuthService {
         String input = request.getMobileOrEmail().trim();
         log.info("Processing login request for user: {}", input);
 
-        // 1. Try finding in Admin repository first (email-only account)
+        // 1. Try finding in UserRepository first (email account)
+        Optional<User> userOpt = userRepository.findByEmail(input.toLowerCase());
+        if (userOpt.isPresent()) {
+            return loginUser(userOpt.get(), request);
+        }
+
+        // 2. Try finding in Admin repository (legacy email-only account)
         Optional<Admin> adminOpt = adminRepository.findByEmail(input);
         if (adminOpt.isPresent()) {
             return loginAdmin(adminOpt.get(), request);
         }
 
-        // 2. Try finding in Farmer repository
+        // 3. Try finding in Farmer repository (legacy mobile/email account)
         Optional<Farmer> farmerOpt = farmerRepository.findByMobileNumberOrEmail(input, input);
         if (farmerOpt.isPresent()) {
             return loginFarmer(farmerOpt.get(), request);
         }
 
-        // 3. Try finding in Partner repository
+        // 4. Try finding in Partner repository
         Optional<Partner> partnerOpt = partnerRepository.findByMobileNumberOrEmailIgnoreCase(input, input);
         if (partnerOpt.isPresent()) {
             return loginPartner(partnerOpt.get(), request);
         }
 
-        throw new BadRequestException("Account not found with provided mobile or email: " + input);
+        throw new BadRequestException("Invalid email or password.");
+    }
+
+    private LoginResponse loginUser(User user, LoginRequest request) {
+        if (!user.isEnabled()) {
+            log.warn("Login blocked for User ID {}: Account is disabled", user.getId());
+            throw new BadRequestException("Account is disabled. Please contact customer support.");
+        }
+
+        if (request.getPassword() == null || request.getPassword().isEmpty()
+                || (!passwordEncoder.matches(request.getPassword(), user.getPassword())
+                    && !request.getPassword().equals(user.getPassword()))) {
+            log.warn("Login failed for User ID {}: Invalid password", user.getId());
+            throw new BadRequestException("Invalid email or password.");
+        }
+
+        Long farmerId = user.getFarmer() != null ? user.getFarmer().getId() : null;
+
+        String token = jwtService.generateToken(user.getId(), user.getRole().name(), user.getEmail(), new HashMap<>());
+
+        log.info("User authentication successful for User ID: {} ({})", user.getId(), user.getName());
+
+        return LoginResponse.builder()
+                .token(token)
+                .userId(user.getId())
+                .farmerId(farmerId)
+                .fullName(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .accountStatus(user.isEnabled() ? "ACTIVE" : "INACTIVE")
+                .message("Login successful. Welcome back, " + user.getName() + "!")
+                .build();
     }
 
     private LoginResponse loginAdmin(Admin admin, LoginRequest request) {

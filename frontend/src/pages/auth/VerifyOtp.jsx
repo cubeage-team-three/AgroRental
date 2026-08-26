@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { verifyOtp, resendOtp, sendOtp } from '../../services/farmerAuthService';
+import { saveUserSession } from '../../services/authService';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 
 function VerifyOtp() {
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
   // Retrieve mobile number passed from state or default fallback
   const initialMobile = location.state?.mobileNumber || '';
@@ -14,6 +17,7 @@ function VerifyOtp() {
   
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef([]);
+  const hasTriggeredInitialOtp = useRef(false);
 
   const [timerSeconds, setTimerSeconds] = useState(300); // 5 minutes (300s)
   const [isTimerActive, setIsTimerActive] = useState(true);
@@ -24,9 +28,15 @@ function VerifyOtp() {
   const [successMessage, setSuccessMessage] = useState('');
   const [devMockOtp, setDevMockOtp] = useState('');
 
-  // Initial OTP trigger if coming directly
+  // Initial OTP trigger if coming directly. Guarded with a ref (not just the
+  // dependency array) because React StrictMode double-invokes effects in dev —
+  // without the guard this fires the send-OTP request twice, creating two OTP
+  // rows in the DB. The backend verifies against the latest row, so if the two
+  // requests resolve out of order, the code shown on screen can end up being
+  // the stale one and get rejected as "invalid" even though it was typed correctly.
   useEffect(() => {
-    if (initialMobile) {
+    if (initialMobile && !hasTriggeredInitialOtp.current) {
+      hasTriggeredInitialOtp.current = true;
       triggerInitialOtp(initialMobile);
     }
   }, [initialMobile]);
@@ -36,6 +46,7 @@ function VerifyOtp() {
       const res = await sendOtp(mobile);
       if (res.data?.devMockOtp) {
         setDevMockOtp(res.data.devMockOtp);
+        setOtpDigits(res.data.devMockOtp.split('').slice(0, 6));
       }
     } catch (err) {
       console.warn('Initial OTP request notification:', err.message);
@@ -117,6 +128,20 @@ function VerifyOtp() {
       const response = await verifyOtp(mobileNumber, fullOtp);
       setSuccessMessage('✓ Mobile verified! Account activated successfully.');
 
+      const data = response?.data;
+      if (data?.token) {
+        saveUserSession({
+          token: data.token,
+          farmerId: data.farmerId,
+          fullName: data.fullName,
+          mobileNumber: data.mobileNumber,
+          email: data.email,
+          role: data.role || 'FARMER',
+          accountStatus: 'ACTIVE',
+        });
+        refreshUser();
+      }
+
       setTimeout(() => {
         navigate('/farmer/dashboard', {
           state: { message: 'Welcome to AgroRent! Your account is active.' }
@@ -151,12 +176,14 @@ function VerifyOtp() {
     try {
       const response = await resendOtp(mobileNumber);
       setSuccessMessage('New OTP code sent successfully to +91 ' + mobileNumber);
-      if (response.data?.devMockOtp) {
-        setDevMockOtp(response.data.devMockOtp);
-      }
       setTimerSeconds(300); // Reset 5-minute timer
       setIsTimerActive(true);
-      setOtpDigits(['', '', '', '', '', '']);
+      if (response.data?.devMockOtp) {
+        setDevMockOtp(response.data.devMockOtp);
+        setOtpDigits(response.data.devMockOtp.split('').slice(0, 6));
+      } else {
+        setOtpDigits(['', '', '', '', '', '']);
+      }
       inputRefs.current[0]?.focus();
     } catch (err) {
       console.error('Resend OTP Error:', err);

@@ -74,7 +74,7 @@ class OperatorEarningsSecurityIntegrationTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
-        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, operatorRepository, adminRepository, partnerRepository, farmerRepository);
+        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, null, operatorRepository, adminRepository, partnerRepository, farmerRepository);
 
         HandlerMethodArgumentResolver principalResolver = new HandlerMethodArgumentResolver() {
             @Override

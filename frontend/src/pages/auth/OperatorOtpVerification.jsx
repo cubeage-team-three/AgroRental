@@ -49,7 +49,7 @@ function OperatorOtpVerification() {
   const [resending, setResending] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [devMockOtp, setDevMockOtp] = useState('');
+  const [devMockOtp, setDevMockOtp] = useState(regData?.devMockOtp || '');
 
   // 30-second cooldown timer
   useEffect(() => {
@@ -64,11 +64,16 @@ function OperatorOtpVerification() {
     return () => clearInterval(timer);
   }, [isCooldownActive, resendCooldown]);
 
-  // Focus first input on mount
+  // Focus first input on mount, auto-filling the dev-mode code if one came
+  // through from the registration step so it's ready to submit immediately.
   useEffect(() => {
+    if (regData?.devMockOtp) {
+      setOtpDigits(regData.devMockOtp.split('').slice(0, 6));
+    }
     if (inputRefs.current[0]) {
       inputRefs.current[0].focus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const maskedMobile = mobileNumber
@@ -129,6 +134,7 @@ function OperatorOtpVerification() {
       setSuccessMessage('✓ A fresh 6-digit verification code has been dispatched to your mobile.');
       if (responseData?.devMockOtp) {
         setDevMockOtp(responseData.devMockOtp);
+        setOtpDigits(responseData.devMockOtp.split('').slice(0, 6));
       }
       setResendCooldown(30);
       setIsCooldownActive(true);

@@ -218,8 +218,10 @@ function RegisterOperator() {
       const registeredOperator = regResponse?.data || regResponse;
       const operatorId = registeredOperator?.id;
 
+      let devMockOtp = null;
       try {
-        await operatorService.sendOperatorOtp(formData.mobileNumber.trim(), 'MOBILE_VERIFICATION');
+        const otpRes = await operatorService.sendOperatorOtp(formData.mobileNumber.trim(), 'MOBILE_VERIFICATION');
+        devMockOtp = otpRes?.data?.devMockOtp || otpRes?.devMockOtp || null;
       } catch (otpErr) {
         console.warn('Initial OTP trigger:', otpErr.message);
       }
@@ -230,6 +232,7 @@ function RegisterOperator() {
         fullName: formData.fullName.trim(),
         aadhaarNumber: formData.aadhaarNumber.trim(),
         drivingLicenseNumber: formData.drivingLicenseNumber.trim().toUpperCase(),
+        devMockOtp,
       };
       sessionStorage.setItem('agro_pending_operator_reg', JSON.stringify(regSession));
 
@@ -378,7 +381,6 @@ function RegisterOperator() {
             id="address"
             name="address"
             label="Address"
-            placeholder="Enter Full Address"
             icon={MapPin}
             type="text"
             value={formData.address}

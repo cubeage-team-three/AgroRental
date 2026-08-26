@@ -75,15 +75,17 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
 
-                        // Farmer: registration + OTP are public, everything else requires the farmer's own JWT
+                        // Farmer: registration + OTP are public; farms, profile, dashboard, and management require authentication
                         .requestMatchers(HttpMethod.POST, "/api/farmers/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/farmers/send-otp", "/api/farmers/verify-otp", "/api/farmers/resend-otp").permitAll()
                         .requestMatchers("/api/farmers/**").hasRole("FARMER")
 
-                        // Partner: registration + OTP are public; KYC approval is an admin action, not partner self-service
+                        // Partner: registration + OTP are public; KYC approval and the full partner
+                        // listing are admin actions, not partner self-service
                         .requestMatchers(HttpMethod.POST, "/api/partners/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/partners/*/otp/**").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/partners/*/kyc/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/partners").hasRole("ADMIN")
                         .requestMatchers("/api/partners/**").hasRole("PARTNER")
 
                         // Equipment: browsing/search is public, listing management is partner-only

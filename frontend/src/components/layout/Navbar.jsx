@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Globe, Menu, X } from 'lucide-react';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 
 const navLinks = [
   { label: 'Services', href: '/#services' },
@@ -14,6 +15,7 @@ const navLinks = [
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const auth = useAuth();
 
   let t = (key, defaultVal) => defaultVal || key;
   let language = 'English';
@@ -43,6 +45,13 @@ function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const getDashboardLink = () => {
+    if (auth.role === 'ADMIN') return '/admin/dashboard';
+    if (auth.role === 'PARTNER') return '/partner/dashboard';
+    if (auth.role === 'OPERATOR') return '/operator/dashboard';
+    return '/farmer/dashboard';
+  };
 
   return (
     <header
@@ -114,19 +123,38 @@ function Navbar() {
               </select>
             </div>
           )}
-          <Link
-            to="/login"
-            className="inline-flex min-h-[44px] items-center rounded-xl border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-800 hover:shadow-md"
-          >
-            {t('login', 'Log In')}
-          </Link>
-          <Link
-            to="/register"
-            className="group inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-lime-400 px-5 py-2.5 text-sm font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-lime-300 hover:shadow-[0_0_25px_rgba(132,204,22,0.7)]"
-          >
-            {t('register', 'Sign Up Free')}
-            <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
-          </Link>
+          {auth.isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to={getDashboardLink()}
+                className="inline-flex min-h-[44px] items-center rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-md transition-all duration-300 hover:bg-emerald-800"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={() => auth.logout()}
+                className="inline-flex min-h-[44px] items-center rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-700 hover:bg-red-100"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="inline-flex min-h-[44px] items-center rounded-xl border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-800 hover:shadow-md"
+              >
+                {t('login', 'Log In')}
+              </Link>
+              <Link
+                to="/register"
+                className="group inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-lime-400 px-5 py-2.5 text-sm font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-lime-300 hover:shadow-[0_0_25px_rgba(132,204,22,0.7)]"
+              >
+                {t('register', 'Sign Up Free')}
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile toggle */}

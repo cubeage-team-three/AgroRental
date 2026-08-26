@@ -153,12 +153,30 @@ public class JwtService {
     }
 
     /**
-     * Extracts the Mobile Number from a JWT token.
+     * Extracts the Mobile Number or Email from a JWT token.
      */
     public String extractMobileNumber(String token) {
         JsonNode payload = extractClaims(token);
         if (payload != null && payload.has("mobile")) {
             return payload.get("mobile").asText();
+        }
+        return null;
+    }
+
+    /**
+     * Extracts the Email from a JWT token payload.
+     */
+    public String extractEmail(String token) {
+        return extractMobileNumber(token);
+    }
+
+    /**
+     * Extracts the Username/Subject from a JWT token payload.
+     */
+    public String extractUsername(String token) {
+        JsonNode payload = extractClaims(token);
+        if (payload != null && payload.has("sub")) {
+            return payload.get("sub").asText();
         }
         return null;
     }

@@ -4,11 +4,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
   CalendarRange,
+  Handshake,
   LayoutDashboard,
   LogOut,
   Menu,
   ShieldCheck,
   Tractor,
+  UserCheck,
   Users,
   X,
 } from 'lucide-react';
@@ -18,7 +20,9 @@ import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 const NAV_ITEMS = [
   { label: 'Overview', to: '/admin/overview', icon: LayoutDashboard, end: true },
-  { label: 'User Management', to: '/admin/farmers', icon: Users },
+  { label: 'Farmers', to: '/admin/farmers', icon: Users },
+  { label: 'Partners', to: '/admin/partners', icon: Handshake },
+  { label: 'Operators', to: '/admin/operators', icon: UserCheck },
   { label: 'Equipment Approvals', to: '/admin/equipment', icon: Tractor },
   { label: 'Bookings', to: '/admin/bookings', icon: CalendarRange },
   { label: 'Disputes', to: '/admin/complaints', icon: AlertTriangle },
