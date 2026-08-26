@@ -12,6 +12,7 @@ import {
   Loader2,
   Lock,
   Mail,
+  MapPin,
   ShieldCheck,
   Sprout,
   Tractor,
@@ -217,8 +218,10 @@ function RegisterOperator() {
       const registeredOperator = regResponse?.data || regResponse;
       const operatorId = registeredOperator?.id;
 
+      let devMockOtp = null;
       try {
-        await operatorService.sendOperatorOtp(formData.mobileNumber.trim(), 'MOBILE_VERIFICATION');
+        const otpRes = await operatorService.sendOperatorOtp(formData.mobileNumber.trim(), 'MOBILE_VERIFICATION');
+        devMockOtp = otpRes?.data?.devMockOtp || otpRes?.devMockOtp || null;
       } catch (otpErr) {
         console.warn('Initial OTP trigger:', otpErr.message);
       }
@@ -229,6 +232,7 @@ function RegisterOperator() {
         fullName: formData.fullName.trim(),
         aadhaarNumber: formData.aadhaarNumber.trim(),
         drivingLicenseNumber: formData.drivingLicenseNumber.trim().toUpperCase(),
+        devMockOtp,
       };
       sessionStorage.setItem('agro_pending_operator_reg', JSON.stringify(regSession));
 
@@ -370,6 +374,16 @@ function RegisterOperator() {
             icon={Mail}
             type="email"
             value={formData.email}
+            onChange={handleInputChange}
+          />
+
+          <AuthField
+            id="address"
+            name="address"
+            label="Address"
+            icon={MapPin}
+            type="text"
+            value={formData.address}
             onChange={handleInputChange}
           />
 
