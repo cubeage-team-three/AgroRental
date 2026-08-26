@@ -264,12 +264,12 @@ function ManagePartners() {
                       <td className="px-6 py-4">
                         <span
                           className={`text-[11px] font-bold px-2 py-0.5 rounded ${
-                            p.active
+                            p.verificationStatus === 'APPROVED'
                               ? 'bg-green-50 text-green-700 border border-green-200'
                               : 'bg-gray-100 text-gray-500 border border-gray-200'
                           }`}
                         >
-                          {p.active ? 'Active' : 'Inactive'}
+                          {p.verificationStatus === 'APPROVED' ? 'Active' : 'Inactive'}
                         </span>
                       </td>
 
