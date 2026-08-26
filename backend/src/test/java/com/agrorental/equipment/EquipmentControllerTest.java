@@ -148,4 +148,55 @@ class EquipmentControllerTest {
 
         verify(equipmentService).deleteEquipment(10L, 1L);
     }
+
+    @Test
+    @DisplayName("POST /api/equipment - Should create equipment for partner")
+    void shouldCreateEquipment() throws Exception {
+        EquipmentResponse response = EquipmentResponse.builder()
+                .id(100L)
+                .name("John Deere 5310 4WD Tractor")
+                .partnerId(1L)
+                .build();
+
+        when(equipmentService.createEquipment(any())).thenReturn(response);
+
+        PartnerPrincipal principal = PartnerPrincipal.builder().id(1L).role("PARTNER").build();
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                principal, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_PARTNER"))));
+
+        String jsonPayload = """
+                {
+                  "name": "John Deere 5310 4WD Tractor",
+                  "category": "TRACTOR",
+                  "brand": "John Deere",
+                  "model": "5310 4WD",
+                  "manufacturingYear": 2026,
+                  "capacity": "55 HP",
+                  "rentalPrice": 2000,
+                  "fuelType": "DIESEL",
+                  "description": "Standard tractor listing",
+                  "partnerId": 1,
+                  "locationAddress": "Shirur MIDC Road, Pune, Maharashtra 412210",
+                  "latitude": 18.5204,
+                  "longitude": 73.8567,
+                  "images": [
+                    {
+                      "imageUrl": "https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0",
+                      "isPrimary": true,
+                      "displayOrder": 1
+                    }
+                  ]
+                }
+                """;
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/equipment")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(100))
+                .andExpect(jsonPath("$.data.partnerId").value(1));
+
+        verify(equipmentService).createEquipment(any());
+    }
 }

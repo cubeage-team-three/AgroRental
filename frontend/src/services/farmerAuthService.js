@@ -17,22 +17,22 @@ export const resendOtp = async (mobileNumber) => {
 };
 
 export const getFarmerProfile = async (farmerId) => {
-  const targetId = farmerId || 1;
-  return await apiRequest(`/farmers/profile/${targetId}`, 'GET');
+  if (!farmerId) return null;
+  return await apiRequest(`/farmers/profile/${farmerId}`, 'GET');
 };
 
 export const updateFarmerProfile = async (farmerId, profileData) => {
-  const targetId = farmerId || 1;
-  return await apiRequest(`/farmers/profile/${targetId}`, 'PUT', profileData);
+  if (!farmerId) throw new Error('Farmer ID required');
+  return await apiRequest(`/farmers/profile/${farmerId}`, 'PUT', profileData);
 };
 
 export const changeFarmerPassword = async (farmerId, passwordData) => {
-  const targetId = farmerId || 1;
-  return await apiRequest(`/farmers/change-password/${targetId}`, 'PUT', passwordData);
+  if (!farmerId) throw new Error('Farmer ID required');
+  return await apiRequest(`/farmers/change-password/${farmerId}`, 'PUT', passwordData);
 };
 
 export const getFarmerDashboard = async (farmerId) => {
-  const targetId = farmerId || 1;
-  return await apiRequest(`/farmers/dashboard?farmerId=${targetId}`, 'GET');
+  if (!farmerId) return null;
+  return await apiRequest(`/farmers/dashboard?farmerId=${farmerId}`, 'GET');
 };
 
