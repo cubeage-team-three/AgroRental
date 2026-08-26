@@ -66,7 +66,6 @@ export const equipmentService = {
     if (Array.isArray(res)) {
       return res;
     }
-
     return [];
   },
 
