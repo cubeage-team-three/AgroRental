@@ -124,7 +124,7 @@ function AssignOperator() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 font-sans">
-      
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
         <div className="space-y-1">
@@ -161,7 +161,7 @@ function AssignOperator() {
 
       {/* Success Notification */}
       {assignedSuccess && (
-        <div className="p-5 bg-emerald-50 border border-emerald-300 rounded-3xl text-emerald-900 space-y-1 shadow-xs">
+        <div className="p-5 bg-emerald-50 border border-emerald-300 rounded-3xl text-emerald-900 space-y-2 shadow-xs">
           <div className="flex items-center gap-2 font-bold text-sm">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <span>✓ Operator Assigned Successfully!</span>
@@ -170,12 +170,12 @@ function AssignOperator() {
             <strong>{selectedOperator?.fullName || selectedOperator?.name}</strong> has been assigned to Booking #{id}. The operator has been notified and task details are now available in their portal.
           </p>
           <div className="pt-2">
-             <Link
+            <Link
               to="/partner/bookings"
               className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
-             >
-               Back to Bookings
-             </Link>
+            >
+              Back to Bookings
+            </Link>
           </div>
         </div>
       )}
@@ -318,11 +318,10 @@ function AssignOperator() {
                   type="button"
                   disabled={isCurrentlyAssigned || submitting}
                   onClick={() => handleSelectToAssign(op)}
-                  className={`w-full py-2.5 text-xs font-bold rounded-xl transition-all shadow-xs ${
-                    isCurrentlyAssigned
+                  className={`w-full py-2.5 text-xs font-bold rounded-xl transition-all shadow-xs ${isCurrentlyAssigned
                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       : 'bg-[#3E7B27] hover:bg-[#2E6F22] text-white active:scale-98'
-                  }`}
+                    }`}
                 >
                   {isCurrentlyAssigned ? 'Already Assigned' : 'Assign Operator'}
                 </button>

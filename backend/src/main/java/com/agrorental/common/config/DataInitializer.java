@@ -5,6 +5,7 @@ import com.agrorental.booking.entity.BookingStatus;
 import com.agrorental.booking.repository.BookingRepository;
 import com.agrorental.equipment.entity.Equipment;
 import com.agrorental.equipment.enums.EquipmentCategory;
+import com.agrorental.equipment.enums.FuelType;
 import com.agrorental.equipment.entity.EquipmentImage;
 import com.agrorental.equipment.enums.AvailabilityStatus;
 import com.agrorental.equipment.repository.EquipmentRepository;
@@ -16,7 +17,14 @@ import com.agrorental.notification.entity.Notification;
 import com.agrorental.notification.repository.NotificationRepository;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
+import com.agrorental.operator.entity.OperatorJobAssignment;
+import com.agrorental.operator.enums.OperatorAssignmentStatus;
+import com.agrorental.operator.entity.OperatorJobPauseInterval;
+import com.agrorental.operator.entity.OperatorReview;
+import com.agrorental.operator.repository.OperatorJobPauseIntervalRepository;
+import com.agrorental.operator.repository.OperatorJobAssignmentRepository;
 import com.agrorental.operator.repository.OperatorRepository;
+import com.agrorental.operator.repository.OperatorReviewRepository;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
 import com.agrorental.payment.entity.Payment;
@@ -48,10 +56,13 @@ public class DataInitializer implements CommandLineRunner {
     private final FarmRepository farmRepository;
     private final EquipmentRepository equipmentRepository;
     private final OperatorRepository operatorRepository;
+    private final OperatorJobAssignmentRepository operatorJobAssignmentRepository;
+    private final OperatorJobPauseIntervalRepository pauseIntervalRepository;
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
     private final NotificationRepository notificationRepository;
     private final ReviewRepository reviewRepository;
+    private final OperatorReviewRepository operatorReviewRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(
@@ -60,20 +71,26 @@ public class DataInitializer implements CommandLineRunner {
             FarmRepository farmRepository,
             EquipmentRepository equipmentRepository,
             OperatorRepository operatorRepository,
+            OperatorJobAssignmentRepository operatorJobAssignmentRepository,
+            OperatorJobPauseIntervalRepository pauseIntervalRepository,
             BookingRepository bookingRepository,
             PaymentRepository paymentRepository,
             NotificationRepository notificationRepository,
             ReviewRepository reviewRepository,
+            OperatorReviewRepository operatorReviewRepository,
             PasswordEncoder passwordEncoder) {
         this.partnerRepository = partnerRepository;
         this.farmerRepository = farmerRepository;
         this.farmRepository = farmRepository;
         this.equipmentRepository = equipmentRepository;
         this.operatorRepository = operatorRepository;
+        this.operatorJobAssignmentRepository = operatorJobAssignmentRepository;
+        this.pauseIntervalRepository = pauseIntervalRepository;
         this.bookingRepository = bookingRepository;
         this.paymentRepository = paymentRepository;
         this.notificationRepository = notificationRepository;
         this.reviewRepository = reviewRepository;
+        this.operatorReviewRepository = operatorReviewRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -132,9 +149,17 @@ public class DataInitializer implements CommandLineRunner {
         Equipment tractor1 = Equipment.builder()
                 .name("John Deere 5310 4WD Tractor")
                 .category(EquipmentCategory.TRACTOR)
+                .brand("John Deere")
+                .model("5310 4WD")
+                .manufacturingYear(2022)
+                .capacity("55 HP")
+                .fuelType(FuelType.DIESEL)
                 .rentalPrice(new BigDecimal("1800.00"))
                 .availabilityStatus(AvailabilityStatus.AVAILABLE)
                 .partner(partner)
+                .locationAddress("Shirur MIDC Road, Pune, Maharashtra 412210")
+                .latitude(18.8256)
+                .longitude(74.3789)
                 .description("55 HP powerful 4WD tractor equipped with power steering and dual clutch, ideal for deep tillage, heavy ploughing, and haulage.")
                 .isDisabled(false)
                 .build();
@@ -149,9 +174,17 @@ public class DataInitializer implements CommandLineRunner {
         Equipment tractor2 = Equipment.builder()
                 .name("Mahindra 575 DI XP Plus Tractor")
                 .category(EquipmentCategory.TRACTOR)
+                .brand("Mahindra")
+                .model("575 DI XP Plus")
+                .manufacturingYear(2023)
+                .capacity("47 HP")
+                .fuelType(FuelType.DIESEL)
                 .rentalPrice(new BigDecimal("1400.00"))
                 .availabilityStatus(AvailabilityStatus.AVAILABLE)
                 .partner(partner)
+                .locationAddress("Khed Agro Hub, Pune, Maharashtra 410501")
+                .latitude(18.8500)
+                .longitude(73.9100)
                 .description("47 HP reliable fuel-efficient tractor, perfect for medium agricultural tasks, sowing, and trailer haulage.")
                 .isDisabled(false)
                 .build();
@@ -166,9 +199,17 @@ public class DataInitializer implements CommandLineRunner {
         Equipment harvester = Equipment.builder()
                 .name("Kubota DC-68G Combine Harvester")
                 .category(EquipmentCategory.HARVESTER)
+                .brand("Kubota")
+                .model("DC-68G")
+                .manufacturingYear(2021)
+                .capacity("68 HP")
+                .fuelType(FuelType.DIESEL)
                 .rentalPrice(new BigDecimal("3500.00"))
                 .availabilityStatus(AvailabilityStatus.BOOKED)
                 .partner(partner)
+                .locationAddress("Talegaon Dabhade Farm Yard, Pune, Maharashtra 410506")
+                .latitude(18.7300)
+                .longitude(73.6800)
                 .description("68 HP high efficiency paddy and wheat combine harvester with rubber crawler tracks for wet field operation.")
                 .isDisabled(false)
                 .build();
@@ -183,9 +224,17 @@ public class DataInitializer implements CommandLineRunner {
         Equipment rotavator = Equipment.builder()
                 .name("Shaktiman Regular Light Rotavator")
                 .category(EquipmentCategory.TILLER)
+                .brand("Shaktiman")
+                .model("Regular Light 6ft")
+                .manufacturingYear(2023)
+                .capacity("6 Feet")
+                .fuelType(FuelType.MANUAL_HUMAN_POWERED)
                 .rentalPrice(new BigDecimal("800.00"))
                 .availabilityStatus(AvailabilityStatus.AVAILABLE)
                 .partner(partner)
+                .locationAddress("Manchar Mandi Road, Pune, Maharashtra 410503")
+                .latitude(19.0000)
+                .longitude(73.9400)
                 .description("6 Feet 42 blade multi-speed gearbox rotavator for fine seedbed preparation in single pass.")
                 .isDisabled(false)
                 .build();
@@ -324,6 +373,60 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         b5 = bookingRepository.save(b5);
 
+        // 5b. Seed Operator Job Assignments
+        OperatorJobAssignment assign1 = OperatorJobAssignment.builder()
+                .operator(op1)
+                .booking(b3)
+                .assignmentStatus(OperatorAssignmentStatus.ASSIGNED)
+                .assignedAt(LocalDateTime.now().minusHours(2))
+                .assignedBy(String.valueOf(partner.getId()))
+                .notes("Paddy harvesting field operations")
+                .build();
+        operatorJobAssignmentRepository.save(assign1);
+
+        OperatorJobAssignment assign2 = OperatorJobAssignment.builder()
+                .operator(op2)
+                .booking(b4)
+                .assignmentStatus(OperatorAssignmentStatus.COMPLETED)
+                .assignedAt(LocalDateTime.now().minusDays(12))
+                .acceptedAt(LocalDateTime.now().minusDays(12).plusMinutes(30))
+                .travelingAt(LocalDateTime.now().minusDays(12).plusHours(1))
+                .reachedAt(LocalDateTime.now().minusDays(12).plusHours(2))
+                .workStartedAt(LocalDateTime.now().minusDays(12).plusHours(3))
+                .completedAt(LocalDateTime.now().minusDays(10))
+                .assignedBy(String.valueOf(partner.getId()))
+                .completionNotes("Rotavator operation completed smoothly.")
+                .build();
+        operatorJobAssignmentRepository.save(assign2);
+
+        OperatorJobAssignment assign3 = OperatorJobAssignment.builder()
+                .operator(op1)
+                .booking(b5)
+                .assignmentStatus(OperatorAssignmentStatus.COMPLETED)
+                .assignedAt(LocalDateTime.now().minusDays(5))
+                .acceptedAt(LocalDateTime.now().minusDays(5).plusMinutes(20))
+                .travelingAt(LocalDateTime.now().minusDays(5).plusHours(1))
+                .reachedAt(LocalDateTime.now().minusDays(5).plusHours(2))
+                .workStartedAt(LocalDateTime.now().minusDays(5).plusHours(3)) // 10:00
+                .completedAt(LocalDateTime.now().minusDays(5).plusHours(9))   // 16:00 (6 hours total = 360 mins)
+                .pausedAt(LocalDateTime.now().minusDays(5).plusHours(5))      // 12:00
+                .resumedAt(LocalDateTime.now().minusDays(5).plusHours(6))     // 13:00 (60 mins pause -> 300 mins net = 5.0 hrs)
+                .pauseReason("Machine cool-down and lunch interval")
+                .assignedBy(String.valueOf(partner.getId()))
+                .completionNotes("Plowing job executed with high precision.")
+                .build();
+        assign3 = operatorJobAssignmentRepository.save(assign3);
+
+        OperatorJobPauseInterval pi1 = OperatorJobPauseInterval.builder()
+                .assignment(assign3)
+                .operator(op1)
+                .pausedAt(LocalDateTime.now().minusDays(5).plusHours(5))
+                .resumedAt(LocalDateTime.now().minusDays(5).plusHours(6))
+                .pauseReason("Machine cool-down and lunch interval")
+                .durationMinutes(60L)
+                .build();
+        pauseIntervalRepository.save(pi1);
+
         // 6. Seed Payments (FR-19)
         Payment p1 = Payment.builder()
                 .bookingId(b4.getId())
@@ -387,6 +490,17 @@ public class DataInitializer implements CommandLineRunner {
                 .comment("Punctual delivery and great support from operator Anil. Will book again for next harvest season.")
                 .build();
         reviewRepository.save(r2);
+
+        // 7b. Seed Operator Review for Completed Assignment #3 (Operator 1)
+        OperatorReview opReview1 = OperatorReview.builder()
+                .assignment(assign3)
+                .operator(op1)
+                .booking(b5)
+                .farmerId(farmer.getId())
+                .rating(5)
+                .comment("Santosh operated the tractor with exceptional skill and leveled the entire 6-acre field smoothly. Very punctual and respectful.")
+                .build();
+        operatorReviewRepository.save(opReview1);
 
         // 8. Seed Notifications for Partner #1 (FR-20)
         Notification n1 = Notification.builder()

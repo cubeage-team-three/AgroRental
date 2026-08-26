@@ -311,6 +311,161 @@ export const operatorService = {
   getDashboardMetrics: async () => {
     return await request('/operators/dashboard/metrics');
   },
+
+  // ==========================================
+  // PHASE 7: GPS / OPERATOR LOCATION TRACKING
+  // ==========================================
+
+  /**
+   * Starts GPS location tracking for an active assignment (PATCH /api/operators/jobs/:assignmentId/location/start).
+   * @param {number|string} assignmentId - Assignment ID
+   * @returns {Promise<Object>} OperatorLocationResponse
+   */
+  startLocationTracking: async (assignmentId) => {
+    return await request(`/operators/jobs/${assignmentId}/location/start`, {
+      method: 'PATCH',
+    });
+  },
+
+  /**
+   * Updates operator GPS coordinates (PATCH /api/operators/jobs/:assignmentId/location).
+   * @param {number|string} assignmentId - Assignment ID
+   * @param {Object} locationData - { latitude, longitude, accuracy, speed, heading }
+   * @returns {Promise<Object>} OperatorLocationResponse
+   */
+  updateLocation: async (assignmentId, locationData) => {
+    return await request(`/operators/jobs/${assignmentId}/location`, {
+      method: 'PATCH',
+      body: JSON.stringify(locationData),
+    });
+  },
+
+  /**
+   * Retrieves latest recorded GPS location for the assignment (GET /api/operators/jobs/:assignmentId/location).
+   * @param {number|string} assignmentId - Assignment ID
+   * @returns {Promise<Object>} OperatorLocationResponse
+   */
+  getLatestLocation: async (assignmentId) => {
+    return await request(`/operators/jobs/${assignmentId}/location`);
+  },
+
+  /**
+   * Stops GPS location tracking for an active assignment (PATCH /api/operators/jobs/:assignmentId/location/stop).
+   * @param {number|string} assignmentId - Assignment ID
+   * @returns {Promise<Object>} OperatorLocationResponse
+   */
+  stopLocationTracking: async (assignmentId) => {
+    return await request(`/operators/jobs/${assignmentId}/location/stop`, {
+      method: 'PATCH',
+    });
+  },
+
+  // ==========================================
+  // PHASE 8: OPERATOR EARNINGS & WORK HOURS
+  // ==========================================
+
+  /**
+   * Retrieves work duration and earnings calculation for a specific job assignment (GET /api/operators/jobs/:assignmentId/earnings).
+   * @param {number|string} assignmentId - Assignment ID
+   * @returns {Promise<Object>} OperatorJobEarningsResponse
+   */
+  getJobEarnings: async (assignmentId) => {
+    return await request(`/operators/jobs/${assignmentId}/earnings`);
+  },
+
+  /**
+   * Retrieves aggregate earnings summary and logged work hours (GET /api/operators/earnings/summary).
+   * @returns {Promise<Object>} OperatorEarningsSummaryResponse
+   */
+  getEarningsSummary: async () => {
+    return await request('/operators/earnings/summary');
+  },
+
+  /**
+   * Retrieves paginated completed jobs earnings history (GET /api/operators/earnings/history).
+   * @param {Object} params - { page, size }
+   * @returns {Promise<Object>} Page<OperatorEarningsHistoryResponse>
+   */
+  getEarningsHistory: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page !== undefined) query.append('page', params.page);
+    if (params.size !== undefined) query.append('size', params.size);
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    return await request(`/operators/earnings/history${queryString}`);
+  },
+
+  // ==========================================
+  // PHASE 9: OPERATOR RATING & REVIEWS
+  // ==========================================
+
+  /**
+   * Retrieves overall rating summary and star distribution for an operator (GET /api/operators/:operatorId/ratings/summary).
+   * @param {number|string} operatorId - Operator ID
+   * @returns {Promise<Object>} OperatorRatingSummaryResponse
+   */
+  getOperatorRatingSummary: async (operatorId) => {
+    return await request(`/operators/${operatorId}/ratings/summary`);
+  },
+
+  /**
+   * Retrieves rating summary for the authenticated operator (GET /api/operators/me/ratings/summary).
+   * @returns {Promise<Object>} OperatorRatingSummaryResponse
+   */
+  getMyRatingSummary: async () => {
+    return await request('/operators/me/ratings/summary');
+  },
+
+  /**
+   * Retrieves paginated reviews for an operator (GET /api/operators/:operatorId/reviews).
+   * @param {number|string} operatorId - Operator ID
+   * @param {Object} params - { page, size }
+   * @returns {Promise<Object>} Page<OperatorReviewResponse>
+   */
+  getOperatorReviews: async (operatorId, params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page !== undefined) query.append('page', params.page);
+    if (params.size !== undefined) query.append('size', params.size);
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    return await request(`/operators/${operatorId}/reviews${queryString}`);
+  },
+
+  /**
+   * Retrieves paginated feedback reviews for the authenticated operator (GET /api/operators/me/reviews).
+   * @param {Object} params - { page, size }
+   * @returns {Promise<Object>} Page<OperatorReviewResponse>
+   */
+  getMyReviews: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page !== undefined) query.append('page', params.page);
+    if (params.size !== undefined) query.append('size', params.size);
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    return await request(`/operators/me/reviews${queryString}`);
+  },
+
+  /**
+   * Submits a verified star rating and review for a completed assignment (POST /api/operators/jobs/:assignmentId/reviews).
+   * @param {number|string} assignmentId - Assignment ID
+   * @param {Object} reviewData - { rating, comment }
+   * @returns {Promise<Object>} OperatorReviewResponse
+   */
+  submitOperatorReview: async (assignmentId, reviewData) => {
+    return await request(`/operators/jobs/${assignmentId}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(reviewData),
+    });
+  },
+
+  /**
+   * Retrieves review associated with a specific job assignment (GET /api/operators/jobs/:assignmentId/review).
+   * @param {number|string} assignmentId - Assignment ID
+   * @returns {Promise<Object>} OperatorReviewResponse
+   */
+  getAssignmentReview: async (assignmentId) => {
+    return await request(`/operators/jobs/${assignmentId}/review`);
+  },
 };
 
 export default operatorService;

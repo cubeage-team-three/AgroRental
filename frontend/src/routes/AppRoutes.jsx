@@ -4,6 +4,9 @@ import MainLayout from '../layouts/MainLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import PartnerLayout from '../layouts/PartnerLayout';
+import AdminDashboardLayout from '../admin/layouts/AdminDashboardLayout';
+import AdminLogin from '../admin/pages/AdminLogin';
+import AdminOverview from '../admin/pages/AdminOverview';
 
 import Home from '../pages/Home';
 import NotFound from '../pages/NotFound';
@@ -73,8 +76,6 @@ function AppRoutes() {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
         <Route path="register/farmer" element={<RegisterFarmer />} />
-        <Route path="register/partner" element={<RegisterPartner />} />
-        <Route path="register/operator" element={<RegisterOperator />} />
         <Route path="verify-otp" element={<VerifyOtp />} />
       </Route>
 
@@ -84,6 +85,8 @@ function AppRoutes() {
         <Route path="login/operator" element={<OperatorLogin />} />
         <Route path="operator/login" element={<OperatorLogin />} />
         <Route path="register" element={<Register />} />
+        <Route path="register/partner" element={<RegisterPartner />} />
+        <Route path="register/operator" element={<RegisterOperator />} />
       </Route>
 
       {/* Farmer routes */}
@@ -138,7 +141,9 @@ function AppRoutes() {
       </Route>
 
       {/* Admin routes */}
-      <Route path="/admin" element={<DashboardLayout />}>
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin" element={<AdminDashboardLayout />}>
+        <Route path="overview" element={<AdminOverview />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="farmers" element={<ManageFarmers />} />
         <Route path="partners" element={<ManagePartners />} />
