@@ -514,6 +514,25 @@ class PartnerServiceTest {
 
         verify(partnerRepository).save(testPartner);
     }
-    
+
+    // =========================================================
+    // GET ALL PARTNERS
+    // =========================================================
+
+    @Test
+    @DisplayName("Should fetch all registered partners")
+    void shouldGetAllPartners() {
+        when(partnerRepository.findAll())
+                .thenReturn(java.util.List.of(testPartner));
+
+        java.util.List<PartnerProfileResponse> list = partnerService.getAllPartners();
+
+        assertThat(list).isNotEmpty();
+        assertThat(list).hasSize(1);
+        assertThat(list.get(0).getId()).isEqualTo(1L);
+        assertThat(list.get(0).getFullName()).isEqualTo("Rajesh Patel");
+
+        verify(partnerRepository).findAll();
+    }
 }
 

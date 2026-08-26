@@ -68,31 +68,25 @@ public class SecurityConfig {
                         .requestMatchers("/api/operators/jobs/**").hasRole("OPERATOR")
                         .requestMatchers("/api/operators/dashboard/**").hasRole("OPERATOR")
                         .requestMatchers("/api/operators/earnings/**").hasRole("OPERATOR")
-                        // Admin Protected Endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Shared / genuinely public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
-
                         // Farmer: registration + OTP are public; farms, profile, dashboard, and management require authentication
                         .requestMatchers(HttpMethod.POST, "/api/farmers/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/farmers/send-otp", "/api/farmers/verify-otp", "/api/farmers/resend-otp").permitAll()
                         .requestMatchers("/api/farmers/**").hasRole("FARMER")
-
-                        // Partner: registration + OTP are public; KYC approval and the full partner
-                        // listing are admin actions, not partner self-service
+                        // Partner: registration + OTP are public; Admin manages partners & KYC; Partner manages own profile/dashboard
                         .requestMatchers(HttpMethod.POST, "/api/partners/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/partners/*/otp/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/partners", "/api/partners/").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/partners/*/kyc/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/partners").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/partners/*").hasAnyRole("ADMIN", "PARTNER")
                         .requestMatchers("/api/partners/**").hasRole("PARTNER")
-
                         // Equipment: browsing/search is public, listing management is partner-only
                         .requestMatchers(HttpMethod.GET, "/api/equipment/**").permitAll()
                         .requestMatchers("/api/equipment/**").hasRole("PARTNER")
-
                         // Bookings: role-specific views and actions, ownership resolved from the JWT in-controller
                         .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("FARMER")
                         .requestMatchers(HttpMethod.GET, "/api/bookings/farmer/**").hasRole("FARMER")
@@ -101,19 +95,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/cancel").hasRole("FARMER")
                         .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/accept", "/api/bookings/*/reject", "/api/bookings/*/assign-operator").hasRole("PARTNER")
                         .requestMatchers("/api/bookings/**").authenticated()
-
                         // Payments: partner earnings/reports vs. farmer-facing payment actions
                         .requestMatchers("/api/payments/partner/**").hasRole("PARTNER")
                         .requestMatchers("/api/payments/farmer/**").hasRole("FARMER")
                         .requestMatchers("/api/payments/**").authenticated()
-
                         // Reviews: reading ratings is public, submitting one requires a farmer login
                         .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll()
                         .requestMatchers("/api/reviews/**").hasRole("FARMER")
-
                         // Notifications: any authenticated role reads/manages their own
                         .requestMatchers("/api/notifications/**").authenticated()
-
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()));

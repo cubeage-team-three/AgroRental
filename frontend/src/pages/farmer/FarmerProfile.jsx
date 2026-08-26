@@ -72,7 +72,6 @@ function FarmerProfile() {
       }
     }
   };
-
   // Profile Form State — seeded from AuthContext's `user` once it loads (see
   // the sync effect below), not from hardcoded defaults.
   const [profileData, setProfileData] = useState({
