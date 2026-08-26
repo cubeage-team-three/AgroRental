@@ -177,7 +177,19 @@ function SearchEquipment() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 border-t border-gray-100 pt-3">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 border-t border-gray-100 pt-3">
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Min HP / Capacity</label>
+            <input
+              type="number"
+              name="minHp"
+              placeholder="e.g. 40, 50, 100"
+              value={filters.minHp}
+              onChange={handleFilterChange}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+            />
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Available Start Date</label>
             <input
@@ -217,7 +229,7 @@ function SearchEquipment() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Max Distance Radius (km)</label>
+            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Max Distance (km)</label>
             <input
               type="number"
               name="maxDistanceKm"

@@ -96,6 +96,20 @@ class PartnerControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/partners - Should return 200 OK with list of all partners")
+    void shouldGetAllPartners() throws Exception {
+        when(partnerService.getAllPartners()).thenReturn(java.util.List.of(testProfile));
+
+        mockMvc.perform(get("/api/partners"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].fullName").value("Rajesh Patel"))
+                .andExpect(jsonPath("$.data[0].businessName").value("Patel Agro Fleet"))
+                .andExpect(jsonPath("$.data[0].mobileNumber").value("9876543210"));
+    }
+
+    @Test
     @DisplayName("GET /api/partners/{id} - Should return 200 OK with profile")
     void shouldGetPartnerProfile() throws Exception {
         when(partnerService.getPartnerProfile(1L)).thenReturn(testProfile);

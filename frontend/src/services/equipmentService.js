@@ -1,4 +1,5 @@
 import { request } from './apiClient';
+import { API_BASE_URL } from '../utils/constants';
 
 /**
  * Frontend Service for Machine Management / Equipment Management Module.
@@ -9,15 +10,7 @@ export const equipmentService = {
    */
   async getAvailableEquipmentPage(page = 0, size = 20) {
     const res = await request(`/api/equipment/available/page?page=${page}&size=${size}`, { method: 'GET' });
-    return res || {
-      content: [],
-      number: page,
-      size: size,
-      totalPages: 0,
-      totalElements: 0,
-      first: true,
-      last: true,
-    };
+    return res;
   },
 
   /**
@@ -41,22 +34,15 @@ export const equipmentService = {
     params.append('size', size);
 
     const res = await request(`/api/equipment/search/page?${params.toString()}`, { method: 'GET' });
-    return res || {
-      content: [],
-      number: page,
-      size: size,
-      totalPages: 0,
-      totalElements: 0,
-      first: true,
-      last: true,
-    };
+    return res;
   },
 
   /**
    * Retrieves single equipment listing by ID.
    */
   async getEquipmentById(id) {
-    return request(`/api/equipment/${id}`, { method: 'GET' });
+    const res = await request(`/api/equipment/${id}`, { method: 'GET' });
+    return res;
   },
 
   /**
@@ -64,15 +50,7 @@ export const equipmentService = {
    */
   async getAllEquipment(page = 0, size = 50) {
     const res = await request(`/api/equipment/page?page=${page}&size=${size}`, { method: 'GET' });
-    return res || {
-      content: [],
-      number: page,
-      size: size,
-      totalPages: 0,
-      totalElements: 0,
-      first: true,
-      last: true,
-    };
+    return res;
   },
 
   /**
@@ -141,5 +119,39 @@ export const equipmentService = {
       method: 'PATCH',
       partnerId,
     });
+  },
+
+  /**
+   * Uploads an equipment image file to the backend server.
+   */
+  async uploadEquipmentImage(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    let token = null;
+    try {
+      const storedUserStr = localStorage.getItem('agro_user');
+      if (storedUserStr) {
+        const parsedUser = JSON.parse(storedUserStr);
+        token = parsedUser?.token || parsedUser?.accessToken || null;
+      }
+    } catch (e) {}
+    if (!token) {
+      token = localStorage.getItem('agro_token') || localStorage.getItem('accessToken');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/upload/image`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Image upload failed. Please try again.');
+    }
+    return data.data; // { url: "/uploads/equipment/filename.ext" }
   },
 };
