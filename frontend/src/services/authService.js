@@ -15,8 +15,10 @@ export const saveUserSession = (userData) => {
     : userData;
 
   if (payload) {
-    if (payload.token) {
-      localStorage.setItem('agro_token', payload.token);
+    const sessionToken = payload.token || payload.accessToken;
+    if (sessionToken) {
+      localStorage.setItem('agro_token', sessionToken);
+      localStorage.setItem('accessToken', sessionToken);
     }
     localStorage.setItem('agro_user', JSON.stringify(payload));
     if (payload.partnerId) {
@@ -67,7 +69,7 @@ export const getOperatorId = () => {
     return user.operatorId;
   }
   const storedId = localStorage.getItem('operatorId');
-  return storedId ? Number(storedId) : 1;
+  return storedId ? Number(storedId) : null;
 };
 
 export const logoutUser = () => {

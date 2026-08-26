@@ -11,17 +11,7 @@ export const complaintService = {
     } catch (error) {
       console.warn('Backend complaints call failed, returning local storage fallback:', error);
       const cached = localStorage.getItem('farmer_complaints');
-      return cached ? JSON.parse(cached) : [
-        {
-          id: 101,
-          bookingId: 12,
-          category: 'LATE_ARRIVAL',
-          description: 'The operator arrived 2 hours late for threshing duty.',
-          status: 'UNDER_REVIEW',
-          resolutionNote: 'Support team is coordinating with partner for time adjustment.',
-          createdAt: new Date(Date.now() - 86400000).toISOString()
-        }
-      ];
+      return cached ? JSON.parse(cached) : [];
     }
   },
 
