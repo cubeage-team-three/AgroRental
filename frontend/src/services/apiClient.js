@@ -32,7 +32,7 @@ export async function request(endpoint, options = {}) {
   }
 
   // Include X-Partner-Id header if partner context is present
-  const partnerId = options.partnerId || localStorage.getItem('partnerId') || '1';
+  const partnerId = options.partnerId || localStorage.getItem('partnerId');
   if (partnerId) {
     defaultHeaders['X-Partner-Id'] = partnerId;
   }
