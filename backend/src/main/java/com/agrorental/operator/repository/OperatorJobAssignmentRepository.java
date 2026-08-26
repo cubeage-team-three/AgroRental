@@ -132,4 +132,60 @@ public interface OperatorJobAssignmentRepository extends JpaRepository<OperatorJ
           a.updatedAt DESC
     """)
     List<OperatorJobAssignment> findActiveAssignmentsForOperator(@Param("operatorId") Long operatorId);
+
+    // ==========================================
+    // PHASE 10: JOB HISTORY QUERIES
+    // ==========================================
+
+    /**
+     * Retrieves historical job assignments for an operator with optional filtering by status, date range, equipment category, and search query.
+     */
+    @Query("""
+        SELECT a
+        FROM OperatorJobAssignment a
+        JOIN a.booking b
+        JOIN b.equipment e
+        WHERE a.operator.id = :operatorId
+          AND (:status IS NULL OR a.assignmentStatus = :status)
+          AND (:startDate IS NULL OR b.endDate >= :startDate)
+          AND (:endDate IS NULL OR b.startDate <= :endDate)
+          AND (:equipmentCategory IS NULL OR LOWER(e.category) = LOWER(:equipmentCategory))
+          AND (
+              :search IS NULL OR :search = ''
+              OR LOWER(e.name) LIKE LOWER(CONCAT('%', :search, '%'))
+              OR LOWER(e.model) LIKE LOWER(CONCAT('%', :search, '%'))
+              OR LOWER(b.deliveryAddress) LIKE LOWER(CONCAT('%', :search, '%'))
+              OR CAST(b.id AS string) LIKE CONCAT('%', :search, '%')
+              OR CAST(a.id AS string) LIKE CONCAT('%', :search, '%')
+          )
+    """)
+    Page<OperatorJobAssignment> findJobHistory(
+            @Param("operatorId") Long operatorId,
+            @Param("status") OperatorAssignmentStatus status,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("equipmentCategory") String equipmentCategory,
+            @Param("search") String search,
+            Pageable pageable
+    );
+
+    /**
+     * Retrieves all historical job assignments for an operator with optional filtering for summary calculation.
+     */
+    @Query("""
+        SELECT a
+        FROM OperatorJobAssignment a
+        JOIN a.booking b
+        JOIN b.equipment e
+        WHERE a.operator.id = :operatorId
+          AND (:startDate IS NULL OR b.endDate >= :startDate)
+          AND (:endDate IS NULL OR b.startDate <= :endDate)
+          AND (:equipmentCategory IS NULL OR LOWER(e.category) = LOWER(:equipmentCategory))
+    """)
+    List<OperatorJobAssignment> findJobHistoryForSummary(
+            @Param("operatorId") Long operatorId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("equipmentCategory") String equipmentCategory
+    );
 }

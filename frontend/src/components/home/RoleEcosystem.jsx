@@ -34,7 +34,7 @@ const roles = [
     icon: Users,
     title: "Get Matched to Jobs Near You",
     ctaLabel: "Get Started as Operator",
-    ctaTo: "/register/operator",
+    ctaTo: "/auth/operator",
     image: operatorImage,
     stat: { value: "12,000+", label: "Verified Operators" },
     points: [

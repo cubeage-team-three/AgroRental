@@ -9,6 +9,7 @@ import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.farmer.entity.FarmerOtp;
 import com.agrorental.farmer.repository.FarmerOtpRepository;
 import com.agrorental.farmer.repository.FarmerRepository;
+import com.agrorental.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 
 @Slf4j
 @Service
@@ -24,6 +26,7 @@ public class FarmerOtpService {
 
     private final FarmerOtpRepository farmerOtpRepository;
     private final FarmerRepository farmerRepository;
+    private final JwtService jwtService;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     @Transactional
@@ -72,12 +75,9 @@ public class FarmerOtpService {
 
         if (Boolean.TRUE.equals(otpRecord.getVerified())) {
             log.info("OTP already verified for mobile: {}", mobile);
-            return OtpResponse.builder()
-                    .mobileNumber(mobile)
-                    .message("Mobile number is already verified.")
-                    .verified(true)
-                    .attemptsRemaining(0)
-                    .build();
+            Farmer alreadyVerifiedFarmer = farmerRepository.findByMobileNumber(mobile)
+                    .orElseThrow(() -> new ResourceNotFoundException("Farmer not found for mobile: " + mobile));
+            return buildSessionResponse(alreadyVerifiedFarmer, "Mobile number is already verified.");
         }
 
         // Rule 1: Check Expiry
@@ -121,11 +121,26 @@ public class FarmerOtpService {
 
         log.info("Account activated successfully for farmer ID: {}", farmer.getFarmerId());
 
+        return buildSessionResponse(farmer, "Mobile number verified successfully! Farmer account activated.");
+    }
+
+    /**
+     * OTP verification for a freshly-registered farmer is itself an authentication
+     * event, so it issues a real session token here rather than leaving the frontend
+     * to land on the dashboard with no way to identify who's logged in.
+     */
+    private OtpResponse buildSessionResponse(Farmer farmer, String message) {
+        String token = jwtService.generateToken(farmer.getFarmerId(), "FARMER", farmer.getMobileNumber(), new HashMap<>());
         return OtpResponse.builder()
-                .mobileNumber(mobile)
-                .message("Mobile number verified successfully! Farmer account activated.")
+                .mobileNumber(farmer.getMobileNumber())
+                .message(message)
                 .verified(true)
                 .attemptsRemaining(0)
+                .token(token)
+                .farmerId(farmer.getFarmerId())
+                .fullName(farmer.getFullName())
+                .email(farmer.getEmail())
+                .role("FARMER")
                 .build();
     }
 

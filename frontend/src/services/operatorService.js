@@ -62,6 +62,13 @@ export const operatorService = {
     });
   },
 
+  sendOperatorOtp: async (mobileNumber, purpose = 'MOBILE_VERIFICATION') => {
+    return await request('/operators/otp/send', {
+      method: 'POST',
+      body: JSON.stringify({ mobileNumber, purpose }),
+    });
+  },
+
   /**
    * Verifies the submitted OTP for the Operator's mobile number.
    * @param {string} mobileNumber - 10-digit mobile number
@@ -74,6 +81,35 @@ export const operatorService = {
       method: 'POST',
       body: JSON.stringify({ mobileNumber, otp, purpose }),
     });
+  },
+
+  verifyOperatorOtp: async (mobileNumber, otp, purpose = 'MOBILE_VERIFICATION') => {
+    return await request('/operators/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ mobileNumber, otp, purpose }),
+    });
+  },
+
+  /**
+   * Submits a KYC or certification document for an Operator.
+   * @param {number|string} operatorId - Operator ID
+   * @param {Object} documentData - { documentType, documentNumber, fileName, fileUrl, fileSize, mimeType }
+   * @returns {Promise<Object>} OperatorDocumentResponse payload
+   */
+  uploadOperatorDocument: async (operatorId, documentData) => {
+    return await request(`/operators/${operatorId}/documents`, {
+      method: 'POST',
+      body: JSON.stringify(documentData),
+    });
+  },
+
+  /**
+   * Retrieves all submitted KYC documents for an Operator.
+   * @param {number|string} operatorId - Operator ID
+   * @returns {Promise<Array>} Array of OperatorDocumentResponse objects
+   */
+  getOperatorDocuments: async (operatorId) => {
+    return await request(`/operators/${operatorId}/documents`);
   },
 
   /**
@@ -466,6 +502,48 @@ export const operatorService = {
   getAssignmentReview: async (assignmentId) => {
     return await request(`/operators/jobs/${assignmentId}/review`);
   },
+
+  // ==========================================
+  // PHASE 10: JOB HISTORY & ANALYTICS METHODS
+  // ==========================================
+
+  /**
+   * Retrieves a paginated, filterable archive of historical jobs (GET /api/operators/jobs/history).
+   * @param {Object} params - { page, size, startDate, endDate, status, equipmentCategory, search }
+   * @returns {Promise<Object>} Page<OperatorJobHistoryResponse>
+   */
+  getJobHistory: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page !== undefined) query.append('page', params.page);
+    if (params.size !== undefined) query.append('size', params.size);
+    if (params.startDate) query.append('startDate', params.startDate);
+    if (params.endDate) query.append('endDate', params.endDate);
+    if (params.status && params.status !== 'ALL') query.append('status', params.status);
+    if (params.equipmentCategory && params.equipmentCategory !== 'ALL') query.append('equipmentCategory', params.equipmentCategory);
+    if (params.search && params.search.trim()) query.append('search', params.search.trim());
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    return await request(`/operators/jobs/history${queryString}`);
+  },
+
+  /**
+   * Retrieves aggregate historical field performance analytics (GET /api/operators/jobs/history/summary).
+   * @param {Object} params - { startDate, endDate, equipmentCategory }
+   * @returns {Promise<Object>} OperatorJobHistorySummaryResponse
+   */
+  getJobHistorySummary: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.startDate) query.append('startDate', params.startDate);
+    if (params.endDate) query.append('endDate', params.endDate);
+    if (params.equipmentCategory && params.equipmentCategory !== 'ALL') query.append('equipmentCategory', params.equipmentCategory);
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    return await request(`/operators/jobs/history/summary${queryString}`);
+  },
 };
 
 export default operatorService;
+
+
+
+

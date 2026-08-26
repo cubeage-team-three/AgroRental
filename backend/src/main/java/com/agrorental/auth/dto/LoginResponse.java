@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Data Transfer Object returned on successful Login authentication.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class LoginResponse {
 
     private String token;
+    private Long userId;
     private Long farmerId;
     private Long partnerId;
     private String businessName;

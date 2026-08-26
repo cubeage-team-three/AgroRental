@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Calendar, MapPin, CheckCircle, Clock, XCircle, ArrowLeft, CreditCard, FileText, UserCheck, ShieldCheck, Truck, AlertCircle } from 'lucide-react';
 import { bookingService } from '../../services/bookingService';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 function BookingDetails() {
   const { id } = useParams();
@@ -99,21 +100,26 @@ function BookingDetails() {
     <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Top Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <Link to="/farmer/my-bookings" className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-2">
-            <ArrowLeft className="h-4 w-4" /> Back to Bookings List
-          </Link>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Booking Reservation #{booking.id}</h1>
-            <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
-              booking.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
-              booking.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
-              booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
-            }`}>
-              {booking.status}
-            </span>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-sm border border-slate-200 h-11 shrink-0">
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
           </div>
-          <p className="text-sm text-slate-600 mt-1">Created on {new Date(booking.createdAt || Date.now()).toLocaleDateString()}</p>
+          <div>
+            <Link to="/farmer/my-bookings" className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-1">
+              <ArrowLeft className="h-4 w-4" /> Back to Bookings List
+            </Link>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Booking Reservation #{booking.id}</h1>
+              <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
+                booking.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
+                booking.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
+                booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+              }`}>
+                {booking.status}
+              </span>
+            </div>
+            <p className="text-sm text-slate-600 mt-1">Created on {new Date(booking.createdAt || Date.now()).toLocaleDateString()}</p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

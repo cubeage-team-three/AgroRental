@@ -7,6 +7,7 @@ import {
 import { getFarmerId } from '../../services/authService';
 import { bookingService } from '../../services/bookingService';
 import { paymentService } from '../../services/paymentService';
+import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 function CheckoutPayment() {
   const { id } = useParams();
@@ -126,12 +127,17 @@ function CheckoutPayment() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between border-b border-slate-200 pb-4">
-        <div>
-          <Link to={`/farmer/bookings`} className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-2">
-            <ArrowLeft className="h-4 w-4" /> Back to My Bookings
-          </Link>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Checkout & Online Payment</h1>
-          <p className="text-sm text-slate-600">Complete secure payment for Equipment Booking #{id}</p>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-sm border border-slate-200 h-11 shrink-0">
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
+          </div>
+          <div>
+            <Link to={`/farmer/bookings`} className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-1">
+              <ArrowLeft className="h-4 w-4" /> Back to My Bookings
+            </Link>
+            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Checkout & Online Payment</h1>
+            <p className="text-sm text-slate-600">Complete secure payment for Equipment Booking #{id}</p>
+          </div>
         </div>
 
         <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-xs font-bold">

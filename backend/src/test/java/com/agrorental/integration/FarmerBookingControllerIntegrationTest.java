@@ -5,6 +5,8 @@ import com.agrorental.booking.entity.BookingStatus;
 import com.agrorental.booking.service.BookingService;
 import com.agrorental.common.exception.GlobalExceptionHandler;
 import com.agrorental.farmer.controller.FarmerBookingController;
+import com.agrorental.security.principal.FarmerPrincipal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,8 +15,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.Collections;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -43,7 +51,12 @@ class FarmerBookingControllerIntegrationTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(farmerBookingController)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();
+
+        FarmerPrincipal principal = FarmerPrincipal.builder().id(10L).role("FARMER").build();
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                principal, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_FARMER"))));
 
         mockResponse = BookingResponse.builder()
                 .id(1L)
@@ -59,6 +72,11 @@ class FarmerBookingControllerIntegrationTest {
                 .deliveryAddress("Sunrise Agro Farm, Pune")
                 .notes("Work Type: Ploughing")
                 .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test

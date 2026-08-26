@@ -6,6 +6,9 @@ import com.agrorental.operator.dto.EligibleOperatorResponse;
 import com.agrorental.operator.dto.OperatorAssignedJobResponse;
 import com.agrorental.operator.dto.OperatorAssignmentRequest;
 import com.agrorental.operator.dto.OperatorAssignmentResponse;
+import com.agrorental.operator.dto.OperatorJobHistoryResponse;
+import com.agrorental.operator.dto.OperatorJobHistorySummaryResponse;
+import com.agrorental.operator.enums.OperatorAssignmentStatus;
 import com.agrorental.operator.service.OperatorAssignmentService;
 import com.agrorental.security.principal.OperatorPrincipal;
 import jakarta.validation.Valid;
@@ -15,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,6 +30,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDate;
 
 /**
  * REST Controller managing Operator Job Assignments, partner/admin operator assignments,
@@ -161,6 +167,72 @@ public class OperatorAssignmentController {
 
         return ResponseEntity.ok(
                 ApiResponse.success("Job assignment details retrieved successfully", response)
+        );
+    }
+
+    // ==========================================
+    // PHASE 10: JOB HISTORY & ANALYTICS ENDPOINTS
+    // ==========================================
+
+    /**
+     * Retrieves a paginated, filterable archive of historical jobs for the authenticated Operator.
+     */
+    @GetMapping("/api/operators/jobs/history")
+    public ResponseEntity<ApiResponse<Page<OperatorJobHistoryResponse>>> getJobHistory(
+            @AuthenticationPrincipal OperatorPrincipal principal,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) OperatorAssignmentStatus status,
+            @RequestParam(required = false) String equipmentCategory,
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 10, sort = "completedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        if (principal == null) {
+            log.warn("Unauthorized /api/operators/jobs/history access attempt without principal");
+            throw new UnauthorizedException("Full authentication is required to access this resource");
+        }
+
+        log.info("REST request: Operator ID {} fetching job history archive", principal.getId());
+        Page<OperatorJobHistoryResponse> response = assignmentService.getJobHistory(
+                principal.getId(),
+                startDate,
+                endDate,
+                status,
+                equipmentCategory,
+                search,
+                pageable
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Job history retrieved successfully", response)
+        );
+    }
+
+    /**
+     * Retrieves aggregated historical performance analytics for the authenticated Operator.
+     */
+    @GetMapping("/api/operators/jobs/history/summary")
+    public ResponseEntity<ApiResponse<OperatorJobHistorySummaryResponse>> getJobHistorySummary(
+            @AuthenticationPrincipal OperatorPrincipal principal,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String equipmentCategory) {
+
+        if (principal == null) {
+            log.warn("Unauthorized /api/operators/jobs/history/summary access attempt without principal");
+            throw new UnauthorizedException("Full authentication is required to access this resource");
+        }
+
+        log.info("REST request: Operator ID {} fetching job history summary", principal.getId());
+        OperatorJobHistorySummaryResponse response = assignmentService.getJobHistorySummary(
+                principal.getId(),
+                startDate,
+                endDate,
+                equipmentCategory
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Job history summary retrieved successfully", response)
         );
     }
 }
