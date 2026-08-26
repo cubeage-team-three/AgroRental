@@ -318,13 +318,24 @@ function OperatorProfile() {
             </div>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 text-right shrink-0">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-200 block">
-              Experience Level
-            </span>
-            <span className="text-xl font-black text-[#C1FF72]">
-              {profile?.experience || 0} Years
-            </span>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 text-right">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-200 block">
+                Experience Level
+              </span>
+              <span className="text-xl font-black text-[#C1FF72]">
+                {profile?.experience || 0} Years
+              </span>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 text-right">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-200 block">
+                Base Tariff
+              </span>
+              <span className="text-xl font-black text-[#C1FF72]">
+                ₹{Number(profile?.hourlyRate || 1500).toLocaleString('en-IN')}/hr
+              </span>
+            </div>
           </div>
         </div>
       </div>

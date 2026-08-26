@@ -54,6 +54,7 @@ function Sidebar() {
       { path: '/operator/notifications', label: 'Job Alerts', icon: '🔔' },
       { path: '/operator/earnings', label: 'Earnings', icon: '💰' },
       { path: '/operator/history', label: 'Job History', icon: '📜' },
+      { path: '/operator/ratings', label: 'Ratings & Reviews', icon: '⭐' },
       { path: '/operator/profile', label: 'Profile', icon: '👤' },
     ];
   } else if (location.pathname.startsWith('/admin')) {

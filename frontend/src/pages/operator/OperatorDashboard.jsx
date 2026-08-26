@@ -55,8 +55,9 @@ function OperatorDashboard() {
       ]);
       setMetrics(data);
       setEarningsSummary(earnings);
-      if (ratings?.success && ratings.data) {
-        setRatingSummary(ratings.data);
+      const ratingData = ratings?.data || ratings;
+      if (ratingData && typeof ratingData === 'object') {
+        setRatingSummary(ratingData);
       }
     } catch (err) {
       console.error('Failed to load operator dashboard metrics:', err);
