@@ -12,6 +12,7 @@ import com.agrorental.partner.repository.PartnerRepository;
 import com.agrorental.security.principal.FarmerPrincipal;
 import com.agrorental.security.principal.OperatorPrincipal;
 import com.agrorental.security.principal.PartnerPrincipal;
+import com.agrorental.common.enums.Role;
 import com.agrorental.user.entity.User;
 import com.agrorental.user.repository.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -98,8 +99,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         log.warn("Operator ID {} from token not found in database", userId);
                     }
                 } else if (userId != null && "ADMIN".equalsIgnoreCase(role)) {
+                    // Admin, Farmer, and User each have independent auto-increment IDs, so a
+                    // token's userId can coincidentally match an unrelated row in another
+                    // table — always confirm the User's own role before trusting the match.
                     Optional<User> userOpt = (userRepository != null) ? userRepository.findById(userId) : Optional.empty();
-                    if (userOpt.isPresent() && userOpt.get().isEnabled()) {
+                    if (userOpt.isPresent() && userOpt.get().isEnabled() && userOpt.get().getRole() == Role.ADMIN) {
                         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                                 "ADMIN_" + userId,
                                 null,
@@ -149,9 +153,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         log.warn("Partner ID {} token rejected: not found or inactive", userId);
                     }
                 } else if (userId != null && "FARMER".equalsIgnoreCase(role)) {
-                    // Check core User repository first
+                    // Check core User repository first — same cross-table ID collision
+                    // concern as the ADMIN branch above, so the role is checked too.
                     Optional<User> userOpt = (userRepository != null) ? userRepository.findById(userId) : Optional.empty();
-                    if (userOpt.isPresent() && userOpt.get().isEnabled()) {
+                    if (userOpt.isPresent() && userOpt.get().isEnabled() && userOpt.get().getRole() == Role.FARMER) {
                         User user = userOpt.get();
                         Long farmerId = user.getFarmer() != null ? user.getFarmer().getId() : user.getId();
                         FarmerPrincipal principal = FarmerPrincipal.builder()

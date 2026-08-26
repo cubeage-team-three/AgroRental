@@ -6,14 +6,14 @@ import LanguageSelector from './components/common/LanguageSelector';
 
 function App() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <LanguageProvider>
         <BrowserRouter>
           <AppRoutes />
           <LanguageSelector />
         </BrowserRouter>
-      </AuthProvider>
-    </LanguageProvider>
+      </LanguageProvider>
+    </AuthProvider>
   );
 }
 

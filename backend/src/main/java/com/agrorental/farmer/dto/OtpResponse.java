@@ -19,4 +19,12 @@ public class OtpResponse {
     private Integer attemptsRemaining;
     private LocalDateTime expiresAt;
     private String devMockOtp; // Helpful for development & automated testing
+
+    // Populated only on a successful verify-otp response, so the frontend can
+    // establish a real session immediately after a fresh registration is verified.
+    private String token;
+    private Long farmerId;
+    private String fullName;
+    private String email;
+    private String role;
 }

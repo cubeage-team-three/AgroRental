@@ -6,9 +6,10 @@ import {
   Sparkles, CreditCard, Shield, HeartHandshake, Check, AlertCircle
 } from 'lucide-react';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
-import { getCurrentUser, getFarmerId } from '../../services/authService';
-import { getFarmerProfile, updateFarmerProfile, changeFarmerPassword } from '../../services/farmerAuthService';
+import { getFarmerId } from '../../services/authService';
+import { updateFarmerProfile, changeFarmerPassword } from '../../services/farmerAuthService';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 
 function FarmerProfile() {
   let langCtx;
@@ -28,25 +29,25 @@ function FarmerProfile() {
     }
   };
 
-  const currentUser = getCurrentUser();
+  const { user, loading: authLoading, refreshUser } = useAuth();
   const farmerId = getFarmerId() || 1;
   const [activeTab, setActiveTab] = useState('personal'); // 'personal' | 'farming' | 'bank' | 'schemes' | 'security'
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Profile Form State
+  // Profile Form State — seeded from AuthContext's `user` once it loads (see
+  // the sync effect below), not from hardcoded defaults.
   const [profileData, setProfileData] = useState({
-    fullName: currentUser?.fullName || currentUser?.name || 'Farmer Account',
-    mobileNumber: currentUser?.mobileNumber || currentUser?.mobile || '',
-    email: currentUser?.email || '',
-    address: currentUser?.address || '',
-    preferredLanguage: currentUser?.preferredLanguage || 'English',
-    profileImage: currentUser?.profileImage || '',
-    accountStatus: currentUser?.accountStatus || 'ACTIVE',
+    fullName: '',
+    mobileNumber: '',
+    email: '',
+    address: '',
+    preferredLanguage: 'English',
+    profileImage: '',
+    accountStatus: 'ACTIVE',
     primaryCrop: 'Wheat, Rice & Pulses',
     totalLandAcres: '0 Acres',
     bankName: 'Not Linked',
@@ -72,34 +73,22 @@ function FarmerProfile() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  // AuthContext owns the fetch (and re-fetch) from the backend; this just
+  // mirrors whatever it has into the local, editable form state.
   useEffect(() => {
-    fetchProfile();
-  }, [farmerId]);
-
-  const fetchProfile = async () => {
-    setLoading(true);
-    setErrorMessage('');
-    try {
-      const res = await getFarmerProfile(farmerId);
-      if (res && (res.data || res.farmerId || res.fullName)) {
-        const data = res.data || res;
-        setProfileData((prev) => ({
-          ...prev,
-          fullName: data.fullName || prev.fullName,
-          mobileNumber: data.mobileNumber || prev.mobileNumber,
-          email: data.email || prev.email,
-          address: data.address || prev.address,
-          preferredLanguage: data.preferredLanguage || prev.preferredLanguage,
-          profileImage: data.profileImage || prev.profileImage,
-          accountStatus: data.accountStatus || 'ACTIVE',
-        }));
-      }
-    } catch (err) {
-      console.warn('Profile fetch note:', err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (!user) return;
+    console.log('AuthContext user data received in FarmerProfile:', user);
+    setProfileData((prev) => ({
+      ...prev,
+      fullName: user.fullName || prev.fullName,
+      mobileNumber: user.mobileNumber || prev.mobileNumber,
+      email: user.email || prev.email,
+      address: user.address || prev.address,
+      preferredLanguage: user.preferredLanguage || prev.preferredLanguage,
+      profileImage: user.profileImage || prev.profileImage,
+      accountStatus: user.accountStatus || prev.accountStatus,
+    }));
+  }, [user]);
 
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
@@ -135,7 +124,7 @@ function FarmerProfile() {
 
       setSuccessMessage('✓ Profile information updated successfully!');
       setIsEditing(false);
-      
+
       const data = res?.data || res;
       if (data) {
         setProfileData((prev) => ({
@@ -146,6 +135,9 @@ function FarmerProfile() {
           preferredLanguage: data.preferredLanguage || prev.preferredLanguage,
         }));
       }
+      // Re-pull the authoritative record so the Sidebar (and anything else
+      // reading useAuth()) picks up the edit too, not just this page.
+      refreshUser();
     } catch (err) {
       console.error('Update profile error:', err);
       setErrorMessage(err.message || 'Failed to update profile details. Please try again.');
@@ -186,7 +178,7 @@ function FarmerProfile() {
     }
   };
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center p-6">
         <div className="text-center">
