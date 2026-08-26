@@ -126,34 +126,28 @@ function VerifyOtp() {
 
     try {
       const response = await verifyOtp(mobileNumber, fullOtp);
-      setSuccessMessage('✓ Mobile verified! Account activated successfully.');
-
-      const data = response?.data;
-      if (data?.token) {
-        saveUserSession({
-          token: data.token,
-          farmerId: data.farmerId,
-          fullName: data.fullName,
-          mobileNumber: data.mobileNumber,
-          email: data.email,
-          role: data.role || 'FARMER',
-          accountStatus: 'ACTIVE',
-        });
-        refreshUser();
-      }
+      setSuccessMessage('✓ Mobile verified! Account activated. Redirecting to Login...');
 
       setTimeout(() => {
-        navigate('/farmer/dashboard', {
-          state: { message: 'Welcome to AgroRent! Your account is active.' }
+        navigate('/login', {
+          state: {
+            mobileNumber,
+            successMessage: '✓ Mobile number verified successfully! Please log in to your account.'
+          }
         });
       }, 1500);
     } catch (err) {
       console.error('OTP Verification Error:', err);
       // Demo fallback if backend is offline
       if (err.message && err.message.includes('Network error')) {
-        setSuccessMessage('Demo Mode: OTP Verified! Redirecting to Farmer Dashboard...');
+        setSuccessMessage('Demo Mode: OTP Verified! Redirecting to Login...');
         setTimeout(() => {
-          navigate('/farmer/dashboard');
+          navigate('/login', {
+            state: {
+              mobileNumber,
+              successMessage: '✓ Mobile number verified successfully! Please log in to your account.'
+            }
+          });
         }, 1500);
       } else {
         setErrorMessage(err.message || 'Invalid or expired OTP. Please try again.');
@@ -368,10 +362,17 @@ function VerifyOtp() {
             </button>
           </form>
 
-          {/* Footer Back Link */}
-          <div className="text-center mt-6">
-            <Link to="/register" className="text-xs font-semibold text-gray-500 hover:text-[#3E7B27] transition-colors">
+          {/* Footer Back & Login Links */}
+          <div className="flex items-center justify-between mt-6 text-xs font-semibold text-gray-500">
+            <Link to="/register" className="hover:text-[#3E7B27] transition-colors">
               ← Back to Registration
+            </Link>
+            <Link
+              to="/login"
+              state={{ mobileNumber }}
+              className="text-[#3E7B27] font-bold hover:underline transition-colors"
+            >
+              Log In to Account →
             </Link>
           </div>
 

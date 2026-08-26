@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Eye, EyeOff, Loader2, MessageCircle, Smartphone, Lock, X } from 'lucide-react';
 import { sendOtp } from '../../services/farmerAuthService';
@@ -26,12 +26,17 @@ function Login() {
   const auth = useAuth();
   const { refreshUser } = auth;
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Retrieve initial state from registration redirect if available
+  const initialMobile = location.state?.mobileNumber || '';
+  const initialMessage = location.state?.successMessage || location.state?.message || '';
 
   // Mode: "PASSWORD" or "OTP"
   const [loginMode, setLoginMode] = useState('PASSWORD');
 
   const [formData, setFormData] = useState({
-    mobileOrEmail: '',
+    mobileOrEmail: initialMobile,
     password: '',
     otp: '',
   });
@@ -43,7 +48,7 @@ function Login() {
   const [devMockOtp, setDevMockOtp] = useState('');
 
   const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(initialMessage);
   const [infoMessage, setInfoMessage] = useState('');
 
   const handleInputChange = (e) => {
