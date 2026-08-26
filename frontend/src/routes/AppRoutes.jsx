@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 
+import ProtectedRoute from '../components/common/ProtectedRoute';
+
 import MainLayout from '../layouts/MainLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
 import AuthLayout from '../layouts/AuthLayout';
@@ -18,6 +20,9 @@ import RegisterFarmer from '../pages/auth/RegisterFarmer';
 import RegisterPartner from '../pages/auth/RegisterPartner';
 import RegisterOperator from '../pages/auth/RegisterOperator';
 import VerifyOtp from '../pages/auth/VerifyOtp';
+import VerifyEmail from '../pages/auth/VerifyEmail';
+import ForgotPassword from '../pages/auth/ForgotPassword';
+import ResetPassword from '../pages/auth/ResetPassword';
 
 import FarmerDashboard from '../pages/farmer/FarmerDashboard';
 import FarmerProfile from '../pages/farmer/FarmerProfile';
@@ -68,7 +73,6 @@ import AdminNotifications from '../pages/admin/Notifications';
 import SystemSettings from '../pages/admin/SystemSettings';
 import AuditLogs from '../pages/admin/AuditLogs';
 
-
 function AppRoutes() {
   return (
     <Routes>
@@ -87,75 +91,88 @@ function AppRoutes() {
         <Route path="register" element={<Register />} />
         <Route path="register/partner" element={<RegisterPartner />} />
         <Route path="register/operator" element={<RegisterOperator />} />
+        <Route path="verify-email" element={<VerifyEmail />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
+        <Route path="reset-password" element={<ResetPassword />} />
       </Route>
 
-      {/* Farmer routes */}
-      <Route path="/farmer" element={<DashboardLayout />}>
-        <Route path="dashboard" element={<FarmerDashboard />} />
-        <Route path="profile" element={<FarmerProfile />} />
-        <Route path="farms" element={<MyFarms />} />
-        <Route path="equipment" element={<SearchEquipment />} />
-        <Route path="search-equipment" element={<SearchEquipment />} />
-        <Route path="equipment/:id" element={<EquipmentDetails />} />
-        <Route path="book/:equipmentId" element={<BookEquipment />} />
-        <Route path="book-equipment" element={<BookEquipment />} />
-        <Route path="bookings" element={<MyBookings />} />
-        <Route path="my-bookings" element={<MyBookings />} />
-        <Route path="bookings/:id" element={<BookingDetails />} />
-        <Route path="bookings/:id/pay" element={<CheckoutPayment />} />
-        <Route path="bookings/:id/invoice" element={<Invoice />} />
-        <Route path="bookings/:id/review" element={<WriteReview />} />
-        <Route path="bookings/:id/tracking" element={<LiveTracking />} />
-        <Route path="live-tracking" element={<LiveTracking />} />
-        <Route path="payments" element={<FarmerPayments />} />
-        <Route path="complaints" element={<FarmerComplaints />} />
-        <Route path="notifications" element={<FarmerNotifications />} />
+      {/* Protected Farmer routes */}
+      <Route element={<ProtectedRoute allowedRoles={['FARMER', 'ADMIN']} />}>
+        <Route path="/farmer" element={<DashboardLayout />}>
+          <Route path="dashboard" element={<FarmerDashboard />} />
+          <Route path="profile" element={<FarmerProfile />} />
+          <Route path="farms" element={<MyFarms />} />
+          <Route path="equipment" element={<SearchEquipment />} />
+          <Route path="search-equipment" element={<SearchEquipment />} />
+          <Route path="equipment/:id" element={<EquipmentDetails />} />
+          <Route path="book/:equipmentId" element={<BookEquipment />} />
+          <Route path="book-equipment" element={<BookEquipment />} />
+          <Route path="bookings" element={<MyBookings />} />
+          <Route path="my-bookings" element={<MyBookings />} />
+          <Route path="bookings/:id" element={<BookingDetails />} />
+          <Route path="bookings/:id/pay" element={<CheckoutPayment />} />
+          <Route path="bookings/:id/invoice" element={<Invoice />} />
+          <Route path="bookings/:id/review" element={<WriteReview />} />
+          <Route path="bookings/:id/tracking" element={<LiveTracking />} />
+          <Route path="live-tracking" element={<LiveTracking />} />
+          <Route path="payments" element={<FarmerPayments />} />
+          <Route path="complaints" element={<FarmerComplaints />} />
+          <Route path="notifications" element={<FarmerNotifications />} />
+        </Route>
       </Route>
 
-      {/* Partner routes */}
-      <Route path="/partner" element={<PartnerLayout />}>
-        <Route path="dashboard" element={<PartnerDashboard />} />
-        <Route path="profile" element={<PartnerProfile />} />
-        <Route path="equipment" element={<MyEquipment />} />
-        <Route path="my-equipment" element={<MyEquipment />} />
-        <Route path="equipment/add" element={<AddEquipment />} />
-        <Route path="add-equipment" element={<AddEquipment />} />
-        <Route path="equipment/availability" element={<EquipmentAvailability />} />
-        <Route path="bookings" element={<BookingRequests />} />
-        <Route path="bookings/:id/assign-operator" element={<AssignOperator />} />
-        <Route path="earnings" element={<PartnerEarnings />} />
-        <Route path="reviews" element={<PartnerReviews />} />
-        <Route path="notifications" element={<PartnerNotifications />} />
+      {/* Protected Partner routes */}
+      <Route element={<ProtectedRoute allowedRoles={['PARTNER', 'ADMIN']} />}>
+        <Route path="/partner" element={<PartnerLayout />}>
+          <Route path="dashboard" element={<PartnerDashboard />} />
+          <Route path="profile" element={<PartnerProfile />} />
+          <Route path="equipment" element={<MyEquipment />} />
+          <Route path="my-equipment" element={<MyEquipment />} />
+          <Route path="equipment/add" element={<AddEquipment />} />
+          <Route path="add-equipment" element={<AddEquipment />} />
+          <Route path="equipment/availability" element={<EquipmentAvailability />} />
+          <Route path="bookings" element={<BookingRequests />} />
+          <Route path="bookings/:id/assign-operator" element={<AssignOperator />} />
+          <Route path="earnings" element={<PartnerEarnings />} />
+          <Route path="reviews" element={<PartnerReviews />} />
+          <Route path="notifications" element={<PartnerNotifications />} />
+        </Route>
       </Route>
 
-      {/* Operator routes */}
-      <Route path="/operator" element={<DashboardLayout />}>
-        <Route path="dashboard" element={<OperatorDashboard />} />
-        <Route path="profile" element={<OperatorProfile />} />
-        <Route path="jobs" element={<AssignedJobs />} />
-        <Route path="jobs/:id" element={<JobDetails />} />
-        <Route path="earnings" element={<OperatorEarnings />} />
-        <Route path="history" element={<JobHistory />} />
-        <Route path="ratings" element={<OperatorRatings />} />
-        <Route path="notifications" element={<OperatorNotifications />} />
+      {/* Protected Operator routes */}
+      <Route element={<ProtectedRoute allowedRoles={['OPERATOR', 'ADMIN']} />}>
+        <Route path="/operator" element={<DashboardLayout />}>
+          <Route path="dashboard" element={<OperatorDashboard />} />
+          <Route path="profile" element={<OperatorProfile />} />
+          <Route path="jobs" element={<AssignedJobs />} />
+          <Route path="jobs/:id" element={<JobDetails />} />
+          <Route path="earnings" element={<OperatorEarnings />} />
+          <Route path="history" element={<JobHistory />} />
+          <Route path="ratings" element={<OperatorRatings />} />
+          <Route path="notifications" element={<OperatorNotifications />} />
+        </Route>
       </Route>
 
-      {/* Admin routes */}
+      {/* Public Admin login */}
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin" element={<AdminDashboardLayout />}>
-        <Route path="overview" element={<AdminOverview />} />
-        <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="farmers" element={<ManageFarmers />} />
-        <Route path="partners" element={<ManagePartners />} />
-        <Route path="operators" element={<ManageOperators />} />
-        <Route path="equipment" element={<ManageEquipment />} />
-        <Route path="bookings" element={<ManageBookings />} />
-        <Route path="payments" element={<ManagePayments />} />
-        <Route path="complaints" element={<ManageComplaints />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="notifications" element={<AdminNotifications />} />
-        <Route path="settings" element={<SystemSettings />} />
-        <Route path="audit-logs" element={<AuditLogs />} />
+
+      {/* Protected Admin routes */}
+      <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+        <Route path="/admin" element={<AdminDashboardLayout />}>
+          <Route path="overview" element={<AdminOverview />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="farmers" element={<ManageFarmers />} />
+          <Route path="partners" element={<ManagePartners />} />
+          <Route path="operators" element={<ManageOperators />} />
+          <Route path="equipment" element={<ManageEquipment />} />
+          <Route path="bookings" element={<ManageBookings />} />
+          <Route path="payments" element={<ManagePayments />} />
+          <Route path="complaints" element={<ManageComplaints />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="notifications" element={<AdminNotifications />} />
+          <Route path="settings" element={<SystemSettings />} />
+          <Route path="audit-logs" element={<AuditLogs />} />
+        </Route>
       </Route>
 
       {/* Catch-all */}

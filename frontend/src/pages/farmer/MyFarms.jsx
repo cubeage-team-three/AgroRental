@@ -133,7 +133,8 @@ function MyFarms() {
       fetchFarms();
       setTimeout(() => setActionSuccess(null), 3000);
     } catch (err) {
-      alert('Failed to save farm details. Please verify your input.');
+      console.error('Save farm error:', err);
+      alert(err.message || 'Failed to save farm details. Please verify all required fields (Farm Name, Village, Taluka, District, State, Farm Area).');
     } finally {
       setFormSubmitting(false);
     }

@@ -7,17 +7,27 @@ import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.common.exception.ForbiddenException;
 import com.agrorental.common.exception.ResourceNotFoundException;
 import com.agrorental.notification.service.NotificationService;
+import com.agrorental.equipment.entity.Equipment;
+import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.operator.dto.EligibleOperatorResponse;
 import com.agrorental.operator.dto.OperatorAssignedJobResponse;
 import com.agrorental.operator.dto.OperatorAssignmentRequest;
 import com.agrorental.operator.dto.OperatorAssignmentResponse;
+import com.agrorental.operator.dto.OperatorJobEarningsResponse;
+import com.agrorental.operator.dto.OperatorJobHistoryResponse;
+import com.agrorental.operator.dto.OperatorJobHistorySummaryResponse;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorJobAssignment;
+import com.agrorental.operator.entity.OperatorLocation;
+import com.agrorental.operator.entity.OperatorReview;
 import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.enums.OperatorAssignmentStatus;
 import com.agrorental.operator.mapper.OperatorJobAssignmentMapper;
 import com.agrorental.operator.repository.OperatorJobAssignmentRepository;
+import com.agrorental.operator.repository.OperatorLocationRepository;
 import com.agrorental.operator.repository.OperatorRepository;
+import com.agrorental.operator.repository.OperatorReviewRepository;
+import com.agrorental.partner.entity.Partner;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,7 +35,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Service managing Operator Job Assignments, eligibility verification, schedule conflict detection,
@@ -41,6 +56,9 @@ public class OperatorAssignmentService {
     private final OperatorJobAssignmentRepository assignmentRepository;
     private final OperatorJobAssignmentMapper assignmentMapper;
     private final NotificationService notificationService;
+    private final OperatorEarningsService earningsService;
+    private final OperatorReviewRepository reviewRepository;
+    private final OperatorLocationRepository locationRepository;
 
     /**
      * Assigns an eligible approved Operator to a confirmed Booking.
@@ -245,5 +263,216 @@ public class OperatorAssignmentService {
         }
 
         return operators.map(assignmentMapper::toEligibleResponse);
+    }
+
+    // ==========================================
+    // PHASE 10: JOB HISTORY & ANALYTICS
+    // ==========================================
+
+    /**
+     * Retrieves a paginated, filterable archive of historical job assignments for an authenticated Operator.
+     */
+    @Transactional(readOnly = true)
+    public Page<OperatorJobHistoryResponse> getJobHistory(
+            Long operatorId,
+            LocalDate startDate,
+            LocalDate endDate,
+            OperatorAssignmentStatus status,
+            String equipmentCategory,
+            String search,
+            Pageable pageable) {
+
+        log.info("Fetching job history for operator ID {} with filters: status={}, startDate={}, endDate={}, category={}, search='{}'",
+                operatorId, status, startDate, endDate, equipmentCategory, search);
+
+        Operator operator = operatorRepository.findById(operatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Operator not found with ID: " + operatorId));
+
+        if (!operator.isActive()) {
+            throw new ForbiddenException("Operator account is inactive");
+        }
+
+        String sanitizedSearch = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        String sanitizedCategory = (equipmentCategory != null && !equipmentCategory.trim().isEmpty() && !equipmentCategory.equalsIgnoreCase("ALL"))
+                ? equipmentCategory.trim() : null;
+
+        Page<OperatorJobAssignment> assignments = assignmentRepository.findJobHistory(
+                operatorId,
+                status,
+                startDate,
+                endDate,
+                sanitizedCategory,
+                sanitizedSearch,
+                pageable
+        );
+
+        BigDecimal hourlyRate = operator.getHourlyRate() != null && operator.getHourlyRate().compareTo(BigDecimal.ZERO) > 0
+                ? operator.getHourlyRate().setScale(2, RoundingMode.HALF_UP)
+                : OperatorEarningsService.DEFAULT_HOURLY_RATE.setScale(2, RoundingMode.HALF_UP);
+
+        return assignments.map(assignment -> mapToJobHistoryResponse(assignment, operator, hourlyRate));
+    }
+
+    /**
+     * Calculates aggregate historical metrics (total jobs, completed, work hours, pause time, gross earnings, average rating)
+     * for the authenticated operator.
+     */
+    @Transactional(readOnly = true)
+    public OperatorJobHistorySummaryResponse getJobHistorySummary(
+            Long operatorId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String equipmentCategory) {
+
+        log.info("Calculating job history summary for operator ID {} with filters: startDate={}, endDate={}, category={}",
+                operatorId, startDate, endDate, equipmentCategory);
+
+        Operator operator = operatorRepository.findById(operatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Operator not found with ID: " + operatorId));
+
+        if (!operator.isActive()) {
+            throw new ForbiddenException("Operator account is inactive");
+        }
+
+        String sanitizedCategory = (equipmentCategory != null && !equipmentCategory.trim().isEmpty() && !equipmentCategory.equalsIgnoreCase("ALL"))
+                ? equipmentCategory.trim() : null;
+
+        List<OperatorJobAssignment> historicalAssignments = assignmentRepository.findJobHistoryForSummary(
+                operatorId,
+                startDate,
+                endDate,
+                sanitizedCategory
+        );
+
+        BigDecimal hourlyRate = operator.getHourlyRate() != null && operator.getHourlyRate().compareTo(BigDecimal.ZERO) > 0
+                ? operator.getHourlyRate().setScale(2, RoundingMode.HALF_UP)
+                : OperatorEarningsService.DEFAULT_HOURLY_RATE.setScale(2, RoundingMode.HALF_UP);
+
+        long totalHistoricalJobs = historicalAssignments.size();
+        long completedJobs = 0L;
+        long rejectedJobs = 0L;
+        long cancelledJobs = 0L;
+        long totalWorkMinutes = 0L;
+        long totalPausedMinutes = 0L;
+        BigDecimal totalGrossEarnings = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+
+        for (OperatorJobAssignment assignment : historicalAssignments) {
+            OperatorAssignmentStatus s = assignment.getAssignmentStatus();
+            if (s == OperatorAssignmentStatus.COMPLETED) {
+                completedJobs++;
+                OperatorJobEarningsResponse earnings = earningsService.computeJobEarnings(assignment, hourlyRate);
+                totalWorkMinutes += earnings.getNetWorkMinutes();
+                totalPausedMinutes += earnings.getPausedMinutes();
+                totalGrossEarnings = totalGrossEarnings.add(earnings.getGrossEarnings());
+            } else if (s == OperatorAssignmentStatus.REJECTED) {
+                rejectedJobs++;
+            } else if (s == OperatorAssignmentStatus.CANCELLED) {
+                cancelledJobs++;
+            }
+        }
+
+        BigDecimal totalWorkHours = BigDecimal.valueOf((double) Math.round((totalWorkMinutes / 60.0) * 100.0) / 100.0)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        // Fetch rating metrics
+        List<OperatorReview> reviews = reviewRepository.findByOperatorId(operatorId);
+        long totalReviewsCount = reviews != null ? reviews.size() : 0L;
+        Double averageRating = 0.0;
+        if (reviews != null && !reviews.isEmpty()) {
+            double sum = 0.0;
+            for (OperatorReview rev : reviews) {
+                if (rev.getRating() != null) {
+                    sum += rev.getRating();
+                }
+            }
+            averageRating = (double) Math.round((sum / reviews.size()) * 10.0) / 10.0;
+        }
+
+        return OperatorJobHistorySummaryResponse.builder()
+                .operatorId(operatorId)
+                .totalHistoricalJobs(totalHistoricalJobs)
+                .completedJobs(completedJobs)
+                .rejectedJobs(rejectedJobs)
+                .cancelledJobs(cancelledJobs)
+                .totalWorkHours(totalWorkHours)
+                .totalPausedMinutes(totalPausedMinutes)
+                .totalGrossEarnings(totalGrossEarnings)
+                .currency(OperatorEarningsService.CURRENCY_INR)
+                .averageRating(averageRating)
+                .totalReviewsCount(totalReviewsCount)
+                .build();
+    }
+
+    /**
+     * Helper mapper creating an enriched OperatorJobHistoryResponse DTO.
+     */
+    private OperatorJobHistoryResponse mapToJobHistoryResponse(
+            OperatorJobAssignment assignment,
+            Operator operator,
+            BigDecimal hourlyRate) {
+
+        Booking booking = assignment.getBooking();
+        Equipment equipment = booking != null ? booking.getEquipment() : null;
+        Partner partner = booking != null ? booking.getPartner() : null;
+
+        // Financials & Duration
+        OperatorJobEarningsResponse earnings = earningsService.computeJobEarnings(assignment, hourlyRate);
+
+        // Review & Customer Rating
+        Optional<OperatorReview> reviewOpt = reviewRepository.findByAssignmentId(assignment.getId());
+        Integer rating = reviewOpt.map(OperatorReview::getRating).orElse(null);
+        String reviewComment = reviewOpt.map(OperatorReview::getComment).orElse(null);
+        LocalDateTime reviewSubmittedAt = reviewOpt.map(OperatorReview::getCreatedAt).orElse(null);
+
+        // GPS Latest Coordinates
+        Optional<OperatorLocation> latestLoc = locationRepository.findTopByAssignmentIdOrderByRecordedAtDesc(assignment.getId());
+        boolean hasGps = latestLoc.isPresent();
+        Double latestLat = latestLoc.map(OperatorLocation::getLatitude).orElse(null);
+        Double latestLon = latestLoc.map(OperatorLocation::getLongitude).orElse(null);
+
+        return OperatorJobHistoryResponse.builder()
+                .assignmentId(assignment.getId())
+                .bookingId(booking != null ? booking.getId() : null)
+                .operatorId(operator.getId())
+                .operatorName(operator.getFullName())
+                .equipmentId(equipment != null ? equipment.getId() : null)
+                .equipmentName(equipment != null ? equipment.getName() : "Agricultural Machinery")
+                .equipmentModel(equipment != null ? equipment.getModel() : "Standard Model")
+                .equipmentCategory(equipment != null && equipment.getCategory() != null ? equipment.getCategory().name() : "GENERAL")
+                .equipmentRegistrationNumber(equipment != null && equipment.getBrand() != null ? equipment.getBrand() + " " + equipment.getModel() : "N/A")
+                .farmerId(booking != null ? booking.getFarmerId() : null)
+                .farmerName(booking != null ? "Verified Farmer #" + booking.getFarmerId() : "Verified Farmer")
+                .deliveryAddress(booking != null && booking.getDeliveryAddress() != null ? booking.getDeliveryAddress() : "On-site Field Delivery")
+                .partnerId(partner != null ? partner.getId() : null)
+                .partnerName(partner != null ? partner.getBusinessName() : "Authorized Equipment Partner")
+                .bookingStartDate(booking != null ? booking.getStartDate() : null)
+                .bookingEndDate(booking != null ? booking.getEndDate() : null)
+                .assignmentStatus(assignment.getAssignmentStatus())
+                .notes(assignment.getNotes())
+                .rejectionReason(assignment.getRejectionReason())
+                .pauseReason(assignment.getPauseReason())
+                .assignedAt(assignment.getAssignedAt())
+                .acceptedAt(assignment.getAcceptedAt())
+                .rejectedAt(assignment.getRejectedAt())
+                .travelingAt(assignment.getTravelingAt())
+                .reachedAt(assignment.getReachedAt())
+                .workStartedAt(assignment.getWorkStartedAt())
+                .pausedAt(assignment.getPausedAt())
+                .resumedAt(assignment.getResumedAt())
+                .completedAt(assignment.getCompletedAt())
+                .totalElapsedMinutes(earnings.getTotalElapsedMinutes())
+                .totalPausedMinutes(earnings.getPausedMinutes())
+                .netWorkHours(BigDecimal.valueOf(earnings.getNetWorkHours()).setScale(2, RoundingMode.HALF_UP))
+                .hourlyRate(hourlyRate)
+                .grossEarnings(earnings.getGrossEarnings())
+                .currency(OperatorEarningsService.CURRENCY_INR)
+                .isFinalized(assignment.getAssignmentStatus() == OperatorAssignmentStatus.COMPLETED)
+                .customerRating(rating)
+                .customerReview(reviewComment)
+                .reviewSubmittedAt(reviewSubmittedAt)
+                .hasGpsData(hasGps)
+                .latestLatitude(latestLat)
+                .latestLongitude(latestLon)
+                .build();
     }
 }

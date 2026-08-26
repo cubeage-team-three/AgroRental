@@ -17,22 +17,22 @@ export const resendOtp = async (mobileNumber) => {
 };
 
 export const getFarmerProfile = async (farmerId) => {
-  const query = farmerId ? `?farmerId=${farmerId}` : '';
-  return await apiRequest(`/farmers/profile${query}`, 'GET');
+  const targetId = farmerId || 1;
+  return await apiRequest(`/farmers/profile/${targetId}`, 'GET');
 };
 
 export const updateFarmerProfile = async (farmerId, profileData) => {
-  const query = farmerId ? `?farmerId=${farmerId}` : '';
-  return await apiRequest(`/farmers/profile${query}`, 'PUT', profileData);
+  const targetId = farmerId || 1;
+  return await apiRequest(`/farmers/profile/${targetId}`, 'PUT', profileData);
 };
 
 export const changeFarmerPassword = async (farmerId, passwordData) => {
-  const query = farmerId ? `?farmerId=${farmerId}` : '';
-  return await apiRequest(`/farmers/change-password${query}`, 'PUT', passwordData);
+  const targetId = farmerId || 1;
+  return await apiRequest(`/farmers/change-password/${targetId}`, 'PUT', passwordData);
 };
 
 export const getFarmerDashboard = async (farmerId) => {
-  const query = farmerId ? `?farmerId=${farmerId}` : '';
-  return await apiRequest(`/farmers/dashboard${query}`, 'GET');
+  const targetId = farmerId || 1;
+  return await apiRequest(`/farmers/dashboard?farmerId=${targetId}`, 'GET');
 };
 

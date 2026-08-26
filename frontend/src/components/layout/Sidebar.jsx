@@ -4,10 +4,12 @@ import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 import { getCurrentUser, logoutUser, getFarmerId, getPartnerId, getOperatorId } from '../../services/authService';
 import { notificationService } from '../../services/notificationService';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const auth = useAuth();
 
   let langCtx;
   try {
@@ -17,13 +19,13 @@ function Sidebar() {
   }
   const t = langCtx?.t || ((k, d) => d || k);
 
-  const currentUser = getCurrentUser();
-  const userName = currentUser?.fullName || 'AgroRental User';
+  const currentUser = auth.user || getCurrentUser();
+  const userName = currentUser?.fullName || currentUser?.name || currentUser?.businessName || 'AgroRental User';
   const mobileNumber = currentUser?.mobileNumber || '9876543210';
   const [unreadCount, setUnreadCount] = useState(0);
 
   const handleLogout = () => {
-    logoutUser();
+    auth.logout();
     navigate('/login');
   };
 

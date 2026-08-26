@@ -7,6 +7,8 @@ import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.enums.OperatorAssignmentStatus;
 import com.agrorental.admin.repository.AdminRepository;
+import com.agrorental.partner.repository.PartnerRepository;
+import com.agrorental.farmer.repository.FarmerRepository;
 import com.agrorental.operator.repository.OperatorRepository;
 import com.agrorental.operator.service.OperatorJobLifecycleService;
 import com.agrorental.security.jwt.JwtAuthenticationFilter;
@@ -53,6 +55,12 @@ class OperatorJobLifecycleSecurityIntegrationTest {
     private AdminRepository adminRepository;
 
     @Mock
+    private PartnerRepository partnerRepository;
+
+    @Mock
+    private FarmerRepository farmerRepository;
+
+    @Mock
     private OperatorJobLifecycleService lifecycleService;
 
     @InjectMocks
@@ -63,7 +71,7 @@ class OperatorJobLifecycleSecurityIntegrationTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
-        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, operatorRepository, adminRepository);
+        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, null, operatorRepository, adminRepository, partnerRepository, farmerRepository);
 
         HandlerMethodArgumentResolver principalResolver = new HandlerMethodArgumentResolver() {
             @Override

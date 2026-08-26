@@ -45,7 +45,34 @@ const HERO_CONTENT = {
         Near You.
       </>
     ),
-    subtext: "Join 12,000+ verified operators earning steady income with live job alerts and fast payouts.",
+    subtext:
+      "Join 12,000+ verified operators earning steady income with live job alerts and fast payouts.",
+  },
+  "/login/operator": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Welcome Back,
+        <br />
+        Equipment Operator.
+      </>
+    ),
+    subtext:
+      "Sign in to access your deployed field jobs, machinery schedules, and earnings.",
+  },
+  "/operator/login": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Welcome Back,
+        <br />
+        Equipment Operator.
+      </>
+    ),
+    subtext:
+      "Sign in to access your deployed field jobs, machinery schedules, and earnings.",
   },
 };
 
@@ -82,11 +109,13 @@ function AuthLayout() {
             className="absolute inset-0 h-full w-full object-cover"
           />
         </AnimatePresence>
+
         <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/95 via-emerald-950/35 to-emerald-950/10 lg:via-emerald-950/25" />
         <div className="absolute inset-0 hidden bg-gradient-to-r from-transparent via-transparent to-emerald-950/20 lg:block" />
 
+        {/* AgroRent Logo */}
         <Link to="/" className="absolute left-6 top-6 z-10 flex items-center gap-2 sm:left-8 sm:top-8">
-          <div className="flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-lg ring-1 ring-slate-900/10 h-11">
+          <div className="flex h-11 items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-lg ring-1 ring-slate-900/10">
             <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
           </div>
         </Link>
@@ -103,6 +132,7 @@ function AuthLayout() {
               <h2 className="font-display text-2xl font-bold leading-[1.15] text-white [text-shadow:0_0_35px_rgba(163,230,53,0.45)] sm:text-3xl lg:text-4xl xl:text-[2.65rem]">
                 {hero.headline}
               </h2>
+
               <p className="mt-4 hidden max-w-sm text-sm leading-relaxed text-white/70 lg:block">
                 {hero.subtext}
               </p>

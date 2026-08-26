@@ -33,6 +33,9 @@ import com.agrorental.payment.entity.PaymentStatus;
 import com.agrorental.payment.repository.PaymentRepository;
 import com.agrorental.review.entity.Review;
 import com.agrorental.review.repository.ReviewRepository;
+import com.agrorental.common.enums.Role;
+import com.agrorental.user.entity.User;
+import com.agrorental.user.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,6 +56,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private final PartnerRepository partnerRepository;
     private final FarmerRepository farmerRepository;
+    private final UserRepository userRepository;
     private final FarmRepository farmRepository;
     private final EquipmentRepository equipmentRepository;
     private final OperatorRepository operatorRepository;
@@ -68,6 +72,7 @@ public class DataInitializer implements CommandLineRunner {
     public DataInitializer(
             PartnerRepository partnerRepository,
             FarmerRepository farmerRepository,
+            UserRepository userRepository,
             FarmRepository farmRepository,
             EquipmentRepository equipmentRepository,
             OperatorRepository operatorRepository,
@@ -81,6 +86,7 @@ public class DataInitializer implements CommandLineRunner {
             PasswordEncoder passwordEncoder) {
         this.partnerRepository = partnerRepository;
         this.farmerRepository = farmerRepository;
+        this.userRepository = userRepository;
         this.farmRepository = farmRepository;
         this.equipmentRepository = equipmentRepository;
         this.operatorRepository = operatorRepository;
@@ -121,8 +127,18 @@ public class DataInitializer implements CommandLineRunner {
         partner = partnerRepository.save(partner);
         log.info("Seeded Partner ID: {}", partner.getId());
 
-        // 2. Seed Farmer #1 & Farm #1
+        // 2. Seed User #1 (Farmer User) & Farmer #1 & Farm #1
+        User farmerUser = User.builder()
+                .name("Ramesh Yadav")
+                .email("ramesh@agrorent.in")
+                .password(passwordEncoder.encode("Farmer@123"))
+                .role(Role.FARMER)
+                .enabled(true)
+                .verified(true)
+                .build();
+
         Farmer farmer = Farmer.builder()
+                .user(farmerUser)
                 .fullName("Ramesh Yadav")
                 .mobileNumber("9876543211")
                 .email("ramesh@agrorent.in")
