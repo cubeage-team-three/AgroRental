@@ -172,6 +172,7 @@ public class OperatorMapper {
                 .profilePhoto(operator.getProfilePhoto())
                 .maskedAadhaarNumber(maskAadhaar(operator.getAadhaarNumber()))
                 .maskedDrivingLicenseNumber(maskDrivingLicense(operator.getDrivingLicenseNumber()))
+                .hourlyRate(operator.getHourlyRate())
                 .status(operator.getStatus())
                 .mobileVerified(operator.isMobileVerified())
                 .active(operator.isActive())

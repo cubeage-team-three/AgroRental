@@ -6,6 +6,7 @@ export async function apiRequest(endpoint, method = 'GET', body = null) {
   };
 
   const token = localStorage.getItem('accessToken') || localStorage.getItem('agro_token');
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -24,14 +25,22 @@ export async function apiRequest(endpoint, method = 'GET', body = null) {
     config.body = JSON.stringify(body);
   }
 
-  const cleanEndpoint = endpoint.startsWith('/api') ? endpoint.substring(4) : endpoint;
+  const cleanEndpoint = endpoint.startsWith('/api')
+    ? endpoint.substring(4)
+    : endpoint;
+
   const baseUrl = API_BASE_URL || 'http://localhost:8080/api';
-  const url = `${baseUrl}${cleanEndpoint.startsWith('/') ? cleanEndpoint : `/${cleanEndpoint}`}`;
+
+  const url = `${baseUrl}${cleanEndpoint.startsWith('/')
+    ? cleanEndpoint
+    : `/${cleanEndpoint}`}`;
 
   try {
     const response = await fetch(url, config);
+
     let data;
     const contentType = response.headers.get('content-type');
+
     if (contentType && contentType.includes('application/json')) {
       data = await response.json();
     } else {
@@ -39,7 +48,12 @@ export async function apiRequest(endpoint, method = 'GET', body = null) {
     }
 
     if (!response.ok) {
-      const errorMsg = (data && data.message) || (data && data.data ? JSON.stringify(data.data) : `HTTP Error ${response.status}`);
+      const errorMsg =
+        (data && data.message) ||
+        (data && data.data
+          ? JSON.stringify(data.data)
+          : `HTTP Error ${response.status}`);
+
       const error = new Error(errorMsg);
       error.status = response.status;
       error.data = data;
@@ -51,9 +65,13 @@ export async function apiRequest(endpoint, method = 'GET', body = null) {
     if (error.status) {
       throw error;
     }
+
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('Network error: Unable to connect to backend server. Please check if the backend service is running on http://localhost:8080.');
+      throw new Error(
+        'Network error: Unable to connect to backend server. Please check if the backend service is running on http://localhost:8080.'
+      );
     }
+
     throw error;
   }
 }

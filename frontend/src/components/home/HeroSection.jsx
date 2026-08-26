@@ -40,7 +40,7 @@ const roleCards = [
     description: "Manage machines, accept bookings, track earnings",
   },
   {
-    to: "/login",
+    to: "/admin/login",
     icon: BarChart3,
     iconBg: "bg-sky-500",
     title: "Platform Admin",

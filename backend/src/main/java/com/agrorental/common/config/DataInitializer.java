@@ -33,7 +33,11 @@ import com.agrorental.payment.entity.PaymentStatus;
 import com.agrorental.payment.repository.PaymentRepository;
 import com.agrorental.review.entity.Review;
 import com.agrorental.review.repository.ReviewRepository;
+import com.agrorental.common.enums.Role;
+import com.agrorental.user.entity.User;
+import com.agrorental.user.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -51,8 +55,12 @@ import java.util.List;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
+    @Value("${agrorental.operator.seed.default-password:${OPERATOR_SEED_PASSWORD:Operator@123}}")
+    private String operatorSeedPassword;
+
     private final PartnerRepository partnerRepository;
     private final FarmerRepository farmerRepository;
+    private final UserRepository userRepository;
     private final FarmRepository farmRepository;
     private final EquipmentRepository equipmentRepository;
     private final OperatorRepository operatorRepository;
@@ -68,6 +76,7 @@ public class DataInitializer implements CommandLineRunner {
     public DataInitializer(
             PartnerRepository partnerRepository,
             FarmerRepository farmerRepository,
+            UserRepository userRepository,
             FarmRepository farmRepository,
             EquipmentRepository equipmentRepository,
             OperatorRepository operatorRepository,
@@ -81,6 +90,7 @@ public class DataInitializer implements CommandLineRunner {
             PasswordEncoder passwordEncoder) {
         this.partnerRepository = partnerRepository;
         this.farmerRepository = farmerRepository;
+        this.userRepository = userRepository;
         this.farmRepository = farmRepository;
         this.equipmentRepository = equipmentRepository;
         this.operatorRepository = operatorRepository;
@@ -121,8 +131,18 @@ public class DataInitializer implements CommandLineRunner {
         partner = partnerRepository.save(partner);
         log.info("Seeded Partner ID: {}", partner.getId());
 
-        // 2. Seed Farmer #1 & Farm #1
+        // 2. Seed User #1 (Farmer User) & Farmer #1 & Farm #1
+        User farmerUser = User.builder()
+                .name("Ramesh Yadav")
+                .email("ramesh@agrorent.in")
+                .password(passwordEncoder.encode("Farmer@123"))
+                .role(Role.FARMER)
+                .enabled(true)
+                .verified(true)
+                .build();
+
         Farmer farmer = Farmer.builder()
+                .user(farmerUser)
                 .fullName("Ramesh Yadav")
                 .mobileNumber("9876543211")
                 .email("ramesh@agrorent.in")
@@ -256,7 +276,7 @@ public class DataInitializer implements CommandLineRunner {
         op1.setDrivingLicenseNumber("MH-14-2018-009876");
         op1.setExperience(5);
         op1.setSkills("Tractor & Harvester Specialist");
-        op1.setPassword(passwordEncoder.encode("Operator@123"));
+        op1.setPassword(passwordEncoder.encode(operatorSeedPassword));
         op1.setStatus(OperatorStatus.APPROVED);
         op1.setMobileVerified(true);
         op1.setPartner(partner);
@@ -271,7 +291,7 @@ public class DataInitializer implements CommandLineRunner {
         op2.setDrivingLicenseNumber("MH-14-2016-004321");
         op2.setExperience(7);
         op2.setSkills("Heavy Machinery & Rotavator");
-        op2.setPassword(passwordEncoder.encode("Operator@123"));
+        op2.setPassword(passwordEncoder.encode(operatorSeedPassword));
         op2.setStatus(OperatorStatus.APPROVED);
         op2.setMobileVerified(true);
         op2.setPartner(partner);
@@ -286,7 +306,7 @@ public class DataInitializer implements CommandLineRunner {
         op3.setDrivingLicenseNumber("MH-14-2020-001234");
         op3.setExperience(4);
         op3.setSkills("Tractor Driver & Land Preparation");
-        op3.setPassword(passwordEncoder.encode("Operator@123"));
+        op3.setPassword(passwordEncoder.encode(operatorSeedPassword));
         op3.setStatus(OperatorStatus.APPROVED);
         op3.setMobileVerified(true);
         op3.setPartner(partner);

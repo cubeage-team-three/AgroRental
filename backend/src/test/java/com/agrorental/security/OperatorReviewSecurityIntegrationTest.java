@@ -76,7 +76,7 @@ class OperatorReviewSecurityIntegrationTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
-        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, operatorRepository, adminRepository, partnerRepository, farmerRepository);
+        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, null, operatorRepository, adminRepository, partnerRepository, farmerRepository);
 
         HandlerMethodArgumentResolver principalResolver = new HandlerMethodArgumentResolver() {
             @Override
@@ -138,6 +138,7 @@ class OperatorReviewSecurityIntegrationTest {
 
         com.agrorental.farmer.entity.Farmer farmer = new com.agrorental.farmer.entity.Farmer();
         farmer.setId(10L);
+        farmer.setActive(true);
         farmer.setAccountStatus("ACTIVE");
         when(farmerRepository.findById(10L)).thenReturn(Optional.of(farmer));
 

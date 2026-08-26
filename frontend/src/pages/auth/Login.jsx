@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Eye, EyeOff, Loader2, MessageCircle, Smartphone, Lock, X } from 'lucide-react';
-import { loginUser, loginWithOtp, saveUserSession } from '../../services/authService';
 import { sendOtp } from '../../services/farmerAuthService';
+import { operatorService } from '../../services/operatorService';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
 import MagneticButton from '../../components/ui/MagneticButton';
 import AuthField from '../../components/auth/AuthField';
@@ -22,6 +23,8 @@ function GoogleIcon() {
 
 function Login() {
   const { t } = useLanguage();
+  const auth = useAuth();
+  const { refreshUser } = auth;
   const navigate = useNavigate();
 
   // Mode: "PASSWORD" or "OTP"
@@ -113,24 +116,34 @@ function Login() {
     try {
       let response;
       if (loginMode === 'OTP') {
-        response = await loginWithOtp({
+        response = await auth.login({
           mobileOrEmail: formData.mobileOrEmail.trim(),
           otp: formData.otp.trim(),
+          loginType: 'OTP',
         });
       } else {
-        response = await loginUser({
+        response = await auth.login({
           mobileOrEmail: formData.mobileOrEmail.trim(),
           password: formData.password,
           loginType: 'PASSWORD',
         });
       }
 
-      const userData = response.data;
-      saveUserSession(userData);
+      const userData = response.data || response;
       if (userData && (userData.role === 'PARTNER' || userData.partnerId)) {
         setSuccessMessage('Partner login successful! Redirecting to Partner Portal...');
         setTimeout(() => {
           navigate('/partner/dashboard');
+        }, 1200);
+      } else if (userData && userData.role === 'ADMIN') {
+        setSuccessMessage('Admin login successful! Redirecting to Admin Portal...');
+        setTimeout(() => {
+          navigate('/admin/overview');
+        }, 1200);
+      } else if (userData && userData.role === 'OPERATOR') {
+        setSuccessMessage('Operator login successful! Redirecting to Operator Portal...');
+        setTimeout(() => {
+          navigate('/operator/dashboard');
         }, 1200);
       } else {
         setSuccessMessage('Login successful! Redirecting to Farmer Dashboard...');
@@ -139,36 +152,47 @@ function Login() {
         }, 1200);
       }
 
-    } catch (err) {
-      console.error('Login error:', err);
+      } catch (err) {
+        console.error('Login error, attempting operator fallback:', err);
 
-      // Special rule: PENDING_OTP redirection
-      if (err.message && err.message.includes('PENDING_OTP')) {
-        const cleanMobile = formData.mobileOrEmail.replace(/\D/g, '');
-        setErrorMessage('Your account is pending OTP verification. Redirecting...');
-        setTimeout(() => {
-          navigate('/verify-otp', {
-            state: { mobileNumber: cleanMobile }
-          });
-        }, 1500);
-        return;
-      }
+        // Fallback: Check if operator account
+        if (loginMode === 'PASSWORD') {
+          try {
+            const opRes = await operatorService.loginOperator({
+              mobileNumber: formData.mobileOrEmail.trim(),
+              password: formData.password,
+            });
+            if (opRes && (opRes.accessToken || opRes.token)) {
+              setSuccessMessage(`Welcome back, ${opRes.operator?.fullName || 'Operator'}! Redirecting to Operator Portal...`);
+              refreshUser();
+              setTimeout(() => {
+                navigate('/operator/dashboard');
+              }, 1000);
+              return;
+            }
+          } catch (opErr) {
+            console.debug('Not an operator account either:', opErr);
+          }
+        }
 
-      if (err.message && err.message.includes('Network error')) {
-        setSuccessMessage('Demo Mode: Logged in! Redirecting to Farmer Dashboard...');
-        saveUserSession({
-          token: 'demo-token-123',
-          fullName: 'Farmer User',
-          mobileNumber: formData.mobileOrEmail,
-          role: 'FARMER',
-        });
-        setTimeout(() => {
-          navigate('/farmer/dashboard');
-        }, 1200);
-      } else {
-        setErrorMessage(err.message || 'Login failed. Please check your credentials.');
-      }
-    } finally {
+        // Special rule: PENDING_OTP redirection
+        if (err.message && err.message.includes('PENDING_OTP')) {
+          const cleanMobile = formData.mobileOrEmail.replace(/\D/g, '');
+          setErrorMessage('Your account is pending OTP verification. Redirecting...');
+          setTimeout(() => {
+            navigate('/verify-otp', {
+              state: { mobileNumber: cleanMobile }
+            });
+          }, 1500);
+          return;
+        }
+
+        if (err.message && err.message.includes('Network error')) {
+          setErrorMessage('Could not reach the server. Please check that the backend is running and try again.');
+        } else {
+          setErrorMessage(err.message || 'Login failed. Please check your credentials.');
+        }
+      } finally {
       setLoading(false);
     }
   };

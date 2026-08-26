@@ -9,11 +9,24 @@ export const loginWithOtp = async (credentials) => {
 };
 
 export const saveUserSession = (userData) => {
-  if (userData && userData.token) {
-    localStorage.setItem('agro_token', userData.token);
-    localStorage.setItem('agro_user', JSON.stringify(userData));
-    if (userData.partnerId) {
-      localStorage.setItem('partnerId', String(userData.partnerId));
+  if (!userData) return;
+  const payload = (userData.data && typeof userData.data === 'object' && (userData.data.token || userData.data.fullName || userData.data.id))
+    ? userData.data
+    : userData;
+
+  if (payload) {
+    if (payload.token) {
+      localStorage.setItem('agro_token', payload.token);
+    }
+    localStorage.setItem('agro_user', JSON.stringify(payload));
+    if (payload.partnerId) {
+      localStorage.setItem('partnerId', String(payload.partnerId));
+    }
+    if (payload.farmerId) {
+      localStorage.setItem('farmerId', String(payload.farmerId));
+    }
+    if (payload.operatorId) {
+      localStorage.setItem('operatorId', String(payload.operatorId));
     }
   }
 };
@@ -59,6 +72,9 @@ export const getOperatorId = () => {
 
 export const logoutUser = () => {
   localStorage.removeItem('agro_token');
+  localStorage.removeItem('accessToken');
   localStorage.removeItem('agro_user');
   localStorage.removeItem('partnerId');
+  localStorage.removeItem('farmerId');
+  localStorage.removeItem('operatorId');
 };

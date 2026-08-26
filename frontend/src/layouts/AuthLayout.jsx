@@ -74,6 +74,78 @@ const HERO_CONTENT = {
     subtext:
       "Sign in to access your deployed field jobs, machinery schedules, and earnings.",
   },
+  "/login/operator": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Field Machinery,
+        <br />
+        Under Your Control.
+      </>
+    ),
+    subtext: "Access your assigned farm machinery tasks, live GPS check-ins, and daily payout records.",
+  },
+  "/operator/login": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Field Machinery,
+        <br />
+        Under Your Control.
+      </>
+    ),
+    subtext: "Access your assigned farm machinery tasks, live GPS check-ins, and daily payout records.",
+  },
+  "/auth/operator": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Get Matched to Jobs,
+        <br />
+        Near You.
+      </>
+    ),
+    subtext: "Join 12,000+ verified operators earning steady income with live job alerts and fast payouts.",
+  },
+  "/verify-otp/operator": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Secure Identity,
+        <br />
+        Instant Verification.
+      </>
+    ),
+    subtext: "Verify your phone number with instant OTP to secure your machinery operations profile.",
+  },
+  "/register/operator/kyc": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Certified Skills,
+        <br />
+        Guaranteed Payouts.
+      </>
+    ),
+    subtext: "Upload your driving license and Aadhaar credentials for fast administrative review.",
+  },
+  "/register/operator/pending": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Application Received,
+        <br />
+        Review in Progress.
+      </>
+    ),
+    subtext: "Your operator credentials are being reviewed by fleet administrators. You will be notified once active.",
+  },
 };
 
 const DEFAULT_HERO = {
@@ -114,16 +186,9 @@ function AuthLayout() {
         <div className="absolute inset-0 hidden bg-gradient-to-r from-transparent via-transparent to-emerald-950/20 lg:block" />
 
         {/* AgroRent Logo */}
-        <Link
-          to="/"
-          className="absolute left-6 top-6 z-10 flex items-center gap-2 sm:left-8 sm:top-8"
-        >
+        <Link to="/" className="absolute left-6 top-6 z-10 flex items-center gap-2 sm:left-8 sm:top-8">
           <div className="flex h-11 items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-lg ring-1 ring-slate-900/10">
-            <img
-              src={agroRentLogo}
-              alt="AgroRent"
-              className="h-full w-auto object-contain"
-            />
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
           </div>
         </Link>
 

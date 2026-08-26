@@ -9,6 +9,7 @@ import com.agrorental.farmer.repository.FarmerRepository;
 import com.agrorental.farmer.service.FarmerOtpService;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
+import com.agrorental.user.repository.UserRepository;
 import com.agrorental.security.jwt.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +34,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuthService Partner Login & Verification Tests")
 class AuthServiceTest {
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private FarmerRepository farmerRepository;
@@ -223,6 +227,6 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Account not found with provided mobile or email: unknown@agro.com");
+                .hasMessageContaining("Invalid email or password.");
     }
 }
