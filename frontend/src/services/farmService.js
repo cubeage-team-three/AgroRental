@@ -3,7 +3,6 @@ import { apiClient } from './apiClient';
 let MOCK_FARMS = [
   {
     id: 1,
-    farmerId: 1,
     farmName: 'Sunrise Agro Fields',
     village: 'Khed',
     taluka: 'Khed',
@@ -17,7 +16,6 @@ let MOCK_FARMS = [
   },
   {
     id: 2,
-    farmerId: 1,
     farmName: 'Green Valley Organic Plot',
     village: 'Manchar',
     taluka: 'Ambegaon',
@@ -36,11 +34,11 @@ let MOCK_FARMS = [
  */
 export const farmService = {
   /**
-   * Fetch all registered farms for a farmer.
+   * Fetch all registered farms for the authenticated farmer.
    */
-  async getFarms(farmerId = 1) {
+  async getFarms() {
     try {
-      const response = await apiClient.get(`/api/farmers/farms?farmerId=${farmerId}`);
+      const response = await apiClient.get('/api/farmers/farms');
       if (Array.isArray(response)) {
         return response;
       }
@@ -54,8 +52,8 @@ export const farmService = {
   /**
    * Alias for getFarms
    */
-  async getFarmerFarms(farmerId = 1) {
-    return this.getFarms(farmerId);
+  async getFarmerFarms() {
+    return this.getFarms();
   },
 
   /**

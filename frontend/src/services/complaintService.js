@@ -4,8 +4,9 @@ import { getFarmerId } from './authService';
 export const complaintService = {
   async getFarmerComplaints() {
     try {
-      const farmerId = getFarmerId() || 1;
-      const data = await request(`/farmers/complaints?farmerId=${farmerId}`);
+      const farmerId = getFarmerId();
+      const endpoint = farmerId ? `/farmers/complaints?farmerId=${farmerId}` : '/farmers/complaints';
+      const data = await request(endpoint);
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.warn('Backend complaints call failed, returning local storage fallback:', error);
@@ -13,7 +14,6 @@ export const complaintService = {
       return cached ? JSON.parse(cached) : [
         {
           id: 101,
-          farmerId: 1,
           bookingId: 12,
           category: 'LATE_ARRIVAL',
           description: 'The operator arrived 2 hours late for threshing duty.',
@@ -31,7 +31,7 @@ export const complaintService = {
 
   async createComplaint(data) {
     try {
-      const farmerId = getFarmerId() || 1;
+      const farmerId = getFarmerId();
       const payload = {
         farmerId,
         bookingId: data.bookingId ? Number(data.bookingId) : null,
@@ -44,7 +44,7 @@ export const complaintService = {
       });
     } catch (error) {
       console.warn('Backend complaint create failed, adding to local storage:', error);
-      const farmerId = getFarmerId() || 1;
+      const farmerId = getFarmerId();
       const newComplaint = {
         id: Date.now(),
         farmerId,

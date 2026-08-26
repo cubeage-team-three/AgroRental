@@ -47,6 +47,7 @@ class PaymentControllerIntegrationTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(paymentController)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver())
                 .build();
 
         mockPaymentResponse = PaymentResponse.builder()

@@ -8,9 +8,10 @@ export async function request(endpoint, options = {}) {
   const cleanEndpoint = endpoint.startsWith('/api') ? endpoint.substring(4) : endpoint;
   const url = `${API_BASE_URL}${cleanEndpoint}`;
 
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-  };
+  const defaultHeaders = {};
+  if (!(options.body instanceof FormData)) {
+    defaultHeaders['Content-Type'] = 'application/json';
+  }
 
   // Automatically attach Bearer token if present
   const token = localStorage.getItem('accessToken') || localStorage.getItem('agro_token');

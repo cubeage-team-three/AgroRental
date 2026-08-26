@@ -77,7 +77,7 @@ public class BookingService {
 
         boolean hasOverlap = bookingRepository.existsOverlappingBooking(
                 equipment.getId(),
-                List.of(BookingStatus.PENDING, BookingStatus.ACCEPTED, BookingStatus.CONFIRMED, BookingStatus.OPERATOR_ASSIGNED, BookingStatus.WORK_STARTED),
+                List.of(BookingStatus.PENDING, BookingStatus.ACCEPTED, BookingStatus.CONFIRMED, BookingStatus.OPERATOR_ASSIGNED, BookingStatus.ON_THE_WAY, BookingStatus.WORK_STARTED),
                 request.getStartDate(),
                 request.getEndDate()
         );
@@ -200,7 +200,7 @@ public class BookingService {
         // Check double-booking protection for active statuses
         boolean hasOverlap = bookingRepository.existsOverlappingBooking(
                 booking.getEquipment().getId(),
-                List.of(BookingStatus.CONFIRMED, BookingStatus.ACCEPTED, BookingStatus.OPERATOR_ASSIGNED, BookingStatus.WORK_STARTED),
+                List.of(BookingStatus.CONFIRMED, BookingStatus.ACCEPTED, BookingStatus.OPERATOR_ASSIGNED, BookingStatus.ON_THE_WAY, BookingStatus.WORK_STARTED),
                 booking.getStartDate(),
                 booking.getEndDate()
         );
@@ -305,7 +305,7 @@ public class BookingService {
         List<Booking> operatorBookings = bookingRepository.findByOperatorId(operatorId);
         boolean hasConflict = operatorBookings.stream()
                 .filter(b -> !b.getId().equals(bookingId))
-                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED || b.getStatus() == BookingStatus.ACCEPTED || b.getStatus() == BookingStatus.OPERATOR_ASSIGNED || b.getStatus() == BookingStatus.WORK_STARTED)
+                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED || b.getStatus() == BookingStatus.ACCEPTED || b.getStatus() == BookingStatus.OPERATOR_ASSIGNED || b.getStatus() == BookingStatus.ON_THE_WAY || b.getStatus() == BookingStatus.WORK_STARTED)
                 .anyMatch(b -> !b.getStartDate().isAfter(booking.getEndDate()) && !b.getEndDate().isBefore(booking.getStartDate()));
 
         if (hasConflict) {
@@ -359,8 +359,24 @@ public class BookingService {
      */
     @Transactional
     public BookingResponse cancelBooking(Long id) {
+        return cancelBooking(id, null);
+    }
+
+    /**
+     * Cancels an existing booking with ownership validation.
+     *
+     * @param id Booking identifier
+     * @param requestingFarmerId Farmer ID attempting cancellation (optional)
+     * @return Updated BookingResponse DTO
+     */
+    @Transactional
+    public BookingResponse cancelBooking(Long id, Long requestingFarmerId) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + id));
+
+        if (requestingFarmerId != null && !booking.getFarmerId().equals(requestingFarmerId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access is denied. You do not have permission to cancel another farmer's booking.");
+        }
 
         if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.COMPLETED) {
             throw new BadRequestException("Booking cannot be cancelled in its current state: " + booking.getStatus());
@@ -423,7 +439,7 @@ public class BookingService {
                 equipment.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
                 equipmentRepository.save(equipment);
             }
-        } else if (newStatus == BookingStatus.CONFIRMED || newStatus == BookingStatus.ACCEPTED || newStatus == BookingStatus.OPERATOR_ASSIGNED) {
+        } else if (newStatus == BookingStatus.CONFIRMED || newStatus == BookingStatus.ACCEPTED || newStatus == BookingStatus.OPERATOR_ASSIGNED || newStatus == BookingStatus.ON_THE_WAY || newStatus == BookingStatus.WORK_STARTED) {
             Equipment equipment = booking.getEquipment();
             if (equipment != null) {
                 equipment.setAvailabilityStatus(AvailabilityStatus.BOOKED);

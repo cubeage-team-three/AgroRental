@@ -73,6 +73,7 @@ public class SecurityConfig {
                         // Shared / genuinely public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
 
                         // Farmer: registration + OTP are public; farms, profile, dashboard, and management require authentication

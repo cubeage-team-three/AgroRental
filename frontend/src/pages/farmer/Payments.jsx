@@ -6,7 +6,7 @@ import { paymentService } from '../../services/paymentService';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 function FarmerPayments() {
-  const farmerId = getFarmerId() || 1;
+  const farmerId = getFarmerId();
 
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);

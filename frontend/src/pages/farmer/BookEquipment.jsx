@@ -36,7 +36,7 @@ function BookEquipment() {
   const [success, setSuccess] = useState(null);
 
   // Form state
-  const farmerId = getFarmerId() || 1;
+  const farmerId = getFarmerId();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('08:00 AM - 04:00 PM');

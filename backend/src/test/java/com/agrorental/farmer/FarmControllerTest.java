@@ -43,7 +43,15 @@ class FarmControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(farmController)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver())
                 .build();
+
+        com.agrorental.security.principal.FarmerPrincipal principal = com.agrorental.security.principal.FarmerPrincipal.builder().id(10L).role("FARMER").build();
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        principal, null, java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_FARMER"))
+                )
+        );
 
         sampleResponse = FarmResponse.builder()
                 .id(1L)
@@ -63,7 +71,7 @@ class FarmControllerTest {
     @Test
     @DisplayName("POST /api/farmers/farms - Should create farm and return HTTP 201")
     void shouldCreateFarm() throws Exception {
-        when(farmService.createFarm(any(FarmCreateRequest.class))).thenReturn(sampleResponse);
+        when(farmService.createFarm(org.mockito.ArgumentMatchers.eq(10L), any(FarmCreateRequest.class))).thenReturn(sampleResponse);
 
         String jsonPayload = """
             {
@@ -103,7 +111,7 @@ class FarmControllerTest {
     @Test
     @DisplayName("GET /api/farmers/farms/{id} - Should return HTTP 404 when not found")
     void shouldReturn404WhenFarmNotFound() throws Exception {
-        when(farmService.getFarmById(99L)).thenThrow(new ResourceNotFoundException("Farm not found with ID: 99"));
+        when(farmService.getFarmByIdAndFarmerId(99L, 10L)).thenThrow(new ResourceNotFoundException("Farm not found with ID: 99"));
 
         mockMvc.perform(get("/api/farmers/farms/99"))
                 .andExpect(status().isNotFound())

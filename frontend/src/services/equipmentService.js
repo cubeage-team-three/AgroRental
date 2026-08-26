@@ -274,7 +274,7 @@ export const equipmentService = {
   /**
    * Retrieves all equipment owned by a specific partner.
    */
-  async getPartnerEquipment(partnerId = 1) {
+  async getPartnerEquipment(partnerId) {
   try {
     const res = await request(`/api/equipment/partner/${partnerId}`, {
       method: 'GET',
@@ -298,7 +298,7 @@ export const equipmentService = {
   /**
    * Creates a new machinery listing.
    */
-  async createEquipment(payload, partnerId = 1) {
+  async createEquipment(payload, partnerId) {
     return request('/api/equipment', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -309,7 +309,7 @@ export const equipmentService = {
   /**
    * Updates an existing machinery listing.
    */
-  async updateEquipment(id, payload, partnerId = 1) {
+  async updateEquipment(id, payload, partnerId) {
     return request(`/api/equipment/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
@@ -320,7 +320,7 @@ export const equipmentService = {
   /**
    * Deletes an equipment listing by ID.
    */
-  async deleteEquipment(id, partnerId = 1) {
+  async deleteEquipment(id, partnerId) {
     return request(`/api/equipment/${id}`, {
       method: 'DELETE',
       partnerId,
@@ -330,7 +330,7 @@ export const equipmentService = {
   /**
    * Enables a previously disabled equipment listing.
    */
-  async enableEquipment(id, partnerId = 1) {
+  async enableEquipment(id, partnerId) {
     return request(`/api/equipment/${id}/enable`, {
       method: 'PATCH',
       partnerId,
@@ -340,7 +340,7 @@ export const equipmentService = {
   /**
    * Disables an equipment listing for administrative lockout or maintenance.
    */
-  async disableEquipment(id, partnerId = 1) {
+  async disableEquipment(id, partnerId) {
     return request(`/api/equipment/${id}/disable`, {
       method: 'PATCH',
       partnerId,

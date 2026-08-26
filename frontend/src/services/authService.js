@@ -57,7 +57,7 @@ export const getFarmerId = () => {
     if (user.role === 'FARMER' && user.id) return user.id;
   }
   const storedId = localStorage.getItem('farmerId');
-  return storedId ? Number(storedId) : 1;
+  return storedId ? Number(storedId) : null;
 };
 
 export const getOperatorId = () => {
