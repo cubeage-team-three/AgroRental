@@ -1,8 +1,13 @@
 package com.agrorental.farmer.entity;
 
 import com.agrorental.common.entity.BaseEntity;
+import com.agrorental.user.entity.User;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
@@ -14,12 +19,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 /**
- * Extends BaseEntity for id/createdAt/updatedAt/active, per the project's
- * standing architecture rule. getFarmerId() is kept as an alias for getId()
- * because ~10 files in this module (controllers, services, DTOs) were
- * already written against a standalone farmerId field before this entity
- * was merged onto BaseEntity; migrating every call site to getId() directly
- * is a follow-up cleanup, not a blocking change.
+ * Entity representing a Farmer profile, linked to the core User entity for authentication.
  */
 @Entity
 @Table(
@@ -36,6 +36,11 @@ import lombok.ToString;
 @Builder
 public class Farmer extends BaseEntity {
 
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
+    @ToString.Exclude
+    private User user;
+
     @NotBlank(message = "Full name is mandatory")
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
@@ -47,11 +52,6 @@ public class Farmer extends BaseEntity {
     @Column(name = "email", unique = true, length = 120)
     private String email;
 
-    /**
-     * Optional — farmers primarily authenticate via mobile OTP (see
-     * FarmerOtpService), but a password is still captured at registration
-     * to support a fallback login path.
-     */
     @Column(name = "password")
     @ToString.Exclude
     private String password;

@@ -5,6 +5,11 @@ export async function apiRequest(endpoint, method = 'GET', body = null) {
     'Content-Type': 'application/json',
   };
 
+  const token = localStorage.getItem('agro_token') || localStorage.getItem('accessToken');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const config = {
     method,
     headers,

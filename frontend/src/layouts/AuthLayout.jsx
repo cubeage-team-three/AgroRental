@@ -186,16 +186,9 @@ function AuthLayout() {
         <div className="absolute inset-0 hidden bg-gradient-to-r from-transparent via-transparent to-emerald-950/20 lg:block" />
 
         {/* AgroRent Logo */}
-        <Link
-          to="/"
-          className="absolute left-6 top-6 z-10 flex items-center gap-2 sm:left-8 sm:top-8"
-        >
+        <Link to="/" className="absolute left-6 top-6 z-10 flex items-center gap-2 sm:left-8 sm:top-8">
           <div className="flex h-11 items-center overflow-hidden rounded-xl bg-white px-2.5 py-1 shadow-lg ring-1 ring-slate-900/10">
-            <img
-              src={agroRentLogo}
-              alt="AgroRent"
-              className="h-full w-auto object-contain"
-            />
+            <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
           </div>
         </Link>
 
