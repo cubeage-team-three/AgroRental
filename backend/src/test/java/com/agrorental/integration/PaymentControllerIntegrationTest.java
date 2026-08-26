@@ -32,6 +32,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -132,7 +133,8 @@ class PaymentControllerIntegrationTest {
     void shouldGetFarmerPayments() throws Exception {
         when(paymentService.getFarmerPayments(1L)).thenReturn(List.of(mockPaymentResponse));
 
-        mockMvc.perform(get("/api/farmers/payments/farmer/1"))
+        mockMvc.perform(get("/api/farmers/payments/farmer/1")
+                        .with(user("farmer").roles("FARMER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].invoiceReference").value("INV-2026-00010"));
