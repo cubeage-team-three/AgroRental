@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { bookingService } from '../../services/bookingService';
 import { operatorService } from '../../services/operatorService';
+import { getPartnerId } from '../../services/authService';
 
 function AssignOperator() {
   const { id } = useParams(); // Booking ID

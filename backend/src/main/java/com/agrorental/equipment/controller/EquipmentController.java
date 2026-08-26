@@ -49,7 +49,12 @@ public class EquipmentController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<EquipmentResponse>> createEquipment(
+            @AuthenticationPrincipal PartnerPrincipal principal,
             @Valid @RequestBody EquipmentCreateRequest request) {
+
+        if (principal != null) {
+            request.setPartnerId(principal.getId());
+        }
 
         EquipmentResponse response = equipmentService.createEquipment(request);
 

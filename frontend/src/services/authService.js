@@ -17,6 +17,7 @@ export const saveUserSession = (userData) => {
   if (payload) {
     if (payload.token) {
       localStorage.setItem('agro_token', payload.token);
+      localStorage.setItem('accessToken', payload.token);
     }
     localStorage.setItem('agro_user', JSON.stringify(payload));
     if (payload.partnerId) {
