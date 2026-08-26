@@ -27,7 +27,12 @@ public class PaymentController {
 
     @PostMapping("/api/farmers/payments")
     public ResponseEntity<ApiResponse<PaymentResponse>> processFarmerPayment(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
             @Valid @RequestBody PaymentRequest request) {
+
+        if (principal != null) {
+            request.setFarmerId(principal.getId());
+        }
         PaymentResponse response = paymentService.processPayment(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -36,14 +41,20 @@ public class PaymentController {
 
     @GetMapping("/api/farmers/payments/{id}")
     public ResponseEntity<ApiResponse<PaymentResponse>> getFarmerPaymentById(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
             @PathVariable Long id) {
         PaymentResponse response = paymentService.getPaymentById(id);
+        if (principal != null && response != null && response.getFarmerId() != null && !response.getFarmerId().equals(principal.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view another farmer's payment details.");
+        }
         return ResponseEntity.ok(ApiResponse.success("Payment details retrieved successfully", response));
     }
 
     @GetMapping("/api/farmers/payments/farmer/{farmerId}")
     public ResponseEntity<ApiResponse<List<PaymentResponse>>> getFarmerPayments(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
             @PathVariable Long farmerId) {
+        validateFarmerOwnershipOrAdmin(farmerId, principal);
         List<PaymentResponse> response = paymentService.getFarmerPayments(farmerId);
         return ResponseEntity.ok(ApiResponse.success("Farmer payments retrieved successfully", response));
     }
@@ -74,8 +85,25 @@ public class PaymentController {
     }
 
     @GetMapping("/api/payments/farmer/{farmerId}")
-    public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsByFarmer(@PathVariable Long farmerId) {
+    public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsByFarmer(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
+            @PathVariable Long farmerId) {
+        validateFarmerOwnershipOrAdmin(farmerId, principal);
         return ResponseEntity.ok(ApiResponse.success("Farmer payments retrieved successfully", paymentService.getPaymentsByFarmer(farmerId)));
+    }
+
+    private void validateFarmerOwnershipOrAdmin(Long targetFarmerId, com.agrorental.security.principal.FarmerPrincipal principal) {
+        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (isAdmin) {
+                return;
+            }
+        }
+        if (principal != null && !principal.getId().equals(targetFarmerId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view another farmer's payment history.");
+        }
     }
 
     @GetMapping("/api/payments/partner/{partnerId}")

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import MagneticButton from "../ui/MagneticButton";
 import { API_BASE_URL } from "../../utils/constants";
+import { getFarmerId } from "../../services/authService";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -580,8 +581,8 @@ function BookingModal({ isOpen, onClose, equipment = DEFAULT_EQUIPMENT, onConfir
     setIsSubmitting(true);
     try {
       const booking = await submitBooking({
-        farmerId: 1,
-        equipmentId: 1,
+        farmerId: getFarmerId(),
+        equipmentId: equipment.id || 1,
         startDate: form.startDate,
         endDate: form.endDate,
         totalAcreage: Number(form.totalAcreage),

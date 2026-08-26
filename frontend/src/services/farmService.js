@@ -5,15 +5,20 @@ import { apiClient } from './apiClient';
  */
 export const farmService = {
   /**
-   * Fetch all registered farms for a farmer.
+   * Fetch all registered farms for the authenticated farmer.
    */
   async getFarms(farmerId) {
-    if (!farmerId) return [];
-    const response = await apiClient.get(`/api/farmers/farms?farmerId=${farmerId}`);
-    if (Array.isArray(response)) {
-      return response;
+    try {
+      const endpoint = farmerId ? `/api/farmers/farms?farmerId=${farmerId}` : '/api/farmers/farms';
+      const response = await apiClient.get(endpoint);
+      if (Array.isArray(response)) {
+        return response;
+      }
+      return response ? (Array.isArray(response.data) ? response.data : []) : [];
+    } catch (error) {
+      console.warn('API fetch failed for farms:', error);
+      return [];
     }
-    return response ? (Array.isArray(response.data) ? response.data : []) : [];
   },
 
   /**

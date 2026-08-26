@@ -107,6 +107,7 @@ public class OperatorService {
                             .filter(b -> b.getStatus() == BookingStatus.CONFIRMED ||
                                          b.getStatus() == BookingStatus.ACCEPTED ||
                                          b.getStatus() == BookingStatus.OPERATOR_ASSIGNED ||
+                                         b.getStatus() == BookingStatus.ON_THE_WAY ||
                                          b.getStatus() == BookingStatus.WORK_STARTED)
                             .anyMatch(b -> !b.getStartDate().isAfter(endDate) && !b.getEndDate().isBefore(startDate));
                     return !hasOverlap;

@@ -5,8 +5,8 @@ export const complaintService = {
   async getFarmerComplaints() {
     try {
       const farmerId = getFarmerId();
-      if (!farmerId) return [];
-      const data = await request(`/farmers/complaints?farmerId=${farmerId}`);
+      const endpoint = farmerId ? `/farmers/complaints?farmerId=${farmerId}` : '/farmers/complaints';
+      const data = await request(endpoint);
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.warn('Backend complaints call failed, returning local storage fallback:', error);

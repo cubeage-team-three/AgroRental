@@ -7,6 +7,8 @@ import com.agrorental.payment.dto.PaymentResponse;
 import com.agrorental.payment.entity.PaymentMethod;
 import com.agrorental.payment.entity.PaymentStatus;
 import com.agrorental.payment.service.PaymentService;
+import com.agrorental.security.principal.FarmerPrincipal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,12 +17,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -47,7 +54,10 @@ class PaymentControllerIntegrationTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(paymentController)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();
+
+        authenticateAsFarmer(1L);
 
         mockPaymentResponse = PaymentResponse.builder()
                 .id(1L)
@@ -82,6 +92,18 @@ class PaymentControllerIntegrationTest {
                 .paymentDate(LocalDateTime.now())
                 .status("SUCCESS")
                 .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void authenticateAsFarmer(Long farmerId) {
+        FarmerPrincipal principal = FarmerPrincipal.builder().id(farmerId).role("FARMER").build();
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_FARMER")))
+        );
     }
 
     @Test

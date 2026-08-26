@@ -115,7 +115,7 @@ class FarmerBookingControllerIntegrationTest {
     @Test
     void shouldCancelFarmerBooking() throws Exception {
         mockResponse.setStatus(BookingStatus.CANCELLED);
-        when(bookingService.cancelBooking(1L)).thenReturn(mockResponse);
+        when(bookingService.cancelBooking(org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.any())).thenReturn(mockResponse);
 
         mockMvc.perform(put("/api/farmers/bookings/1/cancel"))
                 .andExpect(status().isOk())

@@ -1,12 +1,12 @@
 import { API_BASE_URL } from '../utils/constants';
 
 export async function apiRequest(endpoint, method = 'GET', body = null) {
-  const headers = {
-    'Content-Type': 'application/json',
-  };
+  const headers = {};
+  if (!(body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
 
-  const token = localStorage.getItem('accessToken') || localStorage.getItem('agro_token');
-
+  const token = localStorage.getItem('agro_token') || localStorage.getItem('accessToken');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -22,7 +22,7 @@ export async function apiRequest(endpoint, method = 'GET', body = null) {
   };
 
   if (body) {
-    config.body = JSON.stringify(body);
+    config.body = body instanceof FormData ? body : JSON.stringify(body);
   }
 
   const cleanEndpoint = endpoint.startsWith('/api')

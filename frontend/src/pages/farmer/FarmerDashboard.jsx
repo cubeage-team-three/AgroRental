@@ -16,7 +16,7 @@ function FarmerDashboard() {
 
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
-  const farmerId = currentUser?.farmerId || 1;
+  const farmerId = currentUser?.farmerId || currentUser?.id;
 
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
