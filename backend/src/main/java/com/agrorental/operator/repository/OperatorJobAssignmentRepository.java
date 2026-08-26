@@ -155,8 +155,8 @@ public interface OperatorJobAssignmentRepository extends JpaRepository<OperatorJ
               OR LOWER(e.name) LIKE LOWER(CONCAT('%', :search, '%'))
               OR LOWER(e.model) LIKE LOWER(CONCAT('%', :search, '%'))
               OR LOWER(b.deliveryAddress) LIKE LOWER(CONCAT('%', :search, '%'))
-              OR CAST(b.id AS string) LIKE CONCAT('%', :search, '%')
-              OR CAST(a.id AS string) LIKE CONCAT('%', :search, '%')
+              OR CONCAT(b.id, '') LIKE CONCAT('%', :search, '%')
+              OR CONCAT(a.id, '') LIKE CONCAT('%', :search, '%')
           )
     """)
     Page<OperatorJobAssignment> findJobHistory(
