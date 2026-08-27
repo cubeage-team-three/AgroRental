@@ -13,7 +13,9 @@ import lombok.*;
 @Builder
 public class ComplaintCreateRequest {
 
-    @NotNull(message = "Farmer ID is mandatory")
+    // Not client-validated: the controller always overwrites this with the
+    // authenticated farmer's own ID from the JWT before it reaches the service,
+    // so a client-supplied value here is never trusted anyway.
     private Long farmerId;
 
     private Long bookingId;

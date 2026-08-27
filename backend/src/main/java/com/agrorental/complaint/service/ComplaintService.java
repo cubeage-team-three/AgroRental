@@ -6,6 +6,8 @@ import com.agrorental.complaint.dto.ComplaintResponse;
 import com.agrorental.complaint.entity.Complaint;
 import com.agrorental.complaint.enums.ComplaintStatus;
 import com.agrorental.complaint.repository.ComplaintRepository;
+import com.agrorental.farmer.entity.Farmer;
+import com.agrorental.farmer.repository.FarmerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 public class ComplaintService {
 
     private final ComplaintRepository complaintRepository;
+    private final FarmerRepository farmerRepository;
 
     @Transactional
     public ComplaintResponse createComplaint(ComplaintCreateRequest request) {
@@ -36,6 +39,22 @@ public class ComplaintService {
     @Transactional(readOnly = true)
     public List<ComplaintResponse> getComplaintsByFarmerId(Long farmerId) {
         return complaintRepository.findByFarmerIdOrderByCreatedAtDesc(farmerId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ComplaintResponse> getAllComplaints() {
+        return complaintRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ComplaintResponse> getComplaintsByStatus(ComplaintStatus status) {
+        return complaintRepository.findByStatusOrderByCreatedAtDesc(status)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -63,9 +82,13 @@ public class ComplaintService {
     }
 
     private ComplaintResponse mapToResponse(Complaint complaint) {
+        Farmer farmer = farmerRepository.findById(complaint.getFarmerId()).orElse(null);
+
         return ComplaintResponse.builder()
                 .id(complaint.getId())
                 .farmerId(complaint.getFarmerId())
+                .farmerName(farmer != null ? farmer.getFullName() : null)
+                .farmerMobile(farmer != null ? farmer.getMobileNumber() : null)
                 .bookingId(complaint.getBookingId())
                 .category(complaint.getCategory())
                 .description(complaint.getDescription())

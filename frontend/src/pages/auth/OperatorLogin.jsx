@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { operatorService } from '../../services/operatorService';
+import { useAuth } from '../../context/AuthContext';
 import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
 import MagneticButton from '../../components/ui/MagneticButton';
 import AuthField from '../../components/auth/AuthField';
@@ -19,6 +20,7 @@ import AuthField from '../../components/auth/AuthField';
 function OperatorLogin() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { refreshUser } = useAuth();
 
   const [formData, setFormData] = useState({
     mobileNumber: location.state?.mobileNumber || '',
@@ -84,6 +86,8 @@ function OperatorLogin() {
       setSuccessMessage(
         `✓ Welcome back, ${operatorData?.operator?.fullName || operatorData?.fullName || 'Operator'}! Redirecting to dashboard...`
       );
+
+      await refreshUser();
 
       setTimeout(() => {
         navigate('/operator/dashboard');

@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { adminAuthService } from '../services/adminAuthService';
+import { useAuth } from '../../context/AuthContext';
 import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
 import MagneticButton from '../../components/ui/MagneticButton';
 
 function AdminLogin() {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,6 +29,7 @@ function AdminLogin() {
     setLoading(true);
     try {
       await adminAuthService.login(email.trim(), password);
+      await refreshUser();
       navigate('/admin/overview');
     } catch (err) {
       setErrorMessage(err.message || 'Login failed. Please check your credentials.');

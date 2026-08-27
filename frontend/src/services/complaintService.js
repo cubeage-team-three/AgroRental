@@ -61,5 +61,24 @@ export const complaintService = {
       localStorage.setItem('farmer_complaints', JSON.stringify(complaints));
       return newComplaint;
     }
-  }
+  },
+
+  /**
+   * Admin: fetch all complaints platform-wide, optionally filtered by status.
+   */
+  async getAllComplaints(status) {
+    const query = status && status !== 'ALL' ? `?status=${status}` : '';
+    const data = await request(`/admin/complaints${query}`);
+    return Array.isArray(data) ? data : [];
+  },
+
+  /**
+   * Admin: update a complaint's status, optionally with a resolution note.
+   */
+  async updateComplaintStatus(complaintId, status, resolutionNote) {
+    return await request(`/admin/complaints/${complaintId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, resolutionNote: resolutionNote || null }),
+    });
+  },
 };
