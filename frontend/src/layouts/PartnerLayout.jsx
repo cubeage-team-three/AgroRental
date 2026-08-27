@@ -81,9 +81,9 @@ function PartnerLayout() {
     { path: '/partner/equipment', label: 'My Equipment', icon: Tractor },
     { path: '/partner/equipment/add', label: 'Add Equipment', icon: PlusCircle },
     { path: '/partner/equipment/availability', label: 'Fleet Availability', icon: ToggleLeft },
-    { path: '/partner/bookings', label: 'Booking Requests', icon: CalendarCheck, badge: 'Demo' },
-    { path: '/partner/earnings', label: 'Earnings & Payouts', icon: Wallet, badge: 'Demo' },
-    { path: '/partner/reviews', label: 'Reviews & Ratings', icon: Star, badge: 'Demo' },
+    { path: '/partner/bookings', label: 'Booking Requests', icon: CalendarCheck },
+    { path: '/partner/earnings', label: 'Earnings & Payouts', icon: Wallet },
+    { path: '/partner/reviews', label: 'Reviews & Ratings', icon: Star },
     { path: '/partner/notifications', label: 'Notifications', icon: Bell },
   ];
 

@@ -14,6 +14,7 @@ import {
   Tractor,
   RefreshCw,
 } from 'lucide-react';
+import { getPartnerId } from '../../services/authService';
 import { bookingService } from '../../services/bookingService';
 import { operatorService } from '../../services/operatorService';
 

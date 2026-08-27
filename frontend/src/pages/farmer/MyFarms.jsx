@@ -34,8 +34,7 @@ function MyFarms() {
     setLoading(true);
     setError(null);
     try {
-      const activeFarmerId = getFarmerId() || 1;
-      const data = await farmService.getFarms(activeFarmerId);
+      const data = await farmService.getFarms();
       setFarms(data || []);
     } catch (err) {
       console.error('Error fetching farms:', err);
@@ -109,7 +108,6 @@ function MyFarms() {
     setFormSubmitting(true);
 
     const payload = {
-      farmerId: getFarmerId() || 1,
       farmName: formData.farmName,
       village: formData.village,
       taluka: formData.taluka,

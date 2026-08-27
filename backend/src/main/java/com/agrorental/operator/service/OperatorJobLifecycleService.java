@@ -1,6 +1,7 @@
 package com.agrorental.operator.service;
 
 import com.agrorental.booking.entity.Booking;
+import com.agrorental.booking.repository.BookingRepository;
 import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.common.exception.ForbiddenException;
 import com.agrorental.common.exception.ResourceNotFoundException;
@@ -37,6 +38,7 @@ public class OperatorJobLifecycleService {
 
     private final OperatorRepository operatorRepository;
     private final OperatorJobAssignmentRepository assignmentRepository;
+    private final BookingRepository bookingRepository;
     private final OperatorJobAssignmentMapper assignmentMapper;
     private final NotificationService notificationService;
     private final OperatorLocationRepository locationRepository;
@@ -160,6 +162,10 @@ public class OperatorJobLifecycleService {
 
         assignment.setAssignmentStatus(OperatorAssignmentStatus.TRAVELING);
         assignment.setTravelingAt(LocalDateTime.now());
+        if (assignment.getBooking() != null) {
+            assignment.getBooking().setStatus(com.agrorental.booking.entity.BookingStatus.ON_THE_WAY);
+            bookingRepository.save(assignment.getBooking());
+        }
 
         OperatorJobAssignment saved = assignmentRepository.save(assignment);
         notifyStakeholders(saved, "Operator En Route", "Operator " + saved.getOperator().getFullName() + " is traveling to the farm location for job #" + saved.getBooking().getId());
@@ -200,6 +206,10 @@ public class OperatorJobLifecycleService {
 
         assignment.setAssignmentStatus(OperatorAssignmentStatus.IN_PROGRESS);
         assignment.setWorkStartedAt(LocalDateTime.now());
+        if (assignment.getBooking() != null) {
+            assignment.getBooking().setStatus(com.agrorental.booking.entity.BookingStatus.WORK_STARTED);
+            bookingRepository.save(assignment.getBooking());
+        }
 
         OperatorJobAssignment saved = assignmentRepository.save(assignment);
         notifyStakeholders(saved, "Work In Progress", "Machinery operations started for job #" + saved.getBooking().getId());
@@ -286,6 +296,15 @@ public class OperatorJobLifecycleService {
         assignment.setCompletedAt(now);
         if (request != null && request.getCompletionNotes() != null) {
             assignment.setCompletionNotes(request.getCompletionNotes().trim());
+        }
+
+        if (assignment.getBooking() != null) {
+            assignment.getBooking().setStatus(com.agrorental.booking.entity.BookingStatus.COMPLETED);
+            com.agrorental.equipment.entity.Equipment equipment = assignment.getBooking().getEquipment();
+            if (equipment != null) {
+                equipment.setAvailabilityStatus(com.agrorental.equipment.enums.AvailabilityStatus.AVAILABLE);
+            }
+            bookingRepository.save(assignment.getBooking());
         }
 
         // Close any dangling open pause interval

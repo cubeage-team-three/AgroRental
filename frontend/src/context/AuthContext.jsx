@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../utils/constants';
+import { apiClient } from '../services/apiClient';
 import {
   loginUser as loginApi,
   loginWithOtp as loginOtpApi,
@@ -38,15 +37,12 @@ export function AuthProvider({ children }) {
 
     if (storedUser.role === 'FARMER') {
       try {
-        const res = await axios.get(`${API_BASE_URL}/farmers/profile`, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        });
-        const fresh = res.data?.data;
+        const fresh = await apiClient.get('/farmers/profile');
         if (fresh) {
           setUser((prev) => ({ ...prev, ...fresh }));
         }
       } catch (err) {
-        const status = err.response?.status;
+        const status = err.status || err.response?.status;
         if (status === 401 || status === 403) {
           // The stored token is genuinely invalid/expired (not a transient
           // network hiccup) — clear it instead of leaving a phantom "logged

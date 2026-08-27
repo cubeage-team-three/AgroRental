@@ -2,6 +2,7 @@ package com.agrorental.security.jwt;
 
 import com.agrorental.admin.entity.Admin;
 import com.agrorental.admin.repository.AdminRepository;
+import com.agrorental.common.enums.Role;
 import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.farmer.repository.FarmerRepository;
 import com.agrorental.operator.entity.Operator;
@@ -12,7 +13,6 @@ import com.agrorental.partner.repository.PartnerRepository;
 import com.agrorental.security.principal.FarmerPrincipal;
 import com.agrorental.security.principal.OperatorPrincipal;
 import com.agrorental.security.principal.PartnerPrincipal;
-import com.agrorental.common.enums.Role;
 import com.agrorental.user.entity.User;
 import com.agrorental.user.repository.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -65,10 +65,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Long userId = jwtService.extractUserId(token);
                 String role = jwtService.extractRole(token);
                 String mobile = jwtService.extractMobileNumber(token);
+                log.debug("JWT authentication attempt: method={}, path={}, userId={}, role={}, mobile={}",
+                        request.getMethod(), request.getRequestURI(), userId, role, mobile);
 
                 if (userId != null && "OPERATOR".equalsIgnoreCase(role)) {
                     // Database validation against stale/deactivated tokens
-                    Optional<Operator> operatorOpt = operatorRepository.findById(userId);
+                    Optional<Operator> operatorOpt = operatorRepository != null ? operatorRepository.findById(userId) : Optional.empty();
 
                     if (operatorOpt.isPresent()) {
                         Operator operator = operatorOpt.get();
@@ -102,7 +104,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // Admin, Farmer, and User each have independent auto-increment IDs, so a
                     // token's userId can coincidentally match an unrelated row in another
                     // table — always confirm the User's own role before trusting the match.
-                    Optional<User> userOpt = (userRepository != null) ? userRepository.findById(userId) : Optional.empty();
+                    Optional<User> userOpt = userRepository != null ? userRepository.findById(userId) : Optional.empty();
                     if (userOpt.isPresent() && userOpt.get().isEnabled() && userOpt.get().getRole() == Role.ADMIN) {
                         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                                 "ADMIN_" + userId,
@@ -113,6 +115,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         SecurityContextHolder.getContext().setAuthentication(authentication);
                         log.debug("Authenticated user admin ID {} in SecurityContext", userId);
                     } else {
+                        // Fallback check against legacy Admin repository
                         Optional<Admin> adminOpt = adminRepository != null ? adminRepository.findById(userId) : Optional.empty();
 
                         if (adminOpt.isPresent() && adminOpt.get().isActive()) {
@@ -155,7 +158,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 } else if (userId != null && "FARMER".equalsIgnoreCase(role)) {
                     // Check core User repository first — same cross-table ID collision
                     // concern as the ADMIN branch above, so the role is checked too.
-                    Optional<User> userOpt = (userRepository != null) ? userRepository.findById(userId) : Optional.empty();
+                    Optional<User> userOpt = userRepository != null ? userRepository.findById(userId) : Optional.empty();
                     if (userOpt.isPresent() && userOpt.get().isEnabled() && userOpt.get().getRole() == Role.FARMER) {
                         User user = userOpt.get();
                         Long farmerId = user.getFarmer() != null ? user.getFarmer().getId() : user.getId();
@@ -190,7 +193,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     principal,
                                     null,
                                     Collections.singletonList(new SimpleGrantedAuthority("ROLE_FARMER"))
-                                    );
+                            );
                             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                             SecurityContextHolder.getContext().setAuthentication(authentication);
                             log.debug("Authenticated legacy farmer ID {} in SecurityContext", userId);

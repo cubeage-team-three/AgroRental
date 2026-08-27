@@ -12,7 +12,7 @@ import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 function CheckoutPayment() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const farmerId = getFarmerId() || 1;
+  const farmerId = getFarmerId();
 
   const [booking, setBooking] = useState(null);
   const [existingPayment, setExistingPayment] = useState(null);

@@ -32,6 +32,7 @@ export const bookingService = {
   },
 
   getBookingsByFarmer: async (farmerId) => {
+    if (!farmerId) return [];
     try {
       return await request(`/bookings/farmer/${farmerId}`);
     } catch {
@@ -40,10 +41,12 @@ export const bookingService = {
   },
 
   getBookingsByPartner: async (partnerId) => {
+    if (!partnerId) return [];
     return await request(`/bookings/partner/${partnerId}`);
   },
 
   getBookingsByOperator: async (operatorId) => {
+    if (!operatorId) return [];
     return await request(`/bookings/operator/${operatorId}`);
   },
 

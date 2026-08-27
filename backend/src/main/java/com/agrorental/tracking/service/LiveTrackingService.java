@@ -19,33 +19,59 @@ public class LiveTrackingService {
 
     private final TrackingRepository trackingRepository;
     private final BookingRepository bookingRepository;
+    private final com.agrorental.operator.repository.OperatorJobAssignmentRepository assignmentRepository;
+    private final com.agrorental.operator.repository.OperatorLocationRepository operatorLocationRepository;
 
     @Transactional(readOnly = true)
     public TrackingResponse getTrackingByBookingId(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + bookingId));
 
-        Tracking tracking = trackingRepository.findByBookingId(bookingId)
-                .orElseGet(() -> createMockTrackingForBooking(booking));
+        Tracking tracking = trackingRepository.findByBookingId(bookingId).orElse(null);
+
+        // Check if real GPS location updates exist from the operator app/device
+        java.util.Optional<com.agrorental.operator.entity.OperatorJobAssignment> assignmentOpt = assignmentRepository.findByBookingId(bookingId);
+        java.util.Optional<com.agrorental.operator.entity.OperatorLocation> latestLocationOpt = assignmentOpt.flatMap(a ->
+                operatorLocationRepository.findTopByAssignmentIdOrderByRecordedAtDesc(a.getId()));
+
+        double latitude;
+        double longitude;
+        LocalDateTime lastUpdated;
+
+        if (latestLocationOpt.isPresent()) {
+            com.agrorental.operator.entity.OperatorLocation loc = latestLocationOpt.get();
+            latitude = loc.getLatitude();
+            longitude = loc.getLongitude();
+            lastUpdated = loc.getRecordedAt();
+        } else if (tracking != null) {
+            latitude = tracking.getLatitude();
+            longitude = tracking.getLongitude();
+            lastUpdated = tracking.getLastUpdated();
+        } else {
+            Tracking mock = createMockTrackingForBooking(booking);
+            latitude = mock.getLatitude();
+            longitude = mock.getLongitude();
+            lastUpdated = mock.getLastUpdated();
+        }
 
         String operatorName = booking.getOperator() != null ? booking.getOperator().getFullName() : "Assigned Operator";
         String operatorMobile = booking.getOperator() != null ? booking.getOperator().getMobileNumber() : "Contact via Partner";
         String equipmentName = booking.getEquipment() != null ? booking.getEquipment().getName() : "Agricultural Equipment";
 
         return TrackingResponse.builder()
-                .id(tracking.getId())
+                .id(tracking != null ? tracking.getId() : bookingId)
                 .bookingId(booking.getId())
                 .operatorId(booking.getOperator() != null ? booking.getOperator().getId() : null)
                 .operatorName(operatorName)
                 .operatorMobile(operatorMobile)
                 .equipmentName(equipmentName)
-                .latitude(tracking.getLatitude())
-                .longitude(tracking.getLongitude())
-                .eta(tracking.getEta())
-                .routeInformation(tracking.getRouteInformation())
-                .workProgress(tracking.getWorkProgress())
+                .latitude(latitude)
+                .longitude(longitude)
+                .eta(tracking != null ? tracking.getEta() : "25 mins")
+                .routeInformation(tracking != null ? tracking.getRouteInformation() : "En route to registered farm location")
+                .workProgress(tracking != null ? tracking.getWorkProgress() : (booking.getStatus() == com.agrorental.booking.entity.BookingStatus.COMPLETED ? 100 : 45))
                 .status(booking.getStatus() != null ? booking.getStatus().name() : "IN_PROGRESS")
-                .lastUpdated(tracking.getLastUpdated() != null ? tracking.getLastUpdated() : LocalDateTime.now())
+                .lastUpdated(lastUpdated != null ? lastUpdated : LocalDateTime.now())
                 .build();
     }
 

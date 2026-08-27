@@ -15,7 +15,7 @@ function MyBookings() {
   const [activeTab, setActiveTab] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const farmerId = getFarmerId() || 1;
+  const farmerId = getFarmerId();
 
   const fetchBookings = async () => {
     try {
@@ -72,10 +72,18 @@ function MyBookings() {
       case 'CONFIRMED':
       case 'ACCEPTED':
         return <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800"><CheckCircle className="h-3.5 w-3.5 text-emerald-600" /> Confirmed</span>;
+      case 'OPERATOR_ASSIGNED':
+        return <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-800"><Clock className="h-3.5 w-3.5 text-indigo-600" /> Operator Assigned</span>;
+      case 'ON_THE_WAY':
+        return <span className="inline-flex items-center gap-1 rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-semibold text-cyan-800"><Clock className="h-3.5 w-3.5 text-cyan-600 animate-pulse" /> On The Way</span>;
+      case 'WORK_STARTED':
+        return <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-800"><CheckCircle className="h-3.5 w-3.5 text-purple-600" /> Work Started</span>;
       case 'PENDING':
         return <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"><Clock className="h-3.5 w-3.5 text-amber-600" /> Pending Owner</span>;
       case 'CANCELLED':
         return <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800"><XCircle className="h-3.5 w-3.5 text-red-600" /> Cancelled</span>;
+      case 'REJECTED':
+        return <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-800"><XCircle className="h-3.5 w-3.5 text-rose-600" /> Rejected</span>;
       case 'COMPLETED':
         return <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800"><CheckCircle className="h-3.5 w-3.5 text-blue-600" /> Completed</span>;
       default:

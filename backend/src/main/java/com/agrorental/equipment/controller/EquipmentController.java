@@ -49,7 +49,14 @@ public class EquipmentController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<EquipmentResponse>> createEquipment(
+            @AuthenticationPrincipal PartnerPrincipal principal,
             @Valid @RequestBody EquipmentCreateRequest request) {
+
+        if (principal == null || principal.getId() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Full authentication is required to access this resource"));
+        }
+        request.setPartnerId(principal.getId());
 
         EquipmentResponse response = equipmentService.createEquipment(request);
 

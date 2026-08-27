@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Printer, ArrowLeft, CheckCircle, ShieldCheck, Download, AlertCircle, FileText } from 'lucide-react';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 import { paymentService } from '../../services/paymentService';
+import { getFarmerId } from '../../services/authService';
 
 function Invoice() {
   const { id } = useParams(); // bookingId
@@ -25,7 +26,7 @@ function Invoice() {
           invoiceReference: `INV-2026-${String(id).padStart(5, '0')}`,
           transactionId: `TXN-${Date.now()}`,
           bookingId: Number(id),
-          farmerId: 1,
+          farmerId: getFarmerId() || null,
           farmerName: 'Ramesh Kumar',
           farmerMobile: '+91 9876543210',
           equipmentName: 'Mahindra 575 DI Tractor',

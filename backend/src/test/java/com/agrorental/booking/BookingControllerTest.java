@@ -35,6 +35,7 @@ class BookingControllerTest {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(bookingController)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver())
                 .build();
 
         sampleResponse = BookingResponse.builder()
@@ -100,7 +101,7 @@ class BookingControllerTest {
     @DisplayName("PATCH /api/bookings/{id}/cancel - Returns HTTP 200 OK")
     void cancelBooking_Returns200OK() throws Exception {
         sampleResponse.setStatus(BookingStatus.CANCELLED);
-        when(bookingService.cancelBooking(100L)).thenReturn(sampleResponse);
+        when(bookingService.cancelBooking(org.mockito.ArgumentMatchers.eq(100L), org.mockito.ArgumentMatchers.nullable(Long.class))).thenReturn(sampleResponse);
 
         mockMvc.perform(patch("/api/bookings/100/cancel"))
                 .andExpect(status().isOk())

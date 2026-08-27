@@ -27,6 +27,7 @@ import {
 import { getCurrentUser, getPartnerId } from '../../services/authService';
 import { partnerService } from '../../services/partnerService';
 import { equipmentService } from '../../services/equipmentService';
+import { reviewService } from '../../services/reviewService';
 
 function PartnerProfile() {
   const currentUser = getCurrentUser();
@@ -41,6 +42,7 @@ function PartnerProfile() {
 
   const [partner, setPartner] = useState(null);
   const [equipmentCount, setEquipmentCount] = useState(0);
+  const [ratingSummary, setRatingSummary] = useState(null);
 
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -67,14 +69,26 @@ function PartnerProfile() {
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
 
-  // Load Partner Profile & Listed Equipment
+  // Load Partner Profile, Rating Summary & Listed Equipment
   const fetchPartnerData = async () => {
+    if (!partnerId) {
+      setErrorMessage('No partner session active. Please log in.');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setErrorMessage('');
 
     try {
-      const data = await partnerService.getProfile(partnerId);
-      if (data) {
+      const [profileData, eqList, ratingRes] = await Promise.allSettled([
+        partnerService.getProfile(partnerId),
+        equipmentService.getPartnerEquipment(partnerId),
+        reviewService.getPartnerRatingSummary(partnerId),
+      ]);
+
+      if (profileData.status === 'fulfilled' && profileData.value) {
+        const data = profileData.value;
         setPartner(data);
         setFormData({
           fullName: data.fullName || '',
@@ -86,50 +100,21 @@ function PartnerProfile() {
           panNumber: data.panNumber || '',
           profilePhoto: data.profilePhoto || '',
         });
+      } else if (profileData.status === 'rejected') {
+        const reason = profileData.reason;
+        setErrorMessage(reason?.response?.data?.message || reason?.message || 'Failed to retrieve partner profile.');
       }
 
-      // Fetch equipment count
-      try {
-        const eqList = await equipmentService.getPartnerEquipment(partnerId);
-        if (Array.isArray(eqList)) {
-          setEquipmentCount(eqList.length);
-        }
-      } catch (e) {
-        console.warn('Equipment count fetch note:', e.message);
+      if (eqList.status === 'fulfilled' && Array.isArray(eqList.value)) {
+        setEquipmentCount(eqList.value.length);
+      }
+
+      if (ratingRes.status === 'fulfilled' && ratingRes.value) {
+        setRatingSummary(ratingRes.value);
       }
     } catch (err) {
       console.error('Failed to load partner profile:', err);
-      // Fallback for offline demo state
-      if (!partner) {
-        const fallback = {
-          id: partnerId,
-          fullName: currentUser?.fullName || 'Rajesh Patel',
-          businessName: currentUser?.businessName || 'Patel Agro Fleet Services',
-          mobileNumber: currentUser?.mobileNumber || '9876543210',
-          email: currentUser?.email || 'rajesh.patel@agrorent.in',
-          address: 'Shop No. 12, Krishi Seva Kendra, APMC Market Yard, Pune, Maharashtra 411037',
-          gstNumber: '27AABCP1234F1Z5',
-          aadhaarNumber: '•••• •••• 9012',
-          panNumber: 'ABCDE1234F',
-          profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-          otpVerified: true,
-          verificationStatus: 'APPROVED',
-          active: true,
-          createdAt: new Date().toISOString(),
-        };
-        setPartner(fallback);
-        setFormData({
-          fullName: fallback.fullName,
-          businessName: fallback.businessName,
-          email: fallback.email,
-          address: fallback.address,
-          gstNumber: fallback.gstNumber,
-          aadhaarNumber: fallback.aadhaarNumber,
-          panNumber: fallback.panNumber,
-          profilePhoto: fallback.profilePhoto,
-        });
-      }
-      setErrorMessage(err.message || 'Unable to connect to backend server. Viewing cached profile data.');
+      setErrorMessage(err.response?.data?.message || err.message || 'Failed to retrieve partner details from server.');
     } finally {
       setLoading(false);
     }
@@ -195,13 +180,7 @@ function PartnerProfile() {
       setActiveTab('overview');
     } catch (err) {
       console.error('Failed to update partner profile:', err);
-      if (err.message && err.message.includes('Network error')) {
-        setPartner((prev) => ({ ...prev, ...formData }));
-        setSuccessMessage('✓ Profile changes saved locally in demo mode.');
-        setIsEditModalOpen(false);
-      } else {
-        setErrorMessage(err.message || 'Failed to update partner profile. Please try again.');
-      }
+      setErrorMessage(err.response?.data?.message || err.message || 'Failed to update partner profile. Please check the fields and try again.');
     } finally {
       setSaving(false);
     }
@@ -240,12 +219,7 @@ function PartnerProfile() {
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
       console.error('Failed to change password:', err);
-      if (err.message && err.message.includes('Network error')) {
-        setSuccessMessage('✓ Account password updated successfully in demo mode.');
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      } else {
-        setErrorMessage(err.message || 'Failed to update password. Verify current password is correct.');
-      }
+      setErrorMessage(err.response?.data?.message || err.message || 'Failed to update password. Verify current password is correct.');
     } finally {
       setChangingPassword(false);
     }
@@ -264,7 +238,7 @@ function PartnerProfile() {
 
   const partnerName = partner?.fullName || 'Partner Owner';
   const businessName = partner?.businessName || 'Agro Machinery Services';
-  const mobileNumber = partner?.mobileNumber || '9876543210';
+  const mobileNumber = partner?.mobileNumber || 'Not provided';
   const email = partner?.email || 'Not provided';
   const address = partner?.address || 'Operational hub address not set';
   const verificationStatus = partner?.verificationStatus || 'PENDING';
@@ -448,7 +422,9 @@ function PartnerProfile() {
               <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">Partner Rating</span>
               <div className="flex items-center gap-1.5 mt-1">
                 <span className="text-amber-500 font-bold">★</span>
-                <span className="text-base font-extrabold text-gray-900">4.9 / 5.0</span>
+                <span className="text-base font-extrabold text-gray-900">
+                  {ratingSummary?.averageRating ? `${ratingSummary.averageRating.toFixed(1)} / 5.0` : '0.0 / 5.0'}
+                </span>
               </div>
             </div>
 
@@ -615,14 +591,14 @@ function PartnerProfile() {
                 <div className="flex items-center justify-between p-3 bg-[#F8FAF8] rounded-xl">
                   <span className="text-gray-500 font-semibold">PAN Card</span>
                   <span className="font-mono font-bold text-gray-800">
-                    {partner?.panNumber || 'ABCDE1234F'}
+                    {partner?.panNumber || 'Not Provided'}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between p-3 bg-[#F8FAF8] rounded-xl">
                   <span className="text-gray-500 font-semibold">Aadhaar Card</span>
                   <span className="font-mono font-bold text-gray-800">
-                    {partner?.aadhaarNumber ? `•••• •••• ${partner.aadhaarNumber.slice(-4)}` : '•••• •••• 9012'}
+                    {partner?.aadhaarNumber ? `•••• •••• ${partner.aadhaarNumber.slice(-4)}` : 'Not Provided'}
                   </span>
                 </div>
               </div>

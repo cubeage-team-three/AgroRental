@@ -7,6 +7,8 @@ import com.agrorental.payment.dto.PaymentResponse;
 import com.agrorental.payment.entity.PaymentMethod;
 import com.agrorental.payment.entity.PaymentStatus;
 import com.agrorental.payment.service.PaymentService;
+import com.agrorental.security.principal.FarmerPrincipal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,16 +17,22 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -47,7 +55,10 @@ class PaymentControllerIntegrationTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(paymentController)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();
+
+        authenticateAsFarmer(1L);
 
         mockPaymentResponse = PaymentResponse.builder()
                 .id(1L)
@@ -84,6 +95,18 @@ class PaymentControllerIntegrationTest {
                 .build();
     }
 
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void authenticateAsFarmer(Long farmerId) {
+        FarmerPrincipal principal = FarmerPrincipal.builder().id(farmerId).role("FARMER").build();
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_FARMER")))
+        );
+    }
+
     @Test
     void shouldProcessPayment() throws Exception {
         when(paymentService.processPayment(any())).thenReturn(mockPaymentResponse);
@@ -110,7 +133,8 @@ class PaymentControllerIntegrationTest {
     void shouldGetFarmerPayments() throws Exception {
         when(paymentService.getFarmerPayments(1L)).thenReturn(List.of(mockPaymentResponse));
 
-        mockMvc.perform(get("/api/farmers/payments/farmer/1"))
+        mockMvc.perform(get("/api/farmers/payments/farmer/1")
+                        .with(user("farmer").roles("FARMER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].invoiceReference").value("INV-2026-00010"));

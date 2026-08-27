@@ -4,18 +4,23 @@ import com.agrorental.common.dto.ApiResponse;
 import com.agrorental.farmer.dto.FarmCreateRequest;
 import com.agrorental.farmer.dto.FarmResponse;
 import com.agrorental.farmer.service.FarmService;
+import com.agrorental.security.principal.FarmerPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * REST Controller providing APIs for Farmer Farm Management (Module 6).
+ * REST Controller providing APIs for Farmer Farm Management.
  */
 @RestController
 @RequestMapping("/api/farmers/farms")
+@PreAuthorize("hasAnyRole('FARMER', 'ADMIN')")
 @CrossOrigin(origins = "http://localhost:5173")
 public class FarmController {
 
@@ -26,56 +31,80 @@ public class FarmController {
     }
 
     /**
-     * Creates a new farm for the farmer.
+     * Creates a new farm for the authenticated farmer.
      */
     @PostMapping
     public ResponseEntity<ApiResponse<FarmResponse>> createFarm(
+            @AuthenticationPrincipal FarmerPrincipal principal,
             @Valid @RequestBody FarmCreateRequest request) {
 
-        FarmResponse response = farmService.createFarm(request);
+        if (principal == null) {
+            throw new AccessDeniedException("Authentication is required to create a farm.");
+        }
+        FarmResponse response = farmService.createFarm(principal.getId(), request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Farm created successfully", response));
     }
 
     /**
-     * Lists all registered farms for a farmer.
+     * Lists all registered farms for the authenticated farmer.
      */
     @GetMapping
     public ResponseEntity<ApiResponse<List<FarmResponse>>> getFarms(
-            @RequestParam(required = false) Long farmerId) {
+            @AuthenticationPrincipal FarmerPrincipal principal) {
 
-        List<FarmResponse> response = farmService.getFarmsByFarmerId(farmerId);
+        if (principal == null) {
+            throw new AccessDeniedException("Authentication is required to list farms.");
+        }
+        List<FarmResponse> response = farmService.getFarmsByFarmerId(principal.getId());
         return ResponseEntity.ok(ApiResponse.success("Farms retrieved successfully", response));
     }
 
     /**
-     * Retrieves farm details by farm ID.
+     * Retrieves farm details by farm ID for the authenticated farmer.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<FarmResponse>> getFarmById(@PathVariable Long id) {
-        FarmResponse response = farmService.getFarmById(id);
+    public ResponseEntity<ApiResponse<FarmResponse>> getFarmById(
+            @AuthenticationPrincipal FarmerPrincipal principal,
+            @PathVariable Long id) {
+
+        if (principal == null) {
+            throw new AccessDeniedException("Authentication is required to view farm details.");
+        }
+        FarmResponse response = farmService.getFarmByIdAndFarmerId(id, principal.getId());
         return ResponseEntity.ok(ApiResponse.success("Farm retrieved successfully", response));
     }
 
     /**
-     * Updates an existing farm by farm ID.
+     * Updates an existing farm by farm ID for the authenticated farmer.
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<FarmResponse>> updateFarm(
+            @AuthenticationPrincipal FarmerPrincipal principal,
             @PathVariable Long id,
             @Valid @RequestBody FarmCreateRequest request) {
 
-        FarmResponse response = farmService.updateFarm(id, request);
+        if (principal == null) {
+            throw new AccessDeniedException("Authentication is required to update a farm.");
+        }
+        FarmResponse response = farmService.updateFarm(id, principal.getId(), request);
         return ResponseEntity.ok(ApiResponse.success("Farm updated successfully", response));
     }
 
     /**
-     * Deletes a farm by farm ID.
+     * Deletes a farm by farm ID for the authenticated farmer.
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteFarm(@PathVariable Long id) {
-        farmService.deleteFarm(id);
+    public ResponseEntity<ApiResponse<Void>> deleteFarm(
+            @AuthenticationPrincipal FarmerPrincipal principal,
+            @PathVariable Long id) {
+
+        if (principal == null) {
+            throw new AccessDeniedException("Authentication is required to delete a farm.");
+        }
+        farmService.deleteFarm(id, principal.getId());
         return ResponseEntity.ok(ApiResponse.success("Farm deleted successfully", null));
     }
 }
+

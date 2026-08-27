@@ -75,6 +75,66 @@ public class FarmerProfileService {
     }
 
     @Transactional
+    public FarmerProfileResponse uploadAvatar(Long farmerId, org.springframework.web.multipart.MultipartFile file) {
+        log.info("Processing avatar upload for farmer ID: {}", farmerId);
+
+        Farmer farmer = farmerRepository.findById(farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer profile not found for ID: " + farmerId));
+
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("Avatar file must not be empty.");
+        }
+
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new BadRequestException("Avatar file size must not exceed 5 MB.");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String contentType = file.getContentType();
+
+        String extension = getFileExtension(originalFilename);
+        if (!isAllowedImageExtension(extension) || !isAllowedMimeType(contentType)) {
+            throw new BadRequestException("Invalid file type. Only JPG, PNG, WEBP, and GIF images are allowed.");
+        }
+
+        String safeFileName = java.util.UUID.randomUUID().toString() + extension;
+        java.nio.file.Path uploadPath = java.nio.file.Paths.get("uploads", "avatars").toAbsolutePath().normalize();
+
+        try {
+            java.nio.file.Files.createDirectories(uploadPath);
+            java.nio.file.Path targetLocation = uploadPath.resolve(safeFileName);
+            java.nio.file.Files.copy(file.getInputStream(), targetLocation, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            String avatarUrl = "/uploads/avatars/" + safeFileName;
+            farmer.setProfileImage(avatarUrl);
+            Farmer updated = farmerRepository.save(farmer);
+
+            log.info("Successfully uploaded avatar for farmer ID {}: {}", farmerId, avatarUrl);
+            return mapToResponse(updated);
+        } catch (java.io.IOException e) {
+            log.error("Failed to store avatar file for farmer ID {}: {}", farmerId, e.getMessage(), e);
+            throw new BadRequestException("Failed to save uploaded avatar file.");
+        }
+    }
+
+    private String getFileExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return "";
+        }
+        return filename.substring(filename.lastIndexOf(".")).toLowerCase();
+    }
+
+    private boolean isAllowedImageExtension(String ext) {
+        return java.util.List.of(".jpg", ".jpeg", ".png", ".webp", ".gif").contains(ext);
+    }
+
+    private boolean isAllowedMimeType(String contentType) {
+        if (contentType == null) return false;
+        String mime = contentType.toLowerCase();
+        return mime.equals("image/jpeg") || mime.equals("image/png") || mime.equals("image/webp") || mime.equals("image/gif");
+    }
+
+    @Transactional
     public void changePassword(Long farmerId, ChangePasswordRequest request) {
         log.info("Processing password change for farmer ID: {}", farmerId);
 

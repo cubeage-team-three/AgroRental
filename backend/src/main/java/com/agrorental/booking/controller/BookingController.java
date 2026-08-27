@@ -6,6 +6,10 @@ import com.agrorental.booking.dto.BookingStatusUpdateRequest;
 import com.agrorental.booking.service.BookingService;
 import com.agrorental.common.dto.ApiResponse;
 import com.agrorental.security.principal.PartnerPrincipal;
+import com.agrorental.common.exception.ForbiddenException;
+import com.agrorental.common.exception.UnauthorizedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,15 +32,44 @@ public class BookingController {
         this.bookingService = bookingService;
     }
 
+    private void validatePartnerOwnership(Long partnerId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("Full authentication is required to access this resource");
+        }
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            return;
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof PartnerPrincipal partnerPrincipal) {
+            if (partnerPrincipal.getId().equals(partnerId)) {
+                return;
+            }
+        }
+
+        throw new ForbiddenException("Access is denied. You do not have the required permissions.");
+    }
+
     /**
      * Creates a new machinery rental reservation for a farmer.
      *
      * @param request Validated booking creation payload
+     * @param principal Authenticated farmer principal (optional, extracted from JWT)
      * @return ResponseEntity containing HTTP 201 Created and BookingResponse payload
      */
     @PostMapping
     public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
+            @AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
             @Valid @RequestBody BookingCreateRequest request) {
+
+        if (principal != null && request.getFarmerId() == null) {
+            request.setFarmerId(principal.getId());
+        }
 
         BookingResponse response = bookingService.createBooking(request);
 
@@ -51,11 +84,25 @@ public class BookingController {
      * @param id Booking identifier
      * @return ResponseEntity containing HTTP 200 OK and BookingResponse payload
      */
+    /**
+     * Retrieves a booking reservation by its primary key.
+     *
+     * @param id Booking identifier
+     * @param principal Authenticated principal (optional for admin, checked for farmer/partner/operator)
+     * @return ResponseEntity containing HTTP 200 OK and BookingResponse payload
+     */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @AuthenticationPrincipal Object principal) {
 
         BookingResponse response = bookingService.getBookingById(id);
+
+        if (principal instanceof com.agrorental.security.principal.FarmerPrincipal farmerPrincipal) {
+            if (response.getFarmerId() != null && !response.getFarmerId().equals(farmerPrincipal.getId())) {
+                throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view another farmer's booking.");
+            }
+        }
 
         return ResponseEntity.ok(
                 ApiResponse.success("Booking retrieved successfully", response));
@@ -65,13 +112,19 @@ public class BookingController {
      * Retrieves all bookings created by a specific farmer.
      *
      * @param farmerId Farmer identifier
+     * @param principal Authenticated farmer principal
      * @return ResponseEntity containing HTTP 200 OK and List of BookingResponse
      */
     @GetMapping("/farmer/{farmerId}")
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookingsByFarmer(
-            @PathVariable Long farmerId) {
+            @PathVariable Long farmerId,
+            @AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal) {
 
-        List<BookingResponse> response = bookingService.getBookingsByFarmer(farmerId);
+        Long targetFarmerId = (principal != null) ? principal.getId() : farmerId;
+        if (principal != null && !principal.getId().equals(farmerId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view another farmer's bookings.");
+        }
+        List<BookingResponse> response = bookingService.getBookingsByFarmer(targetFarmerId);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Farmer bookings retrieved successfully", response));
@@ -87,6 +140,7 @@ public class BookingController {
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookingsByPartner(
             @PathVariable Long partnerId) {
 
+        validatePartnerOwnership(partnerId);
         List<BookingResponse> response = bookingService.getBookingsByPartner(partnerId);
 
         return ResponseEntity.ok(
@@ -113,13 +167,20 @@ public class BookingController {
      * Cancels an existing booking reservation.
      *
      * @param id Booking identifier
+     * @param principal Authenticated principal
      * @return ResponseEntity containing HTTP 200 OK and updated BookingResponse
      */
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<BookingResponse>> cancelBooking(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @AuthenticationPrincipal Object principal) {
 
-        BookingResponse response = bookingService.cancelBooking(id);
+        Long farmerId = null;
+        if (principal instanceof com.agrorental.security.principal.FarmerPrincipal farmerPrincipal) {
+            farmerId = farmerPrincipal.getId();
+        }
+
+        BookingResponse response = bookingService.cancelBooking(id, farmerId);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Booking cancelled successfully", response));
