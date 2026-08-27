@@ -164,7 +164,7 @@ public class DataInitializer implements CommandLineRunner {
                 .isDisabled(false)
                 .build();
         EquipmentImage img1 = EquipmentImage.builder()
-                .imageUrl("https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=600&auto=format&fit=crop&q=80")
+                .imageUrl("/images/equipment/tractor-ploughing.jpg")
                 .isPrimary(true)
                 .equipment(tractor1)
                 .build();
@@ -189,7 +189,7 @@ public class DataInitializer implements CommandLineRunner {
                 .isDisabled(false)
                 .build();
         EquipmentImage img2 = EquipmentImage.builder()
-                .imageUrl("https://images.unsplash.com/photo-1589923188900-85dae523342b?w=600&auto=format&fit=crop&q=80")
+                .imageUrl("/images/equipment/tractor-ploughing.jpg")
                 .isPrimary(true)
                 .equipment(tractor2)
                 .build();
@@ -214,7 +214,7 @@ public class DataInitializer implements CommandLineRunner {
                 .isDisabled(false)
                 .build();
         EquipmentImage img3 = EquipmentImage.builder()
-                .imageUrl("https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=600&auto=format&fit=crop&q=80")
+                .imageUrl("/images/equipment/harvester-service.jpg")
                 .isPrimary(true)
                 .equipment(harvester)
                 .build();
@@ -239,7 +239,7 @@ public class DataInitializer implements CommandLineRunner {
                 .isDisabled(false)
                 .build();
         EquipmentImage img4 = EquipmentImage.builder()
-                .imageUrl("https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=600&auto=format&fit=crop&q=80")
+                .imageUrl("/images/equipment/rotavator-work.jpg")
                 .isPrimary(true)
                 .equipment(rotavator)
                 .build();

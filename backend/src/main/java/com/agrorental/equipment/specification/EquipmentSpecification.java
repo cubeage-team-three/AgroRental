@@ -90,7 +90,13 @@ public class EquipmentSpecification {
                     bookedSubquery.select(bookingRoot.get("equipment").get("id"));
                     bookedSubquery.where(
                             cb.equal(bookingRoot.get("equipment").get("id"), root.get("id")),
-                            bookingRoot.get("status").in(List.of(BookingStatus.PENDING, BookingStatus.CONFIRMED)),
+                            bookingRoot.get("status").in(List.of(
+                                    BookingStatus.PENDING,
+                                    BookingStatus.ACCEPTED,
+                                    BookingStatus.CONFIRMED,
+                                    BookingStatus.OPERATOR_ASSIGNED,
+                                    BookingStatus.WORK_STARTED
+                            )),
                             cb.lessThanOrEqualTo(bookingRoot.get("startDate"), end),
                             cb.greaterThanOrEqualTo(bookingRoot.get("endDate"), start)
                     );
@@ -160,7 +166,9 @@ public class EquipmentSpecification {
     public static Specification<Equipment> hasMinHp(Integer minHp) {
         return (root, query, cb) -> {
             if (minHp != null) {
-                return cb.greaterThanOrEqualTo(root.get("hp"), minHp);
+                Expression<String> digitsOnly = cb.function("REGEXP_SUBSTR", String.class, root.get("capacity"), cb.literal("[0-9]+"));
+                Expression<Integer> numericHp = digitsOnly.as(Integer.class);
+                return cb.greaterThanOrEqualTo(numericHp, minHp);
             }
             return cb.conjunction();
         };

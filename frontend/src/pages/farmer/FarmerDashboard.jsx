@@ -42,8 +42,16 @@ function FarmerDashboard() {
     setLoading(true);
     try {
       const res = await getFarmerDashboard(farmerId);
-      if (res && res.data) {
-        setDashboardData(res.data);
+      const data = res?.data || res;
+      if (data && typeof data === 'object') {
+        setDashboardData((prev) => ({
+          ...prev,
+          ...data,
+          profileSummary: {
+            ...prev.profileSummary,
+            ...(data.profileSummary || {}),
+          },
+        }));
       }
     } catch (err) {
       console.warn('Dashboard fetch notice:', err.message);
