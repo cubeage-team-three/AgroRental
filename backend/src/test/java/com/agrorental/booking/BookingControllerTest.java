@@ -5,10 +5,12 @@ import com.agrorental.booking.dto.BookingResponse;
 import com.agrorental.booking.entity.BookingStatus;
 import com.agrorental.booking.service.BookingService;
 import com.agrorental.common.exception.GlobalExceptionHandler;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -30,6 +32,11 @@ class BookingControllerTest {
 
     @BeforeEach
     void setUp() {
+        // Guards against a leftover Authentication from another test class's
+        // SecurityContextHolder ThreadLocal state (JUnit reuses threads across
+        // test classes run sequentially), which would otherwise make this
+        // controller's per-ID ownership checks fire against a stale principal.
+        SecurityContextHolder.clearContext();
         bookingService = mock(BookingService.class);
         BookingController bookingController = new BookingController(bookingService);
         mockMvc = MockMvcBuilders
@@ -49,6 +56,11 @@ class BookingControllerTest {
                 .totalCost(new BigDecimal("4500.00"))
                 .status(BookingStatus.CONFIRMED)
                 .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
