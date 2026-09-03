@@ -87,9 +87,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/partners/*").hasAnyRole("ADMIN", "PARTNER")
                         .requestMatchers("/api/partners/**").hasRole("PARTNER")
 
-                        // Equipment: browsing/search is public, listing management is partner-only
+                        // Equipment: browsing/search is public, creation is partner-only, mutations allow partner and admin
                         .requestMatchers(HttpMethod.GET, "/api/equipment", "/api/equipment/**").permitAll()
-                        .requestMatchers("/api/equipment", "/api/equipment/**").hasRole("PARTNER")
+                        .requestMatchers(HttpMethod.POST, "/api/equipment").hasRole("PARTNER")
+                        .requestMatchers("/api/equipment", "/api/equipment/**").hasAnyRole("PARTNER", "ADMIN")
                         // Image Uploads: static file retrieval is public, uploading requires PARTNER role
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/api/upload/**").hasRole("PARTNER")
