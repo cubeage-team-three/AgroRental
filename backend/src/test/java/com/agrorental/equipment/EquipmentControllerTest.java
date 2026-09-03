@@ -32,11 +32,14 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -198,5 +201,127 @@ class EquipmentControllerTest {
                 .andExpect(jsonPath("$.data.partnerId").value(1));
 
         verify(equipmentService).createEquipment(any());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/equipment/{id}/enable - Admin should enable equipment successfully")
+    void shouldAllowAdminToEnableEquipment() throws Exception {
+        EquipmentResponse response = EquipmentResponse.builder().id(10L).isDisabled(false).build();
+        when(equipmentService.enableEquipment(10L)).thenReturn(response);
+
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                "ADMIN_1", null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+
+        mockMvc.perform(patch("/api/equipment/10/enable"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.isDisabled").value(false));
+
+        verify(equipmentService).enableEquipment(10L);
+    }
+
+    @Test
+    @DisplayName("PATCH /api/equipment/{id}/enable - Partner should enable own equipment")
+    void shouldAllowPartnerToEnableOwnEquipment() throws Exception {
+        EquipmentResponse response = EquipmentResponse.builder().id(10L).isDisabled(false).build();
+        when(equipmentService.enableEquipment(10L, 1L)).thenReturn(response);
+
+        PartnerPrincipal principal = PartnerPrincipal.builder().id(1L).role("PARTNER").build();
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                principal, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_PARTNER"))));
+
+        mockMvc.perform(patch("/api/equipment/10/enable"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.isDisabled").value(false));
+
+        verify(equipmentService).enableEquipment(10L, 1L);
+    }
+
+    @Test
+    @DisplayName("PATCH /api/equipment/{id}/enable - Unauthorized request rejected without NPE")
+    void shouldRejectEnableEquipmentWhenUnauthenticated() throws Exception {
+        SecurityContextHolder.clearContext();
+
+        mockMvc.perform(patch("/api/equipment/10/enable"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
+
+        verify(equipmentService, never()).enableEquipment(any());
+        verify(equipmentService, never()).enableEquipment(any(), any());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/equipment/{id}/disable - Admin should disable equipment successfully")
+    void shouldAllowAdminToDisableEquipment() throws Exception {
+        EquipmentResponse response = EquipmentResponse.builder().id(10L).isDisabled(true).build();
+        when(equipmentService.disableEquipment(10L)).thenReturn(response);
+
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                "ADMIN_1", null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+
+        mockMvc.perform(patch("/api/equipment/10/disable"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.isDisabled").value(true));
+
+        verify(equipmentService).disableEquipment(10L);
+    }
+
+    @Test
+    @DisplayName("PATCH /api/equipment/{id}/disable - Partner should disable own equipment")
+    void shouldAllowPartnerToDisableOwnEquipment() throws Exception {
+        EquipmentResponse response = EquipmentResponse.builder().id(10L).isDisabled(true).build();
+        when(equipmentService.disableEquipment(10L, 1L)).thenReturn(response);
+
+        PartnerPrincipal principal = PartnerPrincipal.builder().id(1L).role("PARTNER").build();
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                principal, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_PARTNER"))));
+
+        mockMvc.perform(patch("/api/equipment/10/disable"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.isDisabled").value(true));
+
+        verify(equipmentService).disableEquipment(10L, 1L);
+    }
+
+    @Test
+    @DisplayName("PATCH /api/equipment/{id}/disable - Unauthorized request rejected without NPE")
+    void shouldRejectDisableEquipmentWhenUnauthenticated() throws Exception {
+        SecurityContextHolder.clearContext();
+
+        mockMvc.perform(patch("/api/equipment/10/disable"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
+
+        verify(equipmentService, never()).disableEquipment(any());
+        verify(equipmentService, never()).disableEquipment(any(), any());
+    }
+
+    @Test
+    @DisplayName("DELETE /api/equipment/{id} - Admin should delete equipment successfully")
+    void shouldAllowAdminToDeleteEquipment() throws Exception {
+        doNothing().when(equipmentService).deleteEquipment(10L);
+
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                "ADMIN_1", null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+
+        mockMvc.perform(delete("/api/equipment/10"))
+                .andExpect(status().isNoContent());
+
+        verify(equipmentService).deleteEquipment(10L);
+    }
+
+    @Test
+    @DisplayName("DELETE /api/equipment/{id} - Unauthorized request rejected without NPE")
+    void shouldRejectDeleteEquipmentWhenUnauthenticated() throws Exception {
+        SecurityContextHolder.clearContext();
+
+        mockMvc.perform(delete("/api/equipment/10"))
+                .andExpect(status().isUnauthorized());
+
+        verify(equipmentService, never()).deleteEquipment(any());
+        verify(equipmentService, never()).deleteEquipment(any(), any());
     }
 }

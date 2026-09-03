@@ -76,7 +76,7 @@ public class SecurityConfig {
                         // Farmer: registration + OTP are public; farms, profile, dashboard, and management require authentication
                         .requestMatchers(HttpMethod.POST, "/api/farmers/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/farmers/send-otp", "/api/farmers/verify-otp", "/api/farmers/resend-otp").permitAll()
-                        .requestMatchers("/api/farmers/**").hasRole("FARMER")
+                        .requestMatchers("/api/farmers", "/api/farmers/**", "/api/farmers/farms", "/api/farmers/farms/**").hasRole("FARMER")
 
                         // Partner: registration + OTP are public; Admin manages partners & KYC; Partner manages own profile/dashboard
                         .requestMatchers(HttpMethod.POST, "/api/partners/register").permitAll()
@@ -86,9 +86,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/partners/*/dashboard").hasAnyRole("ADMIN", "PARTNER")
                         .requestMatchers(HttpMethod.GET, "/api/partners/*").hasAnyRole("ADMIN", "PARTNER")
                         .requestMatchers("/api/partners/**").hasRole("PARTNER")
-                        // Equipment: browsing/search is public, listing management is partner-only
-                        .requestMatchers(HttpMethod.GET, "/api/equipment/**").permitAll()
-                        .requestMatchers("/api/equipment/**").hasRole("PARTNER")
+
+                        // Equipment: browsing/search is public, creation is partner-only, mutations allow partner and admin
+                        .requestMatchers(HttpMethod.GET, "/api/equipment", "/api/equipment/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/equipment").hasRole("PARTNER")
+                        .requestMatchers("/api/equipment", "/api/equipment/**").hasAnyRole("PARTNER", "ADMIN")
                         // Image Uploads: static file retrieval is public, uploading requires PARTNER role
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/api/upload/**").hasRole("PARTNER")

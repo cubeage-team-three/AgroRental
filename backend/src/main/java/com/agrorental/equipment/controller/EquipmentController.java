@@ -16,7 +16,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -41,6 +43,23 @@ public class EquipmentController {
         this.equipmentService = equipmentService;
     }
 
+    private boolean isAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getAuthorities() != null &&
+                auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+    }
+
+    private PartnerPrincipal getPartnerPrincipal(Object principal) {
+        if (principal instanceof PartnerPrincipal pp) {
+            return pp;
+        }
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof PartnerPrincipal pp) {
+            return pp;
+        }
+        return null;
+    }
+
     /**
      * Creates a new equipment listing owned by a partner.
      *
@@ -49,14 +68,15 @@ public class EquipmentController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<EquipmentResponse>> createEquipment(
-            @AuthenticationPrincipal PartnerPrincipal principal,
+            @AuthenticationPrincipal Object principal,
             @Valid @RequestBody EquipmentCreateRequest request) {
 
-        if (principal == null || principal.getId() == null) {
+        PartnerPrincipal partnerPrincipal = getPartnerPrincipal(principal);
+        if (partnerPrincipal == null || partnerPrincipal.getId() == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Full authentication is required to access this resource"));
         }
-        request.setPartnerId(principal.getId());
+        request.setPartnerId(partnerPrincipal.getId());
 
         EquipmentResponse response = equipmentService.createEquipment(request);
 
@@ -195,73 +215,115 @@ public class EquipmentController {
      * Updates mutable fields of an existing equipment listing.
      *
      * @param id Equipment primary key
-     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header)
+     * @param principal Authenticated principal (Admin or Partner)
      * @param request Validated equipment update payload
      * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<EquipmentResponse>> updateEquipment(
             @PathVariable Long id,
-            @AuthenticationPrincipal PartnerPrincipal principal,
+            @AuthenticationPrincipal Object principal,
             @Valid @RequestBody EquipmentUpdateRequest request) {
 
-        EquipmentResponse response = equipmentService.updateEquipment(id, principal.getId(), request);
+        if (isAdmin()) {
+            EquipmentResponse response = equipmentService.updateEquipment(id, request);
+            return ResponseEntity.ok(
+                    ApiResponse.success("Equipment updated successfully", response));
+        }
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Equipment updated successfully", response));
+        PartnerPrincipal partnerPrincipal = getPartnerPrincipal(principal);
+        if (partnerPrincipal != null && partnerPrincipal.getId() != null) {
+            EquipmentResponse response = equipmentService.updateEquipment(id, partnerPrincipal.getId(), request);
+            return ResponseEntity.ok(
+                    ApiResponse.success("Equipment updated successfully", response));
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Full authentication is required to access this resource"));
     }
 
     /**
      * Enables a previously disabled equipment listing.
      *
      * @param id Equipment primary key
-     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header)
+     * @param principal Authenticated principal (Admin or Partner)
      * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
      */
     @PatchMapping("/{id}/enable")
     public ResponseEntity<ApiResponse<EquipmentResponse>> enableEquipment(
             @PathVariable Long id,
-            @AuthenticationPrincipal PartnerPrincipal principal) {
+            @AuthenticationPrincipal Object principal) {
 
-        EquipmentResponse response = equipmentService.enableEquipment(id, principal.getId());
+        if (isAdmin()) {
+            EquipmentResponse response = equipmentService.enableEquipment(id);
+            return ResponseEntity.ok(
+                    ApiResponse.success("Equipment enabled successfully", response));
+        }
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Equipment enabled successfully", response));
+        PartnerPrincipal partnerPrincipal = getPartnerPrincipal(principal);
+        if (partnerPrincipal != null && partnerPrincipal.getId() != null) {
+            EquipmentResponse response = equipmentService.enableEquipment(id, partnerPrincipal.getId());
+            return ResponseEntity.ok(
+                    ApiResponse.success("Equipment enabled successfully", response));
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Full authentication is required to access this resource"));
     }
 
     /**
      * Disables an equipment listing for maintenance or administrative lockout.
      *
      * @param id Equipment primary key
-     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header)
+     * @param principal Authenticated principal (Admin or Partner)
      * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
      */
     @PatchMapping("/{id}/disable")
     public ResponseEntity<ApiResponse<EquipmentResponse>> disableEquipment(
             @PathVariable Long id,
-            @AuthenticationPrincipal PartnerPrincipal principal) {
+            @AuthenticationPrincipal Object principal) {
 
-        EquipmentResponse response = equipmentService.disableEquipment(id, principal.getId());
+        if (isAdmin()) {
+            EquipmentResponse response = equipmentService.disableEquipment(id);
+            return ResponseEntity.ok(
+                    ApiResponse.success("Equipment disabled successfully", response));
+        }
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Equipment disabled successfully", response));
+        PartnerPrincipal partnerPrincipal = getPartnerPrincipal(principal);
+        if (partnerPrincipal != null && partnerPrincipal.getId() != null) {
+            EquipmentResponse response = equipmentService.disableEquipment(id, partnerPrincipal.getId());
+            return ResponseEntity.ok(
+                    ApiResponse.success("Equipment disabled successfully", response));
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Full authentication is required to access this resource"));
     }
 
     /**
      * Removes an equipment listing from the system.
      *
      * @param id Equipment primary key
-     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header)
+     * @param principal Authenticated principal (Admin or Partner)
      * @return ResponseEntity containing HTTP 204 No Content
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEquipment(
             @PathVariable Long id,
-            @AuthenticationPrincipal PartnerPrincipal principal) {
+            @AuthenticationPrincipal Object principal) {
 
-        equipmentService.deleteEquipment(id, principal.getId());
+        if (isAdmin()) {
+            equipmentService.deleteEquipment(id);
+            return ResponseEntity.noContent().build();
+        }
 
-        return ResponseEntity.noContent().build();
+        PartnerPrincipal partnerPrincipal = getPartnerPrincipal(principal);
+        if (partnerPrincipal != null && partnerPrincipal.getId() != null) {
+            equipmentService.deleteEquipment(id, partnerPrincipal.getId());
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     /**
@@ -269,18 +331,29 @@ public class EquipmentController {
      *
      * @param equipmentId Equipment primary key
      * @param imageId Image asset primary key
-     * @param principal Authenticated partner, resolved from the JWT (not a client-supplied header)
+     * @param principal Authenticated principal (Admin or Partner)
      * @return ResponseEntity containing HTTP 200 OK and updated EquipmentResponse
      */
     @DeleteMapping("/{equipmentId}/images/{imageId}")
     public ResponseEntity<ApiResponse<EquipmentResponse>> deleteEquipmentImage(
             @PathVariable Long equipmentId,
             @PathVariable Long imageId,
-            @AuthenticationPrincipal PartnerPrincipal principal) {
+            @AuthenticationPrincipal Object principal) {
 
-        EquipmentResponse response = equipmentService.deleteEquipmentImage(equipmentId, imageId, principal.getId());
+        if (isAdmin()) {
+            EquipmentResponse response = equipmentService.deleteEquipmentImage(equipmentId, imageId, null);
+            return ResponseEntity.ok(
+                    ApiResponse.success("Equipment image deleted successfully", response));
+        }
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Equipment image deleted successfully", response));
+        PartnerPrincipal partnerPrincipal = getPartnerPrincipal(principal);
+        if (partnerPrincipal != null && partnerPrincipal.getId() != null) {
+            EquipmentResponse response = equipmentService.deleteEquipmentImage(equipmentId, imageId, partnerPrincipal.getId());
+            return ResponseEntity.ok(
+                    ApiResponse.success("Equipment image deleted successfully", response));
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Full authentication is required to access this resource"));
     }
 }

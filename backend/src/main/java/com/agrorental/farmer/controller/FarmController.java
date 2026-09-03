@@ -38,9 +38,11 @@ public class FarmController {
             @AuthenticationPrincipal FarmerPrincipal principal,
             @Valid @RequestBody FarmCreateRequest request) {
 
-        if (principal == null) {
+        if (principal == null || principal.getId() == null) {
             throw new AccessDeniedException("Authentication is required to create a farm.");
         }
+        request.setFarmerId(principal.getId());
+
         FarmResponse response = farmService.createFarm(principal.getId(), request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -52,12 +54,14 @@ public class FarmController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<List<FarmResponse>>> getFarms(
-            @AuthenticationPrincipal FarmerPrincipal principal) {
+            @AuthenticationPrincipal FarmerPrincipal principal,
+            @RequestParam(required = false) Long farmerId) {
 
-        if (principal == null) {
+        Long targetFarmerId = (principal != null && principal.getId() != null) ? principal.getId() : farmerId;
+        if (targetFarmerId == null) {
             throw new AccessDeniedException("Authentication is required to list farms.");
         }
-        List<FarmResponse> response = farmService.getFarmsByFarmerId(principal.getId());
+        List<FarmResponse> response = farmService.getFarmsByFarmerId(targetFarmerId);
         return ResponseEntity.ok(ApiResponse.success("Farms retrieved successfully", response));
     }
 
@@ -69,7 +73,7 @@ public class FarmController {
             @AuthenticationPrincipal FarmerPrincipal principal,
             @PathVariable Long id) {
 
-        if (principal == null) {
+        if (principal == null || principal.getId() == null) {
             throw new AccessDeniedException("Authentication is required to view farm details.");
         }
         FarmResponse response = farmService.getFarmByIdAndFarmerId(id, principal.getId());
@@ -81,13 +85,15 @@ public class FarmController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<FarmResponse>> updateFarm(
-            @AuthenticationPrincipal FarmerPrincipal principal,
             @PathVariable Long id,
+            @AuthenticationPrincipal FarmerPrincipal principal,
             @Valid @RequestBody FarmCreateRequest request) {
 
-        if (principal == null) {
+        if (principal == null || principal.getId() == null) {
             throw new AccessDeniedException("Authentication is required to update a farm.");
         }
+        request.setFarmerId(principal.getId());
+
         FarmResponse response = farmService.updateFarm(id, principal.getId(), request);
         return ResponseEntity.ok(ApiResponse.success("Farm updated successfully", response));
     }
@@ -100,11 +106,10 @@ public class FarmController {
             @AuthenticationPrincipal FarmerPrincipal principal,
             @PathVariable Long id) {
 
-        if (principal == null) {
+        if (principal == null || principal.getId() == null) {
             throw new AccessDeniedException("Authentication is required to delete a farm.");
         }
         farmService.deleteFarm(id, principal.getId());
         return ResponseEntity.ok(ApiResponse.success("Farm deleted successfully", null));
     }
 }
-
