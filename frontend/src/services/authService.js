@@ -15,6 +15,12 @@ export const saveUserSession = (userData) => {
     : userData;
 
   if (payload) {
+    localStorage.removeItem('agro_token');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('agro_user');
+    localStorage.removeItem('partnerId');
+    localStorage.removeItem('farmerId');
+    localStorage.removeItem('operatorId');
     const sessionToken = payload.token || payload.accessToken;
     if (sessionToken) {
       localStorage.setItem('agro_token', sessionToken);

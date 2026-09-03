@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   User, Phone, Mail, MapPin, ShieldCheck, Award, Edit3, Lock, CheckCircle2,
   Globe, Landmark, FileText, Camera, Sprout, Layers, ArrowRight, Eye, EyeOff,
-  Sparkles, CreditCard, Shield, HeartHandshake, Check, AlertCircle
+  Sparkles, CreditCard, Shield, HeartHandshake, Check, AlertCircle, RefreshCw
 } from 'lucide-react';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 import { getFarmerId } from '../../services/authService';
-import { updateFarmerProfile, changeFarmerPassword } from '../../services/farmerAuthService';
+import { updateFarmerProfile, changeFarmerPassword, uploadFarmerAvatar } from '../../services/farmerAuthService';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -30,7 +30,10 @@ function FarmerProfile() {
   };
 
   const { user, loading: authLoading, refreshUser } = useAuth();
-  const farmerId = getFarmerId() || 1;
+  const farmerId = getFarmerId();
+  const fileInputRef = useRef(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
   const [activeTab, setActiveTab] = useState('personal'); // 'personal' | 'farming' | 'bank' | 'schemes' | 'security'
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +41,37 @@ function FarmerProfile() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  const handleAvatarFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage('Image size must be less than 5MB.');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const res = await uploadFarmerAvatar(file);
+      const data = res?.data || res;
+      if (data && data.profileImage) {
+        setProfileData((prev) => ({ ...prev, profileImage: data.profileImage }));
+        setSuccessMessage('✓ Profile avatar updated successfully!');
+        refreshUser();
+      }
+    } catch (err) {
+      console.error('Avatar upload error:', err);
+      setErrorMessage(err.message || 'Failed to upload profile avatar.');
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
   // Profile Form State — seeded from AuthContext's `user` once it loads (see
   // the sync effect below), not from hardcoded defaults.
   const [profileData, setProfileData] = useState({
@@ -227,7 +261,7 @@ function FarmerProfile() {
                   <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-emerald-700 flex items-center justify-center text-white text-4xl font-extrabold">
                     {profileData.profileImage ? (
                       <img
-                        src={profileData.profileImage}
+                        src={profileData.profileImage.startsWith('http') || profileData.profileImage.startsWith('data:') ? profileData.profileImage : `http://localhost:8080${profileData.profileImage}`}
                         alt={profileData.fullName}
                         className="h-full w-full object-cover"
                         onError={(e) => { e.target.style.display = 'none'; }}
@@ -236,19 +270,23 @@ function FarmerProfile() {
                       <User className="h-14 w-14" />
                     )}
                   </div>
+
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleAvatarFileUpload}
+                    accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
+                    className="hidden"
+                  />
                   
                   <button
                     type="button"
-                    onClick={() => {
-                      const url = prompt('Enter image URL for profile photo:', profileData.profileImage);
-                      if (url !== null) {
-                        setProfileData((prev) => ({ ...prev, profileImage: url }));
-                      }
-                    }}
-                    className="absolute bottom-1 right-1 flex items-center gap-1 rounded-xl bg-emerald-700 p-2 text-xs font-bold text-white shadow-lg border-2 border-white hover:bg-emerald-800 transition"
-                    title="Change Photo"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute bottom-1 right-1 flex items-center gap-1 rounded-xl bg-emerald-700 p-2 text-xs font-bold text-white shadow-lg border-2 border-white hover:bg-emerald-800 transition disabled:opacity-50"
+                    title="Upload Profile Avatar Photo"
                   >
-                    <Camera className="h-3.5 w-3.5" />
+                    {uploadingAvatar ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
                   </button>
                 </div>
 

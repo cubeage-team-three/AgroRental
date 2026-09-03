@@ -71,6 +71,7 @@ public class SecurityConfig {
                         // Shared / genuinely public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         // Farmer: registration + OTP are public; farms, profile, dashboard, and management require authentication
                         .requestMatchers(HttpMethod.POST, "/api/farmers/register").permitAll()
@@ -82,20 +83,20 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/partners/*/otp/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/partners", "/api/partners/").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/partners/*/kyc/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/partners/*/dashboard").hasAnyRole("ADMIN", "PARTNER")
                         .requestMatchers(HttpMethod.GET, "/api/partners/*").hasAnyRole("ADMIN", "PARTNER")
                         .requestMatchers("/api/partners/**").hasRole("PARTNER")
 
                         // Equipment: browsing/search is public, listing management is partner-only
                         .requestMatchers(HttpMethod.GET, "/api/equipment", "/api/equipment/**").permitAll()
                         .requestMatchers("/api/equipment", "/api/equipment/**").hasRole("PARTNER")
-
                         // Image Uploads: static file retrieval is public, uploading requires PARTNER role
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/api/upload/**").hasRole("PARTNER")
                         // Bookings: role-specific views and actions, ownership resolved from the JWT in-controller
                         .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("FARMER")
                         .requestMatchers(HttpMethod.GET, "/api/bookings/farmer/**").hasRole("FARMER")
-                        .requestMatchers(HttpMethod.GET, "/api/bookings/partner/**").hasRole("PARTNER")
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/partner/**").hasAnyRole("ADMIN", "PARTNER")
                         .requestMatchers(HttpMethod.GET, "/api/bookings/operator/**").hasRole("OPERATOR")
                         .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/cancel").hasRole("FARMER")
                         .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/accept", "/api/bookings/*/reject", "/api/bookings/*/assign-operator").hasRole("PARTNER")
