@@ -28,6 +28,7 @@ export async function request(endpoint, options = {}) {
     token = localStorage.getItem('agro_token') || localStorage.getItem('accessToken');
   }
 
+
   if (token) {
     defaultHeaders['Authorization'] = `Bearer ${token}`;
   }

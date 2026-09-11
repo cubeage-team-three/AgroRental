@@ -15,6 +15,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -383,6 +385,11 @@ public class EquipmentService {
      * @param requestingPartnerId Partner ID performing the operation
      */
     private void validateOwnership(Equipment equipment, Long requestingPartnerId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getAuthorities() != null &&
+                auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+            return;
+        }
         if (equipment.getPartner() == null || !equipment.getPartner().getId().equals(requestingPartnerId)) {
             throw new BadRequestException("Partner ID " + requestingPartnerId + " is not authorized to modify equipment ID " + equipment.getId());
         }
