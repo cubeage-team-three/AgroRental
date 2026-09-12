@@ -55,7 +55,10 @@ import java.util.List;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
-    @Value("${agrorental.operator.seed.default-password:${OPERATOR_SEED_PASSWORD:Operator@123}}")
+    @Value("${agrorental.operator.seed.enabled:${OPERATOR_SEED_ENABLED:true}}")
+    private boolean operatorSeedEnabled;
+
+    @Value("${agrorental.operator.seed.default-password:${OPERATOR_SEED_PASSWORD:}}")
     private String operatorSeedPassword;
 
     private final PartnerRepository partnerRepository;
@@ -266,51 +269,62 @@ public class DataInitializer implements CommandLineRunner {
         rotavator.setImages(List.of(img4));
         rotavator = equipmentRepository.save(rotavator);
 
-        // 4. Seed Operators
-        Operator op1 = new Operator();
-        op1.setFullName("Santosh Gaikwad");
-        op1.setMobileNumber("9876543220");
-        op1.setEmail("santosh.operator@agrorent.in");
-        op1.setAddress("Village Khed, Taluka Rajgurunagar, Pune");
-        op1.setAadhaarNumber("654398761234");
-        op1.setDrivingLicenseNumber("MH-14-2018-009876");
-        op1.setExperience(5);
-        op1.setSkills("Tractor & Harvester Specialist");
-        op1.setPassword(passwordEncoder.encode(operatorSeedPassword));
-        op1.setStatus(OperatorStatus.APPROVED);
-        op1.setMobileVerified(true);
-        op1.setPartner(partner);
-        op1 = operatorRepository.save(op1);
+        // 4. Seed Operators (Configurable / Dynamic)
+        Operator op1 = null;
+        Operator op2 = null;
+        Operator op3 = null;
 
-        Operator op2 = new Operator();
-        op2.setFullName("Balasaheb Kadam");
-        op2.setMobileNumber("9876543221");
-        op2.setEmail("balasaheb.operator@agrorent.in");
-        op2.setAddress("Narayangaon, Junnar, Pune");
-        op2.setAadhaarNumber("789012345678");
-        op2.setDrivingLicenseNumber("MH-14-2016-004321");
-        op2.setExperience(7);
-        op2.setSkills("Heavy Machinery & Rotavator");
-        op2.setPassword(passwordEncoder.encode(operatorSeedPassword));
-        op2.setStatus(OperatorStatus.APPROVED);
-        op2.setMobileVerified(true);
-        op2.setPartner(partner);
-        op2 = operatorRepository.save(op2);
+        if (operatorSeedEnabled) {
+            String resolvedSeedPassword = (operatorSeedPassword != null && !operatorSeedPassword.isBlank())
+                    ? operatorSeedPassword
+                    : java.util.UUID.randomUUID().toString();
+            String encodedOperatorPassword = passwordEncoder.encode(resolvedSeedPassword);
 
-        Operator op3 = new Operator();
-        op3.setFullName("Anil Jadhav");
-        op3.setMobileNumber("9876543222");
-        op3.setEmail("anil.operator@agrorent.in");
-        op3.setAddress("Chakan, Pune");
-        op3.setAadhaarNumber("890123456789");
-        op3.setDrivingLicenseNumber("MH-14-2020-001234");
-        op3.setExperience(4);
-        op3.setSkills("Tractor Driver & Land Preparation");
-        op3.setPassword(passwordEncoder.encode(operatorSeedPassword));
-        op3.setStatus(OperatorStatus.APPROVED);
-        op3.setMobileVerified(true);
-        op3.setPartner(partner);
-        op3 = operatorRepository.save(op3);
+            op1 = new Operator();
+            op1.setFullName("Santosh Gaikwad");
+            op1.setMobileNumber("9876543220");
+            op1.setEmail("santosh.operator@agrorent.in");
+            op1.setAddress("Village Khed, Taluka Rajgurunagar, Pune");
+            op1.setAadhaarNumber("654398761234");
+            op1.setDrivingLicenseNumber("MH-14-2018-009876");
+            op1.setExperience(5);
+            op1.setSkills("Tractor & Harvester Specialist");
+            op1.setPassword(encodedOperatorPassword);
+            op1.setStatus(OperatorStatus.APPROVED);
+            op1.setMobileVerified(true);
+            op1.setPartner(partner);
+            op1 = operatorRepository.save(op1);
+
+            op2 = new Operator();
+            op2.setFullName("Balasaheb Kadam");
+            op2.setMobileNumber("9876543221");
+            op2.setEmail("balasaheb.operator@agrorent.in");
+            op2.setAddress("Narayangaon, Junnar, Pune");
+            op2.setAadhaarNumber("789012345678");
+            op2.setDrivingLicenseNumber("MH-14-2016-004321");
+            op2.setExperience(7);
+            op2.setSkills("Heavy Machinery & Rotavator");
+            op2.setPassword(encodedOperatorPassword);
+            op2.setStatus(OperatorStatus.APPROVED);
+            op2.setMobileVerified(true);
+            op2.setPartner(partner);
+            op2 = operatorRepository.save(op2);
+
+            op3 = new Operator();
+            op3.setFullName("Anil Jadhav");
+            op3.setMobileNumber("9876543222");
+            op3.setEmail("anil.operator@agrorent.in");
+            op3.setAddress("Chakan, Pune");
+            op3.setAadhaarNumber("890123456789");
+            op3.setDrivingLicenseNumber("MH-14-2020-001234");
+            op3.setExperience(4);
+            op3.setSkills("Tractor Driver & Land Preparation");
+            op3.setPassword(encodedOperatorPassword);
+            op3.setStatus(OperatorStatus.APPROVED);
+            op3.setMobileVerified(true);
+            op3.setPartner(partner);
+            op3 = operatorRepository.save(op3);
+        }
 
         // 5. Seed Bookings
         LocalDate today = LocalDate.now();
