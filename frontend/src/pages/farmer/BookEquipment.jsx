@@ -36,7 +36,7 @@ function BookEquipment() {
   const [success, setSuccess] = useState(null);
 
   // Form state
-  const farmerId = getFarmerId() || 1;
+  const farmerId = getFarmerId();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('08:00 AM - 04:00 PM');
@@ -80,7 +80,7 @@ function BookEquipment() {
           setDeliveryAddress(`${defaultFarm.farmName}, ${defaultFarm.village}, ${defaultFarm.taluka}, ${defaultFarm.district || defaultFarm.state || ''}`);
         }
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load booking details.');
+        setError(err.message || err.data?.message || err.response?.data?.message || 'Failed to load booking details.');
       } finally {
         setLoading(false);
       }
@@ -141,7 +141,7 @@ function BookEquipment() {
         navigate(`/farmer/bookings`);
       }, 1800);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to complete equipment booking.');
+      setError(err.message || err.data?.message || err.response?.data?.message || 'Failed to complete equipment booking.');
     } finally {
       setSubmitting(false);
     }

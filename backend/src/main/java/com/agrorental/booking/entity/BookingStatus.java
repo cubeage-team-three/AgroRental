@@ -16,6 +16,9 @@ public enum BookingStatus {
     /** Certified operator assigned to confirmed booking. */
     OPERATOR_ASSIGNED,
 
+    /** Machine dispatched and operator en route to field location. */
+    ON_THE_WAY,
+
     /** Machine in field and work actively started. */
     WORK_STARTED,
 

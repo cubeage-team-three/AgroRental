@@ -59,6 +59,9 @@ class OperatorJobLifecycleServiceTest {
     private OperatorJobPauseIntervalRepository pauseIntervalRepository;
 
     @Mock
+    private com.agrorental.booking.repository.BookingRepository bookingRepository;
+
+    @Mock
     private NotificationService notificationService;
 
     @Spy

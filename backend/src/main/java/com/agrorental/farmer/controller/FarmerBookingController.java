@@ -39,9 +39,14 @@ public class FarmerBookingController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(
+            @AuthenticationPrincipal FarmerPrincipal principal,
             @PathVariable Long id) {
 
         BookingResponse response = bookingService.getBookingById(id);
+
+        if (principal != null && response.getFarmerId() != null && !response.getFarmerId().equals(principal.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view another farmer's booking.");
+        }
 
         return ResponseEntity.ok(
                 ApiResponse.success("Booking retrieved successfully", response));
@@ -49,19 +54,31 @@ public class FarmerBookingController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getFarmerBookings(
-            @AuthenticationPrincipal FarmerPrincipal principal) {
+            @AuthenticationPrincipal FarmerPrincipal principal,
+            @RequestParam(name = "farmerId", required = false) Long paramFarmerId) {
 
-        List<BookingResponse> response = bookingService.getBookingsByFarmer(principal.getId());
+        if (principal == null && paramFarmerId == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Authentication is required to view farmer bookings.");
+        }
+
+        Long targetFarmerId = (principal != null) ? principal.getId() : paramFarmerId;
+        if (principal != null && paramFarmerId != null && !paramFarmerId.equals(principal.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view another farmer's bookings.");
+        }
+
+        List<BookingResponse> response = bookingService.getBookingsByFarmer(targetFarmerId);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Farmer bookings retrieved successfully", response));
     }
 
-    @PutMapping("/{id}/cancel")
+    @RequestMapping(value = "/{id}/cancel", method = {RequestMethod.PUT, RequestMethod.PATCH})
     public ResponseEntity<ApiResponse<BookingResponse>> cancelBooking(
+            @AuthenticationPrincipal FarmerPrincipal principal,
             @PathVariable Long id) {
 
-        BookingResponse response = bookingService.cancelBooking(id);
+        Long requestingFarmerId = principal != null ? principal.getId() : null;
+        BookingResponse response = bookingService.cancelBooking(id, requestingFarmerId);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Booking cancelled successfully", response));

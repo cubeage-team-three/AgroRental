@@ -16,13 +16,24 @@ export const getStoredUser = () => {
 };
 
 export const getAuthToken = () => {
-  return localStorage.getItem('accessToken') || localStorage.getItem('agro_token');
+  try {
+    const storedUserStr = localStorage.getItem('agro_user');
+    if (storedUserStr) {
+      const parsedUser = JSON.parse(storedUserStr);
+      if (parsedUser?.token || parsedUser?.accessToken) {
+        return parsedUser.token || parsedUser.accessToken;
+      }
+    }
+  } catch (e) {
+    // Ignore JSON parse errors
+  }
+  return localStorage.getItem('agro_token') || localStorage.getItem('accessToken');
 };
 
 export const setAuthToken = (token) => {
   if (token) {
-    localStorage.setItem('accessToken', token);
     localStorage.setItem('agro_token', token);
+    localStorage.setItem('accessToken', token);
   }
 };
 

@@ -13,6 +13,7 @@ import com.agrorental.equipment.service.EquipmentService;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -78,6 +82,11 @@ class EquipmentServiceTest {
                 .isDisabled(false)
                 .build();
         equipmentA.setId(10L);
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -265,5 +274,67 @@ class EquipmentServiceTest {
 
         verify(equipmentRepository).findAll(any(Specification.class));
         verify(equipmentMapper).toSummaryResponse(equipmentA);
+    }
+
+    @Test
+    @DisplayName("Should allow Admin to enable equipment without partner ID check")
+    void shouldAllowAdminToEnableEquipmentWithoutPartnerCheck() {
+        equipmentA.setIsDisabled(true);
+        EquipmentResponse response = EquipmentResponse.builder().id(10L).isDisabled(false).build();
+
+        when(equipmentRepository.findById(10L)).thenReturn(Optional.of(equipmentA));
+        when(equipmentRepository.save(equipmentA)).thenReturn(equipmentA);
+        when(equipmentMapper.toResponse(equipmentA)).thenReturn(response);
+
+        EquipmentResponse result = equipmentService.enableEquipment(10L);
+
+        assertFalse(equipmentA.getIsDisabled());
+        assertFalse(result.getIsDisabled());
+        verify(equipmentRepository).save(equipmentA);
+    }
+
+    @Test
+    @DisplayName("Should allow Admin to disable equipment without partner ID check")
+    void shouldAllowAdminToDisableEquipmentWithoutPartnerCheck() {
+        EquipmentResponse response = EquipmentResponse.builder().id(10L).isDisabled(true).build();
+
+        when(equipmentRepository.findById(10L)).thenReturn(Optional.of(equipmentA));
+        when(equipmentRepository.save(equipmentA)).thenReturn(equipmentA);
+        when(equipmentMapper.toResponse(equipmentA)).thenReturn(response);
+
+        EquipmentResponse result = equipmentService.disableEquipment(10L);
+
+        assertTrue(equipmentA.getIsDisabled());
+        assertTrue(result.getIsDisabled());
+        verify(equipmentRepository).save(equipmentA);
+    }
+
+    @Test
+    @DisplayName("Should allow Admin to delete equipment without partner ID check")
+    void shouldAllowAdminToDeleteEquipmentWithoutPartnerCheck() {
+        when(equipmentRepository.findById(10L)).thenReturn(Optional.of(equipmentA));
+        doNothing().when(equipmentRepository).delete(equipmentA);
+
+        assertDoesNotThrow(() -> equipmentService.deleteEquipment(10L));
+        verify(equipmentRepository).delete(equipmentA);
+    }
+
+    @Test
+    @DisplayName("Should allow Admin to bypass partner ownership validation when SecurityContext has ROLE_ADMIN")
+    void shouldAllowAdminToBypassOwnershipWhenContextHasRoleAdmin() {
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                "ADMIN_1", null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+
+        EquipmentResponse response = EquipmentResponse.builder().id(10L).isDisabled(true).build();
+        when(equipmentRepository.findById(10L)).thenReturn(Optional.of(equipmentA));
+        when(equipmentRepository.save(equipmentA)).thenReturn(equipmentA);
+        when(equipmentMapper.toResponse(equipmentA)).thenReturn(response);
+
+        // Partner ID 999 does NOT match equipmentA's partner ID 1, but user is Admin
+        EquipmentResponse result = equipmentService.disableEquipment(10L, 999L);
+
+        assertNotNull(result);
+        assertTrue(equipmentA.getIsDisabled());
+        verify(equipmentRepository).save(equipmentA);
     }
 }

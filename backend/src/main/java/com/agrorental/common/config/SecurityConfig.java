@@ -71,28 +71,33 @@ public class SecurityConfig {
                         // Shared / genuinely public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         // Farmer: registration + OTP are public; farms, profile, dashboard, and management require authentication
                         .requestMatchers(HttpMethod.POST, "/api/farmers/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/farmers/send-otp", "/api/farmers/verify-otp", "/api/farmers/resend-otp").permitAll()
-                        .requestMatchers("/api/farmers/**").hasRole("FARMER")
+                        .requestMatchers("/api/farmers", "/api/farmers/**", "/api/farmers/farms", "/api/farmers/farms/**").hasRole("FARMER")
+
                         // Partner: registration + OTP are public; Admin manages partners & KYC; Partner manages own profile/dashboard
-                        // Partner: registration + OTP are public; KYC approval and the full partner
-                        // listing are admin actions, not partner self-service
                         .requestMatchers(HttpMethod.POST, "/api/partners/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/partners/*/otp/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/partners", "/api/partners/").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/partners/*/kyc/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/partners/*/dashboard").hasAnyRole("ADMIN", "PARTNER")
                         .requestMatchers(HttpMethod.GET, "/api/partners/*").hasAnyRole("ADMIN", "PARTNER")
-                        .requestMatchers(HttpMethod.GET, "/api/partners").hasRole("ADMIN")
                         .requestMatchers("/api/partners/**").hasRole("PARTNER")
-                        // Equipment: browsing/search is public, listing management is partner-only
-                        .requestMatchers(HttpMethod.GET, "/api/equipment/**").permitAll()
-                        .requestMatchers("/api/equipment/**").hasRole("PARTNER")
+
+                        // Equipment: browsing/search is public, creation is partner-only, mutations allow partner and admin
+                        .requestMatchers(HttpMethod.GET, "/api/equipment", "/api/equipment/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/equipment").hasRole("PARTNER")
+                        .requestMatchers("/api/equipment", "/api/equipment/**").hasAnyRole("PARTNER", "ADMIN")
+                        // Image Uploads: static file retrieval is public, uploading requires PARTNER role
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers("/api/upload/**").hasRole("PARTNER")
                         // Bookings: role-specific views and actions, ownership resolved from the JWT in-controller
                         .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("FARMER")
                         .requestMatchers(HttpMethod.GET, "/api/bookings/farmer/**").hasRole("FARMER")
-                        .requestMatchers(HttpMethod.GET, "/api/bookings/partner/**").hasRole("PARTNER")
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/partner/**").hasAnyRole("ADMIN", "PARTNER")
                         .requestMatchers(HttpMethod.GET, "/api/bookings/operator/**").hasRole("OPERATOR")
                         .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/cancel").hasRole("FARMER")
                         .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/accept", "/api/bookings/*/reject", "/api/bookings/*/assign-operator").hasRole("PARTNER")

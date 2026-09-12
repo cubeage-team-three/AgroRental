@@ -230,7 +230,7 @@ public class PartnerService {
             if (avg != null && avg > 0) {
                 customerRatings = BigDecimal.valueOf(avg).setScale(1, RoundingMode.HALF_UP).doubleValue();
             } else {
-                customerRatings = 4.9;
+                customerRatings = 0.0;
             }
         }
 

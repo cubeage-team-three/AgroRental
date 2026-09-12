@@ -8,12 +8,27 @@ export async function request(endpoint, options = {}) {
   const cleanEndpoint = endpoint.startsWith('/api') ? endpoint.substring(4) : endpoint;
   const url = `${API_BASE_URL}${cleanEndpoint}`;
 
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-  };
+  const defaultHeaders = {};
+  if (!(options.body instanceof FormData)) {
+    defaultHeaders['Content-Type'] = 'application/json';
+  }
 
-  // Automatically attach Bearer token if present
-  const token = localStorage.getItem('accessToken') || localStorage.getItem('agro_token');
+  // Automatically attach Bearer token belonging to the current active session
+  let token = null;
+  try {
+    const storedUserStr = localStorage.getItem('agro_user');
+    if (storedUserStr) {
+      const parsedUser = JSON.parse(storedUserStr);
+      token = parsedUser?.token || parsedUser?.accessToken || null;
+    }
+  } catch (e) {
+    // Ignore JSON parse error
+  }
+  if (!token) {
+    token = localStorage.getItem('agro_token') || localStorage.getItem('accessToken');
+  }
+
+
   if (token) {
     defaultHeaders['Authorization'] = `Bearer ${token}`;
   }

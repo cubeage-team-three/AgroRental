@@ -17,22 +17,36 @@ export const resendOtp = async (mobileNumber) => {
 };
 
 export const getFarmerProfile = async (farmerId) => {
-  const targetId = farmerId || 1;
-  return await apiRequest(`/farmers/profile/${targetId}`, 'GET');
+  if (farmerId) {
+    return await apiRequest(`/farmers/profile/${farmerId}`, 'GET');
+  }
+  return await apiRequest('/farmers/profile', 'GET');
 };
 
 export const updateFarmerProfile = async (farmerId, profileData) => {
-  const targetId = farmerId || 1;
-  return await apiRequest(`/farmers/profile/${targetId}`, 'PUT', profileData);
+  if (farmerId) {
+    return await apiRequest(`/farmers/profile/${farmerId}`, 'PUT', profileData);
+  }
+  return await apiRequest('/farmers/profile', 'PUT', profileData);
 };
 
 export const changeFarmerPassword = async (farmerId, passwordData) => {
-  const targetId = farmerId || 1;
-  return await apiRequest(`/farmers/change-password/${targetId}`, 'PUT', passwordData);
+  if (farmerId) {
+    return await apiRequest(`/farmers/change-password/${farmerId}`, 'PUT', passwordData);
+  }
+  return await apiRequest('/farmers/change-password', 'PUT', passwordData);
+};
+
+export const uploadFarmerAvatar = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return await apiRequest('/farmers/profile/avatar', 'POST', formData);
 };
 
 export const getFarmerDashboard = async (farmerId) => {
-  const targetId = farmerId || 1;
-  return await apiRequest(`/farmers/dashboard?farmerId=${targetId}`, 'GET');
+  if (farmerId) {
+    return await apiRequest(`/farmers/dashboard?farmerId=${farmerId}`, 'GET');
+  }
+  return await apiRequest('/farmers/dashboard', 'GET');
 };
 

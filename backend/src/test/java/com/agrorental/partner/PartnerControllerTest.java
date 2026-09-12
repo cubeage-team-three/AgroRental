@@ -8,6 +8,8 @@ import com.agrorental.partner.dto.PartnerProfileResponse;
 import com.agrorental.partner.dto.PartnerProfileUpdateRequest;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.service.PartnerService;
+import com.agrorental.security.principal.PartnerPrincipal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -49,6 +53,17 @@ class PartnerControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
 
+        // Set up security context with PartnerPrincipal for partner ID 1
+        PartnerPrincipal principal = PartnerPrincipal.builder()
+                .id(1L)
+                .mobileNumber("9876543210")
+                .fullName("Rajesh Patel")
+                .role("PARTNER")
+                .build();
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
         testProfile = PartnerProfileResponse.builder()
                 .id(1L)
                 .fullName("Rajesh Patel")
@@ -59,6 +74,11 @@ class PartnerControllerTest {
                 .verificationStatus(Partner.VerificationStatus.APPROVED)
                 .active(true)
                 .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -92,13 +112,13 @@ class PartnerControllerTest {
     @Test
     @DisplayName("GET /api/partners/{id} - Should return 404 when partner not found")
     void shouldReturn404WhenPartnerNotFound() throws Exception {
-        when(partnerService.getPartnerProfile(99L))
-                .thenThrow(new ResourceNotFoundException("Partner profile not found with ID: 99"));
+        when(partnerService.getPartnerProfile(1L))
+                .thenThrow(new ResourceNotFoundException("Partner profile not found with ID: 1"));
 
-        mockMvc.perform(get("/api/partners/99"))
+        mockMvc.perform(get("/api/partners/1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Partner profile not found with ID: 99"));
+                .andExpect(jsonPath("$.message").value("Partner profile not found with ID: 1"));
     }
 
     @Test

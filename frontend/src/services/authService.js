@@ -15,8 +15,16 @@ export const saveUserSession = (userData) => {
     : userData;
 
   if (payload) {
-    if (payload.token) {
-      localStorage.setItem('agro_token', payload.token);
+    localStorage.removeItem('agro_token');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('agro_user');
+    localStorage.removeItem('partnerId');
+    localStorage.removeItem('farmerId');
+    localStorage.removeItem('operatorId');
+    const sessionToken = payload.token || payload.accessToken;
+    if (sessionToken) {
+      localStorage.setItem('agro_token', sessionToken);
+      localStorage.setItem('accessToken', sessionToken);
     }
     localStorage.setItem('agro_user', JSON.stringify(payload));
     if (payload.partnerId) {
@@ -58,7 +66,7 @@ export const getFarmerId = () => {
     if (user.role === 'FARMER' && user.id) return user.id;
   }
   const storedId = localStorage.getItem('farmerId');
-  return storedId ? Number(storedId) : 1;
+  return storedId ? Number(storedId) : null;
 };
 
 export const getOperatorId = () => {
@@ -67,7 +75,7 @@ export const getOperatorId = () => {
     return user.operatorId;
   }
   const storedId = localStorage.getItem('operatorId');
-  return storedId ? Number(storedId) : 1;
+  return storedId ? Number(storedId) : null;
 };
 
 export const logoutUser = () => {

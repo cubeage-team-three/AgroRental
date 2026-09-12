@@ -10,6 +10,11 @@ import com.agrorental.partner.dto.PartnerRegistrationRequest;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.service.PartnerService;
 
+import com.agrorental.security.principal.PartnerPrincipal;
+import com.agrorental.common.exception.ForbiddenException;
+import com.agrorental.common.exception.UnauthorizedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.List;
 
 import jakarta.validation.Valid;
@@ -40,6 +45,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class PartnerController {
 
     private final PartnerService partnerService;
+
+    private void validatePartnerOwnership(Long id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("Full authentication is required to access this resource");
+        }
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            return;
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof PartnerPrincipal partnerPrincipal) {
+            if (partnerPrincipal.getId().equals(id)) {
+                return;
+            }
+        }
+
+        throw new ForbiddenException("Access is denied. You do not have the required permissions.");
+    }
 
     // =========================
     // PARTNER REGISTRATION
@@ -90,6 +118,7 @@ public class PartnerController {
     public ResponseEntity<ApiResponse<PartnerProfileResponse>> getPartnerProfile(
             @PathVariable Long id) {
 
+        validatePartnerOwnership(id);
         log.info("Fetching partner profile for ID: {}", id);
 
         PartnerProfileResponse response =
@@ -112,6 +141,7 @@ public class PartnerController {
             @PathVariable Long id,
             @Valid @RequestBody PartnerProfileUpdateRequest request) {
 
+        validatePartnerOwnership(id);
         log.info("Updating partner profile for ID: {}", id);
 
         PartnerProfileResponse response =
@@ -134,6 +164,7 @@ public class PartnerController {
             @PathVariable Long id,
             @Valid @RequestBody PartnerChangePasswordRequest request) {
 
+        validatePartnerOwnership(id);
         log.info("Updating password for partner ID: {}", id);
 
         partnerService.changePartnerPassword(id, request);
@@ -154,6 +185,7 @@ public class PartnerController {
     public ResponseEntity<ApiResponse<PartnerDashboardResponse>> getPartnerDashboard(
             @PathVariable Long id) {
 
+        validatePartnerOwnership(id);
         log.info("Fetching partner dashboard metrics for ID: {}", id);
 
         return partnerService.getPartnerDashboard(id)
