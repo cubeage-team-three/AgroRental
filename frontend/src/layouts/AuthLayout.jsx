@@ -4,6 +4,7 @@ import heroGoldenHour from "../assets/images/hero-golden-hour.jpg";
 import farmerImage from "../assets/images/ModuleService Images/Farmer.jpeg";
 import equipmentOwnerImage from "../assets/images/ModuleService Images/Equipment Owner.jpeg";
 import operatorImage from "../assets/images/ModuleService Images/Operator.jpeg";
+import agroRentLogo from "../assets/images/agrorent-logo.jpeg";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -46,6 +47,30 @@ const HERO_CONTENT = {
     ),
     subtext: "Join 12,000+ verified operators earning steady income with live job alerts and fast payouts.",
   },
+  "/login/operator": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Welcome Back,
+        <br />
+        Equipment Operator.
+      </>
+    ),
+    subtext: "Sign in to access your deployed field jobs, machinery schedules, and earnings.",
+  },
+  "/operator/login": {
+    image: operatorImage,
+    alt: "Verified AgroRent equipment operator",
+    headline: (
+      <>
+        Welcome Back,
+        <br />
+        Equipment Operator.
+      </>
+    ),
+    subtext: "Sign in to access your deployed field jobs, machinery schedules, and earnings.",
+  },
 };
 
 const DEFAULT_HERO = {
@@ -84,11 +109,14 @@ function AuthLayout() {
         <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/95 via-emerald-950/35 to-emerald-950/10 lg:via-emerald-950/25" />
         <div className="absolute inset-0 hidden bg-gradient-to-r from-transparent via-transparent to-emerald-950/20 lg:block" />
 
-        <Link to="/" className="absolute left-6 top-6 z-10 flex items-center gap-2 sm:left-8 sm:top-8">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-lime-400 text-base font-bold text-emerald-950 shadow-lg">
-            🌱
+        <Link to="/" className="absolute left-6 top-6 z-10 flex items-center gap-2 sm:left-8 sm:top-8 group">
+          <span className="flex items-center overflow-hidden rounded-xl bg-white px-2.5 shadow-sm ring-1 ring-slate-900/5 transition-all duration-300 ease-out h-10 sm:h-11">
+            <img
+              src={agroRentLogo}
+              alt="AgroRent — Agriculture Service Marketplace"
+              className="h-[175%] w-auto max-w-none object-contain"
+            />
           </span>
-          <span className="font-display text-lg font-bold text-white drop-shadow-md">AgroRent</span>
         </Link>
 
         <div className="absolute inset-x-0 bottom-0 z-10 p-6 sm:p-8 lg:p-12 xl:p-16">

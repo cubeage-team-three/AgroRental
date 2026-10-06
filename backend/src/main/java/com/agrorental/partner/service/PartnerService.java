@@ -396,8 +396,15 @@ public String resendOtp(Long partnerId) {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public List<PartnerProfileResponse> getAllPartners() {
+        return partnerRepository.findAll().stream()
+                .map(this::toProfileResponse)
+                .toList();
+    }
+
     @Transactional
-public PartnerProfileResponse approvePartnerKyc(Long partnerId) {
+    public PartnerProfileResponse approvePartnerKyc(Long partnerId) {
 
     Partner partner = partnerRepository.findById(partnerId)
             .orElseThrow(() -> new ResourceNotFoundException(
