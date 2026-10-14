@@ -161,17 +161,17 @@ function ManageOperators() {
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 font-sans">
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-2xl bg-[#142E1C] text-[#C1FF72] shadow-xs">
+            <div className="p-2.5 rounded-2xl bg-emerald-50 text-emerald-700 shadow-xs">
               <HardHat className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#142E1C] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Operator Verification & Safety
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 font-medium">
             Review equipment operating credentials, government KYC documentation, and approve verified operators.
           </p>
         </div>
@@ -180,7 +180,7 @@ function ManageOperators() {
           type="button"
           onClick={loadOperators}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition shadow-xs self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs self-start sm:self-auto cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh Data</span>
@@ -201,7 +201,7 @@ function ManageOperators() {
           <button
             type="button"
             onClick={() => setSuccessMessage('')}
-            className="text-emerald-700 hover:text-emerald-950 font-black text-sm"
+            className="text-emerald-700 hover:text-emerald-950 font-black text-sm cursor-pointer"
           >
             ✕
           </button>
@@ -209,16 +209,17 @@ function ManageOperators() {
       )}
 
       {/* Filters and Search Bar */}
-      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-gray-200/70 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Status Tabs */}
         <div className="flex flex-wrap gap-2">
           {[
             { id: 'PENDING', label: 'Pending Review', icon: Clock, color: 'text-amber-700' },
             { id: 'APPROVED', label: 'Approved Operators', icon: CheckCircle2, color: 'text-emerald-700' },
-            { id: 'REJECTED', label: 'Rejected', icon: XCircle, color: 'text-red-700' },
-            { id: 'ALL', label: 'All Operators', icon: Filter, color: 'text-gray-700' },
+            { id: 'REJECTED', label: 'Rejected', icon: 'text-red-700', iconComp: XCircle },
+            { id: 'ALL', label: 'All Operators', icon: Filter, color: 'text-slate-700' },
           ].map((tab) => {
             const active = activeTab === tab.id;
+            const IconComponent = tab.iconComp || tab.icon;
             return (
               <button
                 key={tab.id}
@@ -227,13 +228,13 @@ function ManageOperators() {
                   setActiveTab(tab.id);
                   setPage(0);
                 }}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   active
-                    ? 'bg-[#142E1C] text-white shadow-xs'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                <tab.icon className={`w-3.5 h-3.5 ${active ? 'text-[#C1FF72]' : tab.color}`} />
+                <IconComponent className={`w-3.5 h-3.5 ${active ? 'text-lime-300' : tab.color}`} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -242,13 +243,13 @@ function ManageOperators() {
 
         {/* Search Input */}
         <div className="relative min-w-[240px]">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, mobile, skills..."
-            className="w-full pl-10 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#3E7B27] focus:outline-none"
+            className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none"
           />
         </div>
       </div>
@@ -257,8 +258,8 @@ function ManageOperators() {
       <div className="bg-white rounded-3xl border border-gray-200/70 shadow-sm overflow-hidden">
         {loading ? (
           <div className="py-20 text-center space-y-3">
-            <Loader2 className="w-8 h-8 text-[#3E7B27] animate-spin mx-auto" />
-            <p className="text-xs font-bold text-gray-500">Loading Operator Profiles from Server...</p>
+            <Loader2 className="w-8 h-8 text-emerald-700 animate-spin mx-auto" />
+            <p className="text-xs font-bold text-slate-500">Loading Operator Profiles from Server...</p>
           </div>
         ) : error ? (
           <div className="py-16 text-center space-y-3">
@@ -374,7 +375,7 @@ function ManageOperators() {
                       <button
                         type="button"
                         onClick={() => handleOpenReview(op.id)}
-                        className="px-3 py-1.5 bg-[#142E1C] hover:bg-[#0E2013] text-white rounded-xl text-xs font-bold transition shadow-xs inline-flex items-center gap-1"
+                        className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition shadow-xs inline-flex items-center gap-1 cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>Review & Verify</span>
@@ -391,40 +392,40 @@ function ManageOperators() {
       {/* Review & Verification Modal */}
       <AnimatePresence>
         {selectedOperatorId && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 shadow-2xl space-y-6 p-6 sm:p-8 relative"
+              className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 shadow-2xl space-y-6 p-6 sm:p-8 relative"
             >
               {/* Modal Close Button */}
               <button
                 type="button"
                 onClick={handleCloseReview}
-                className="absolute top-5 right-5 text-gray-400 hover:text-gray-700 p-1.5 rounded-xl hover:bg-gray-100 transition"
+                className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
 
               {detailLoading || !operatorDetail ? (
                 <div className="py-16 text-center space-y-3">
-                  <Loader2 className="w-8 h-8 text-[#3E7B27] animate-spin mx-auto" />
-                  <p className="text-xs font-bold text-gray-500">Loading full KYC dossier...</p>
+                  <Loader2 className="w-8 h-8 text-emerald-700 animate-spin mx-auto" />
+                  <p className="text-xs font-bold text-slate-500">Loading full KYC dossier...</p>
                 </div>
               ) : (
                 <>
                   {/* Modal Header */}
-                  <div className="border-b border-gray-100 pb-4 space-y-1">
+                  <div className="border-b border-slate-100 pb-4 space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded-lg">
+                      <span className="font-mono text-xs font-bold text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
                         #OP-{operatorDetail.id}
                       </span>
-                      <h2 className="text-xl font-black text-[#142E1C]">
+                      <h2 className="text-xl font-black text-slate-900">
                         {operatorDetail.fullName}
                       </h2>
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-500">
                       Registered on {new Date(operatorDetail.createdAt).toLocaleDateString('en-IN', {
                         day: 'numeric',
                         month: 'short',
@@ -435,54 +436,54 @@ function ManageOperators() {
 
                   {/* Operator Credentials Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <div className="bg-[#FAF8F5] p-3.5 rounded-2xl border border-amber-100/60 space-y-1">
-                      <span className="text-gray-400 font-bold uppercase text-[10px] block">
+                    <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] block">
                         Contact & Location
                       </span>
-                      <p className="font-bold text-gray-900 flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5 text-gray-500" /> +91 {operatorDetail.mobileNumber}
+                      <p className="font-bold text-slate-900 flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5 text-slate-500" /> +91 {operatorDetail.mobileNumber}
                       </p>
-                      <p className="text-gray-600 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-gray-400" /> {operatorDetail.address || 'Address provided'}
+                      <p className="text-slate-600 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400" /> {operatorDetail.address || 'Address provided'}
                       </p>
                     </div>
 
-                    <div className="bg-[#FAF8F5] p-3.5 rounded-2xl border border-amber-100/60 space-y-1">
-                      <span className="text-gray-400 font-bold uppercase text-[10px] block">
+                    <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] block">
                         Operational Qualifications
                       </span>
-                      <p className="font-bold text-emerald-950">
+                      <p className="font-bold text-emerald-900">
                         {operatorDetail.experience} Years Field Experience
                       </p>
-                      <p className="text-gray-600 truncate">
+                      <p className="text-slate-600 truncate">
                         Skills: {operatorDetail.skills}
                       </p>
                     </div>
                   </div>
 
                   {/* Masked Government KYC Section */}
-                  <div className="border border-gray-200/80 rounded-2xl p-4 space-y-3 bg-[#FDFBF7]">
+                  <div className="border border-slate-200 rounded-2xl p-4 space-y-3 bg-slate-50">
                     <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-[#3E7B27]" />
-                      <h3 className="text-xs font-black uppercase text-[#142E1C] tracking-wider">
+                      <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                      <h3 className="text-xs font-black uppercase text-slate-900 tracking-wider">
                         Masked Government KYC Identifiers
                       </h3>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 text-xs font-mono">
                       <div>
-                        <span className="text-gray-400 font-sans font-bold text-[10px] block">
+                        <span className="text-slate-400 font-sans font-bold text-[10px] block">
                           Aadhaar Number
                         </span>
-                        <span className="font-extrabold text-gray-900">
+                        <span className="font-extrabold text-slate-900">
                           {operatorDetail.maskedAadhaarNumber || 'XXXX-XXXX-XXXX'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-gray-400 font-sans font-bold text-[10px] block">
+                        <span className="text-slate-400 font-sans font-bold text-[10px] block">
                           Driving License Number
                         </span>
-                        <span className="font-extrabold text-gray-900">
+                        <span className="font-extrabold text-slate-900">
                           {operatorDetail.maskedDrivingLicenseNumber || 'DL-XXXX-XXXX'}
                         </span>
                       </div>
@@ -491,7 +492,7 @@ function ManageOperators() {
 
                   {/* Uploaded Documents List */}
                   <div className="space-y-2">
-                    <h3 className="text-xs font-black uppercase text-gray-700 tracking-wider">
+                    <h3 className="text-xs font-black uppercase text-slate-700 tracking-wider">
                       Attached KYC Documents ({operatorDetail.documents?.length || 0})
                     </h3>
 
@@ -500,23 +501,23 @@ function ManageOperators() {
                         {operatorDetail.documents.map((doc) => (
                           <div
                             key={doc.id}
-                            className="p-3 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between text-xs"
+                            className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs"
                           >
                             <div className="flex items-center gap-2.5">
-                              <FileText className="w-4 h-4 text-gray-500" />
+                              <FileText className="w-4 h-4 text-slate-500" />
                               <div>
-                                <span className="font-bold text-gray-900 block">{doc.documentType}</span>
-                                <span className="text-[10px] text-gray-400">{doc.fileName}</span>
+                                <span className="font-bold text-slate-900 block">{doc.documentType}</span>
+                                <span className="text-[10px] text-slate-400">{doc.fileName}</span>
                               </div>
                             </div>
-                            <span className="px-2 py-0.5 bg-gray-200 text-gray-700 text-[10px] font-bold rounded-md">
+                            <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-[10px] font-bold rounded-md">
                               {doc.verificationStatus}
                             </span>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-400 italic bg-gray-50 p-3 rounded-xl">
+                      <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl border border-slate-200">
                         No additional KYC document files attached. Identifiers registered with account.
                       </p>
                     )}
@@ -537,13 +538,13 @@ function ManageOperators() {
                         value={rejectionReason}
                         onChange={(e) => setRejectionReason(e.target.value)}
                         placeholder="e.g. Unclear driving license copy, invalid phone verification, experience mismatch..."
-                        className="w-full p-2.5 bg-white border border-red-200 rounded-xl text-xs font-medium text-gray-900 focus:ring-2 focus:ring-red-400 focus:outline-none"
+                        className="w-full p-2.5 bg-white border border-red-200 rounded-xl text-xs font-medium text-slate-900 focus:ring-2 focus:ring-red-400 focus:outline-none"
                       />
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => setShowRejectBox(false)}
-                          className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg"
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg cursor-pointer"
                         >
                           Cancel
                         </button>
@@ -551,7 +552,7 @@ function ManageOperators() {
                           type="button"
                           disabled={actionLoading}
                           onClick={() => handleVerify('REJECTED')}
-                          className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-lg shadow"
+                          className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-lg shadow cursor-pointer"
                         >
                           {actionLoading ? 'Rejecting...' : 'Confirm Reject ✕'}
                         </button>
@@ -561,11 +562,11 @@ function ManageOperators() {
 
                   {/* Modal Action Controls */}
                   {operatorDetail.status === 'PENDING' && !showRejectBox && (
-                    <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row gap-3 justify-end">
+                    <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-3 justify-end">
                       <button
                         type="button"
                         onClick={() => setShowRejectBox(true)}
-                        className="px-5 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-extrabold rounded-xl border border-red-200 transition"
+                        className="px-5 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-extrabold rounded-xl border border-red-200 transition cursor-pointer"
                       >
                         ✕ Reject Application
                       </button>
@@ -574,7 +575,7 @@ function ManageOperators() {
                         type="button"
                         disabled={actionLoading || !operatorDetail.mobileVerified}
                         onClick={() => handleVerify('APPROVED')}
-                        className="px-6 py-2.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-black rounded-xl shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black rounded-xl shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                       >
                         {actionLoading ? (
                           <>
@@ -592,8 +593,8 @@ function ManageOperators() {
                   )}
 
                   {operatorDetail.status !== 'PENDING' && (
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-center text-xs text-gray-600 font-bold">
-                      This application is already finalized as <span className="uppercase text-gray-900 font-black">{operatorDetail.status}</span>.
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs text-slate-600 font-bold">
+                      This application is already finalized as <span className="uppercase text-slate-900 font-black">{operatorDetail.status}</span>.
                       {operatorDetail.rejectionReason && (
                         <span className="block text-red-700 font-normal mt-1">
                           Reason: {operatorDetail.rejectionReason}

@@ -37,20 +37,23 @@ public class OperatorAuthService {
      * @param request OperatorLoginRequest containing mobile number and raw password.
      * @return OperatorLoginResponse containing JWT token and safe operator identity.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public OperatorLoginResponse login(OperatorLoginRequest request) {
-        String mobile = request.getMobileNumber() != null ? request.getMobileNumber().trim() : "";
+        String rawMobile = request.getMobileNumber() != null ? request.getMobileNumber().trim() : "";
+        String cleanMobile = cleanMobileNumber(rawMobile);
+        String searchMobile = (cleanMobile != null && cleanMobile.length() == 10) ? cleanMobile : rawMobile;
         log.info("Processing operator login attempt for mobile: [PROTECTED]");
 
         // 1. Find operator by mobile number
-        Operator operator = operatorRepository.findByMobileNumber(mobile)
+        Operator operator = operatorRepository.findByMobileNumber(searchMobile)
+                .or(() -> operatorRepository.findByMobileNumber(rawMobile))
                 .orElseThrow(() -> {
                     log.warn("Operator login failed: Mobile number not registered");
                     return new UnauthorizedException("Invalid mobile number or password");
                 });
 
-        // 2. Validate password via BCrypt PasswordEncoder
-        if (operator.getPassword() == null || !passwordEncoder.matches(request.getPassword(), operator.getPassword())) {
+        // 2. Validate password via BCrypt PasswordEncoder with safe legacy compatibility
+        if (!verifyOperatorPassword(request.getPassword(), operator)) {
             log.warn("Operator login failed for operator ID {}: Password mismatch", operator.getId());
             throw new UnauthorizedException("Invalid mobile number or password");
         }
@@ -123,5 +126,63 @@ public class OperatorAuthService {
         }
 
         return operatorMapper.toAuthenticatedResponse(operator);
+    }
+
+    private static final java.util.regex.Pattern BCRYPT_PATTERN =
+            java.util.regex.Pattern.compile("^\\$2[aby]\\$\\d{2}\\$[./A-Za-z0-9]{53}$");
+
+    private String cleanMobileNumber(String input) {
+        if (input == null || input.contains("@")) {
+            return null;
+        }
+        String digits = input.replaceAll("\\D", "");
+        if (digits.length() == 10) {
+            return digits;
+        }
+        if (digits.length() == 12 && digits.startsWith("91")) {
+            return digits.substring(2);
+        }
+        if (digits.length() == 11 && digits.startsWith("0")) {
+            return digits.substring(1);
+        }
+        return null;
+    }
+
+    private boolean verifyOperatorPassword(String rawPassword, Operator operator) {
+        if (rawPassword == null || rawPassword.isEmpty() || operator.getPassword() == null) {
+            return false;
+        }
+
+        String storedPassword = operator.getPassword();
+
+        // 1. Primary check: Use BCrypt PasswordEncoder
+        if (passwordEncoder.matches(rawPassword, storedPassword)) {
+            return true;
+        }
+
+        // 1b. Check trimmed password if leading/trailing whitespace was accidentally passed
+        if (!rawPassword.equals(rawPassword.trim()) && passwordEncoder.matches(rawPassword.trim(), storedPassword)) {
+            return true;
+        }
+
+        // 2. Safe legacy check: ONLY if stored password is NOT a BCrypt hash
+        if (!BCRYPT_PATTERN.matcher(storedPassword).matches()) {
+            boolean legacyMatches = java.security.MessageDigest.isEqual(
+                    storedPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    rawPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+            ) || (!rawPassword.equals(rawPassword.trim()) && java.security.MessageDigest.isEqual(
+                    storedPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    rawPassword.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8)
+            ));
+
+            if (legacyMatches) {
+                log.info("Safely upgrading legacy unhashed password to BCrypt hash for Operator ID: {}", operator.getId());
+                operator.setPassword(passwordEncoder.encode(rawPassword.trim()));
+                operatorRepository.save(operator);
+                return true;
+            }
+        }
+
+        return false;
     }
 }

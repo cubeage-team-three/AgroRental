@@ -10,34 +10,19 @@ export const bookingService = {
    * @returns {Promise<Object>} Created BookingResponse payload
    */
   createBooking: async (bookingData) => {
-    try {
-      return await request('/bookings', {
-        method: 'POST',
-        body: JSON.stringify(bookingData),
-      });
-    } catch {
-      return await request('/farmers/bookings', {
-        method: 'POST',
-        body: JSON.stringify(bookingData),
-      });
-    }
+    return await request('/bookings', {
+      method: 'POST',
+      body: JSON.stringify(bookingData),
+    });
   },
 
   getBookingById: async (id) => {
-    try {
-      return await request(`/bookings/${id}`);
-    } catch {
-      return await request(`/farmers/bookings/${id}`);
-    }
+    return await request(`/bookings/${id}`);
   },
 
   getBookingsByFarmer: async (farmerId) => {
     if (!farmerId) return [];
-    try {
-      return await request(`/bookings/farmer/${farmerId}`);
-    } catch {
-      return await request(`/farmers/bookings?farmerId=${farmerId}`);
-    }
+    return await request(`/bookings/farmer/${farmerId}`);
   },
 
   getBookingsByPartner: async (partnerId) => {
@@ -51,15 +36,9 @@ export const bookingService = {
   },
 
   cancelBooking: async (id) => {
-    try {
-      return await request(`/bookings/${id}/cancel`, {
-        method: 'PATCH',
-      });
-    } catch {
-      return await request(`/farmers/bookings/${id}/cancel`, {
-        method: 'PUT',
-      });
-    }
+    return await request(`/bookings/${id}/cancel`, {
+      method: 'PATCH',
+    });
   },
 
   /**

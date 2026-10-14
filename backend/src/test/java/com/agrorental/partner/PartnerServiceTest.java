@@ -100,7 +100,15 @@ class PartnerServiceTest {
         assertThat(registered.getId()).isEqualTo(1L);
         assertThat(registered.getFullName()).isEqualTo("Rajesh Patel");
 
-        verify(partnerRepository).save(any(Partner.class));
+        org.mockito.ArgumentCaptor<Partner> partnerCaptor = org.mockito.ArgumentCaptor.forClass(Partner.class);
+        verify(partnerRepository).save(partnerCaptor.capture());
+        Partner capturedPartner = partnerCaptor.getValue();
+        assertThat(capturedPartner.getVerificationStatus()).isEqualTo(Partner.VerificationStatus.PENDING);
+        assertThat(capturedPartner.isOtpVerified()).isFalse();
+        assertThat(capturedPartner.getFullName()).isEqualTo("Rajesh Patel");
+        assertThat(capturedPartner.getMobileNumber()).isEqualTo("9876543210");
+        assertThat(capturedPartner.getEmail()).isEqualTo("rajesh.patel@example.com");
+        assertThat(capturedPartner.getPassword()).isEqualTo("encoded_secret_pass");
     }
 
     @Test
@@ -299,7 +307,7 @@ class PartnerServiceTest {
     void shouldVerifyOtp() {
 
         testPartner.setOtpVerified(false);
-        testPartner.setOtpCode("123456");
+        testPartner.setOtpCode("654321");
         testPartner.setOtpExpiry(
                 LocalDateTime.now().plusMinutes(5)
         );
@@ -311,7 +319,7 @@ class PartnerServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         PartnerProfileResponse response =
-                partnerService.verifyOtp(1L, "123456");
+                partnerService.verifyOtp(1L, "654321");
 
         assertThat(response).isNotNull();
 
@@ -339,7 +347,7 @@ class PartnerServiceTest {
     void shouldRejectInvalidOtp() {
 
         testPartner.setOtpVerified(false);
-        testPartner.setOtpCode("123456");
+        testPartner.setOtpCode("654321");
         testPartner.setOtpExpiry(
                 LocalDateTime.now().plusMinutes(5)
         );
@@ -362,7 +370,7 @@ class PartnerServiceTest {
     void shouldRejectExpiredOtp() {
 
         testPartner.setOtpVerified(false);
-        testPartner.setOtpCode("123456");
+        testPartner.setOtpCode("654321");
         testPartner.setOtpExpiry(
                 LocalDateTime.now().minusMinutes(1)
         );
@@ -371,7 +379,7 @@ class PartnerServiceTest {
                 .thenReturn(Optional.of(testPartner));
 
         assertThatThrownBy(() ->
-                partnerService.verifyOtp(1L, "123456"))
+                partnerService.verifyOtp(1L, "654321"))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("OTP has expired");
     }

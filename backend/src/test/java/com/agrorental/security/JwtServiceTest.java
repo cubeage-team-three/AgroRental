@@ -87,4 +87,21 @@ class JwtServiceTest {
         assertNull(jwtService.extractRole("malformed-token"));
         assertNull(jwtService.extractMobileNumber("malformed-token"));
     }
+
+    @Test
+    @DisplayName("Should generate and validate tokens across all platform roles using explicitly configured secret")
+    void testTokensForAllRolesWithExplicitSecret() {
+        assertDoesNotThrow(jwtProperties::validateSecret);
+
+        String[] roles = {"FARMER", "PARTNER", "OPERATOR", "ADMIN"};
+        for (long id = 1; id <= roles.length; id++) {
+            String role = roles[(int) (id - 1)];
+            String token = jwtService.generateToken(id, role, "987650000" + id, new HashMap<>());
+
+            assertTrue(jwtService.validateToken(token), "Token must validate for role: " + role);
+            assertEquals(id, jwtService.extractUserId(token));
+            assertEquals(role, jwtService.extractRole(token));
+            assertEquals("987650000" + id, jwtService.extractMobileNumber(token));
+        }
+    }
 }

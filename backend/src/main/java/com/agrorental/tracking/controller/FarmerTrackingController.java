@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/farmers/bookings")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class FarmerTrackingController {
 
     private final LiveTrackingService liveTrackingService;

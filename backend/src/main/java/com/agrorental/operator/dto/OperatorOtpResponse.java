@@ -25,4 +25,5 @@ public class OperatorOtpResponse {
     private LocalDateTime expiresAt;
     private Integer attemptsRemaining;
     private String devMockOtp;
+    private String resetToken;
 }

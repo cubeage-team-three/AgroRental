@@ -54,26 +54,33 @@ function CheckoutPayment() {
   }, [id]);
 
   const calculateSubtotal = () => {
-    const total = booking?.totalCost ? Number(booking.totalCost) : 1500;
+    const total = booking?.totalCost ? Number(booking.totalCost) : 0;
     return (total * 0.82).toFixed(2);
   };
 
   const calculateGST = () => {
-    const total = booking?.totalCost ? Number(booking.totalCost) : 1500;
+    const total = booking?.totalCost ? Number(booking.totalCost) : 0;
     return (total - Number(calculateSubtotal())).toFixed(2);
   };
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
 
+    if (!booking || booking.totalCost == null || Number(booking.totalCost) <= 0) {
+      setError('Authoritative booking total cost could not be retrieved from reservation. Please reload or contact support.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
 
+      const authoritativeAmount = Number(booking.totalCost);
+
       const payload = {
         bookingId: Number(id),
         farmerId: Number(farmerId),
-        amount: booking?.totalCost ? Number(booking.totalCost) : 1500,
+        amount: authoritativeAmount,
         paymentMethod: paymentMethod,
         paymentDetails: paymentMethod === 'UPI' ? upiId : `Card ending in ${cardNumber.slice(-4)}`,
       };
@@ -243,7 +250,7 @@ function CheckoutPayment() {
               </div>
               <div className="border-t border-slate-200 pt-3 flex justify-between text-lg font-bold text-slate-900">
                 <span>Total Amount:</span>
-                <span className="text-emerald-700">₹{booking?.totalCost || 1500}</span>
+                <span className="text-emerald-700">₹{booking?.totalCost != null ? Number(booking.totalCost).toFixed(2) : '0.00'}</span>
               </div>
             </div>
 
@@ -360,8 +367,8 @@ function CheckoutPayment() {
               {/* Action Button */}
               <button
                 type="submit"
-                disabled={submitting}
-                className="w-full rounded-xl bg-emerald-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={submitting || !booking?.totalCost || Number(booking.totalCost) <= 0}
+                className="w-full rounded-xl bg-emerald-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {submitting ? (
                   <>
@@ -371,7 +378,7 @@ function CheckoutPayment() {
                 ) : (
                   <>
                     <ShieldCheck className="h-5 w-5" />
-                    <span>Pay ₹{booking?.totalCost || 1500} & Confirm Booking</span>
+                    <span>Pay ₹{booking?.totalCost != null ? Number(booking.totalCost).toFixed(2) : '0.00'} & Confirm Booking</span>
                   </>
                 )}
               </button>

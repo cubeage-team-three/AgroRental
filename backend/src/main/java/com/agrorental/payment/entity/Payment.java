@@ -8,7 +8,14 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "payments")
+@Table(
+        name = "payments",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_payments_booking_id", columnNames = "booking_id"),
+                @UniqueConstraint(name = "uk_payments_transaction_id", columnNames = "transaction_id"),
+                @UniqueConstraint(name = "uk_payments_invoice_reference", columnNames = "invoice_reference")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,7 +23,7 @@ import java.time.LocalDateTime;
 @Builder
 public class Payment extends BaseEntity {
 
-    @Column(name = "booking_id", nullable = false)
+    @Column(name = "booking_id", nullable = false, unique = true)
     private Long bookingId;
 
     @Column(name = "farmer_id", nullable = false)

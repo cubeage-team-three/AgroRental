@@ -13,7 +13,6 @@ public class BookingCreateRequest {
     @NotNull(message = "Equipment ID is mandatory")
     private Long equipmentId;
 
-    @NotNull(message = "Farmer ID is mandatory")
     private Long farmerId;
 
     private Long farmId;

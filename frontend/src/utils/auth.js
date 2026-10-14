@@ -57,8 +57,9 @@ export const isOperator = () => {
 
 export const getOperatorId = () => {
   const user = getCurrentUser();
-  if (user && user.id && user.role === 'OPERATOR') {
-    return user.id;
+  if (user) {
+    if (user.operatorId) return user.operatorId;
+    if (user.id && user.role === 'OPERATOR') return user.id;
   }
   const stored = localStorage.getItem('operatorId');
   return stored ? Number(stored) : null;

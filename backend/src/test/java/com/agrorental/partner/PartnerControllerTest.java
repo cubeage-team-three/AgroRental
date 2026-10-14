@@ -228,24 +228,24 @@ class PartnerControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/partners/{id}/otp/send - Should return 200 OK with OTP")
+    @DisplayName("POST /api/partners/{id}/otp/send - Should return 200 OK with OTP sent message")
     void shouldSendOtp() throws Exception {
-        when(partnerService.sendOtp(1L)).thenReturn("123456");
+        when(partnerService.sendOtp(1L)).thenReturn("654321");
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/partners/1/otp/send"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").value("123456"));
+                .andExpect(jsonPath("$.data").value("OTP sent to registered mobile number"));
     }
 
     @Test
     @DisplayName("POST /api/partners/{id}/otp/verify - Should return 200 OK on successful verification")
     void shouldVerifyOtp() throws Exception {
-        when(partnerService.verifyOtp(eq(1L), eq("123456"))).thenReturn(testProfile);
+        when(partnerService.verifyOtp(eq(1L), eq("654321"))).thenReturn(testProfile);
 
         String jsonPayload = """
                 {
-                    "otp": "123456"
+                    "otp": "654321"
                 }
                 """;
 
@@ -265,7 +265,7 @@ class PartnerControllerTest {
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/partners/1/otp/resend"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").value("654321"));
+                .andExpect(jsonPath("$.data").value("OTP resent to registered mobile number"));
     }
 
     @Test

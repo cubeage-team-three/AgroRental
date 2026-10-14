@@ -126,20 +126,20 @@ function AssignOperator() {
     <div className="max-w-6xl mx-auto space-y-6 font-sans">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Link
               to="/partner/bookings"
-              className="p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors shadow-2xs"
+              className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#142E1C] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Assign Certified Machine Operator
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500">
+          <p className="text-xs sm:text-sm text-slate-500">
             {booking
               ? `Assigning operator for Booking #${booking.id} (${booking.equipmentName || 'Equipment'})`
               : `Select an experienced driver or machinery operator for Booking #${id || ''}.`}
@@ -152,7 +152,7 @@ function AssignOperator() {
             loadBookingAndAssignment();
             loadEligibleOperators();
           }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors shadow-2xs self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
@@ -172,7 +172,7 @@ function AssignOperator() {
           <div className="pt-2">
             <Link
               to="/partner/bookings"
-              className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
+              className="inline-flex items-center justify-center px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
             >
               Back to Bookings
             </Link>
@@ -182,26 +182,26 @@ function AssignOperator() {
 
       {/* Current Active Assignment Banner */}
       {currentAssignment && (
-        <div className="p-5 bg-[#F0EFE9] border border-gray-200 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div className="p-5 bg-slate-50 border border-slate-200 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-3">
-            <span className="p-2.5 rounded-2xl bg-emerald-600 text-white font-black text-xs">
+            <span className="p-2.5 rounded-2xl bg-emerald-700 text-white font-black text-xs">
               <HardHat className="w-5 h-5" />
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="text-sm font-extrabold text-gray-900">
+                <h4 className="text-sm font-extrabold text-slate-900">
                   Assigned Operator: {currentAssignment.operatorName}
                 </h4>
                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
                   {currentAssignment.assignmentStatus}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Contact: {currentAssignment.operatorMobile} • Assigned on {new Date(currentAssignment.assignedAt).toLocaleDateString()} by {currentAssignment.assignedBy}
               </p>
             </div>
           </div>
-          <span className="text-xs font-bold text-[#3E7B27] bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 self-start sm:self-auto">
+          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 self-start sm:self-auto">
             Active Assignment
           </span>
         </div>
@@ -217,7 +217,7 @@ function AssignOperator() {
           <button
             type="button"
             onClick={() => setError(null)}
-            className="text-xs font-bold text-red-800 underline"
+            className="text-xs font-bold text-red-800 underline cursor-pointer"
           >
             Dismiss
           </button>
@@ -225,15 +225,15 @@ function AssignOperator() {
       )}
 
       {/* Search Bar */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200">
         <div className="relative w-full">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search eligible operators by name, skills (e.g. Tractor, Harvester), mobile number, or district..."
-            className="w-full pl-10 pr-4 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
           />
         </div>
       </div>
@@ -242,21 +242,21 @@ function AssignOperator() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((idx) => (
-            <div key={idx} className="bg-white rounded-3xl p-6 space-y-3 animate-pulse border border-gray-100">
-              <div className="w-12 h-12 bg-gray-200 rounded-2xl" />
-              <div className="h-5 bg-gray-200 rounded w-3/4" />
-              <div className="h-4 bg-gray-200 rounded w-1/2" />
-              <div className="h-10 bg-gray-200 rounded-xl" />
+            <div key={idx} className="bg-white rounded-3xl p-6 space-y-3 animate-pulse border border-slate-200">
+              <div className="w-12 h-12 bg-slate-100 rounded-2xl" />
+              <div className="h-5 bg-slate-100 rounded w-3/4" />
+              <div className="h-4 bg-slate-100 rounded w-1/2" />
+              <div className="h-10 bg-slate-100 rounded-xl" />
             </div>
           ))}
         </div>
       ) : operators.length === 0 ? (
-        <div className="bg-white border border-dashed border-gray-300 rounded-3xl p-12 text-center space-y-3 shadow-xs">
-          <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center mx-auto text-2xl">
+        <div className="bg-white border border-dashed border-slate-300 rounded-3xl p-12 text-center space-y-3 shadow-xs">
+          <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center mx-auto text-2xl border border-amber-100">
             <HardHat className="w-7 h-7 text-amber-600" />
           </div>
-          <h3 className="text-base font-extrabold text-gray-900">No Eligible Operators Found</h3>
-          <p className="text-xs text-gray-500 max-w-sm mx-auto">
+          <h3 className="text-base font-extrabold text-slate-900">No Eligible Operators Found</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto font-medium">
             {searchTerm
               ? 'No approved operators matched your search filter.'
               : 'There are currently no approved and active operators available for assignment.'}
@@ -276,39 +276,39 @@ function AssignOperator() {
             return (
               <div
                 key={opId}
-                className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 hover:border-emerald-600 hover:shadow-md transition-all flex flex-col justify-between space-y-4"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black text-lg">
-                      <HardHat className="w-6 h-6 text-[#3E7B27]" />
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black text-lg border border-emerald-100">
+                      <HardHat className="w-6 h-6 text-emerald-700" />
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-black text-emerald-600 flex items-center gap-1 justify-end">
+                      <span className="text-xs font-black text-emerald-700 flex items-center gap-1 justify-end">
                         <BadgeCheck className="w-4 h-4 text-emerald-600" /> Verified
                       </span>
-                      <span className="text-[10px] text-gray-400 font-semibold block">ID #{opId}</span>
+                      <span className="text-[10px] text-slate-400 font-semibold block">ID #{opId}</span>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-base font-extrabold text-gray-900">{displayName}</h3>
-                    <p className="text-xs font-bold text-[#3E7B27] mt-0.5 line-clamp-1">
+                    <h3 className="text-base font-extrabold text-slate-900">{displayName}</h3>
+                    <p className="text-xs font-bold text-emerald-700 mt-0.5 line-clamp-1">
                       {displaySkills}
                     </p>
                   </div>
 
-                  <div className="space-y-1.5 text-xs text-gray-500 font-medium pt-2 border-t border-gray-100">
+                  <div className="space-y-1.5 text-xs text-slate-500 font-medium pt-2 border-t border-slate-100">
                     <p className="flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>{displayMobile}</span>
                     </p>
                     <p className="flex items-center gap-1.5">
-                      <Briefcase className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>{displayExperience} Years Operational Experience</span>
                     </p>
                     <p className="flex items-center gap-1.5 truncate">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>{displayAddress}</span>
                     </p>
                   </div>
@@ -318,9 +318,9 @@ function AssignOperator() {
                   type="button"
                   disabled={isCurrentlyAssigned || submitting}
                   onClick={() => handleSelectToAssign(op)}
-                  className={`w-full py-2.5 text-xs font-bold rounded-xl transition-all shadow-xs ${isCurrentlyAssigned
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-[#3E7B27] hover:bg-[#2E6F22] text-white active:scale-98'
+                  className={`w-full py-2.5 text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer ${isCurrentlyAssigned
+                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      : 'bg-emerald-700 hover:bg-emerald-800 text-white active:scale-98'
                     }`}
                 >
                   {isCurrentlyAssigned ? 'Already Assigned' : 'Assign Operator'}
@@ -334,28 +334,28 @@ function AssignOperator() {
       {/* Confirmation Modal */}
       {showConfirmModal && selectedOperator && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3">
-              <span className="p-3 bg-emerald-50 text-emerald-700 rounded-2xl">
-                <HardHat className="w-6 h-6 text-[#3E7B27]" />
+              <span className="p-3 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-100">
+                <HardHat className="w-6 h-6 text-emerald-700" />
               </span>
               <div>
-                <h3 className="text-lg font-black text-gray-900">Confirm Assignment</h3>
-                <p className="text-xs text-gray-500">Booking #{id}</p>
+                <h3 className="text-lg font-black text-slate-900">Confirm Assignment</h3>
+                <p className="text-xs text-slate-500">Booking #{id}</p>
               </div>
             </div>
 
-            <div className="p-4 bg-[#F0EFE9] rounded-2xl text-xs space-y-1 text-gray-700">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-1 text-slate-700">
               <p>
                 Assign <strong>{selectedOperator.fullName || selectedOperator.name}</strong> ({selectedOperator.mobileNumber || selectedOperator.phone}) to operate machinery for this booking?
               </p>
-              <p className="text-[11px] text-gray-500">
+              <p className="text-[11px] text-slate-500">
                 Experience: {selectedOperator.experience || selectedOperator.experienceYears || 0} years • Skills: {selectedOperator.skills || selectedOperator.specialty || 'All Machinery'}
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-700">
+              <label className="text-xs font-bold text-slate-700">
                 Assignment Notes (Optional)
               </label>
               <textarea
@@ -363,7 +363,7 @@ function AssignOperator() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add special instructions, field coordinates, or task specifics..."
-                className="w-full p-3 bg-[#F0EFE9] border border-transparent rounded-xl text-xs focus:ring-2 focus:ring-[#3E7B27] focus:bg-white focus:outline-none"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none"
               />
             </div>
 
@@ -372,7 +372,7 @@ function AssignOperator() {
                 type="button"
                 disabled={submitting}
                 onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition-colors"
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -380,7 +380,7 @@ function AssignOperator() {
                 type="button"
                 disabled={submitting}
                 onClick={handleConfirmAssignment}
-                className="px-5 py-2.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-bold rounded-xl shadow-xs disabled:opacity-50 transition-all"
+                className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-xs disabled:opacity-50 transition-all cursor-pointer"
               >
                 {submitting ? 'Assigning...' : 'Confirm Assignment'}
               </button>

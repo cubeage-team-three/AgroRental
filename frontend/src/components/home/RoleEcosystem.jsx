@@ -14,7 +14,7 @@ const roles = [
     icon: Wheat,
     title: "Book Any Farm Service in Minutes",
     ctaLabel: "Get Started as Farmer",
-    ctaTo: "/register/farmer",
+    ctaTo: "/register?role=farmer",
     image: farmerImage,
     stat: { value: "50,000+", label: "Farmers Served" },
     points: [
@@ -34,7 +34,7 @@ const roles = [
     icon: Users,
     title: "Get Matched to Jobs Near You",
     ctaLabel: "Get Started as Operator",
-    ctaTo: "/auth/operator",
+    ctaTo: "/register?role=operator",
     image: operatorImage,
     stat: { value: "12,000+", label: "Verified Operators" },
     points: [
@@ -54,7 +54,7 @@ const roles = [
     icon: Tractor,
     title: "Turn Your Machines Into Income",
     ctaLabel: "Get Started as Equipment Owner",
-    ctaTo: "/register/partner",
+    ctaTo: "/register?role=partner",
     image: equipmentOwnerImage,
     stat: { value: "3,200+", label: "Machines Listed" },
     points: [
@@ -74,7 +74,7 @@ const roles = [
     icon: BarChart3,
     title: "Run the Entire Platform from One Dashboard",
     ctaLabel: "Explore Admin Panel",
-    ctaTo: "/login",
+    ctaTo: "/admin/login",
     image: adminImage,
     stat: { value: "28", label: "States Covered" },
     points: [

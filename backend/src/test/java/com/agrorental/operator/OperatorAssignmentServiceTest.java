@@ -114,8 +114,8 @@ class OperatorAssignmentServiceTest {
         when(bookingRepository.findById(100L)).thenReturn(Optional.of(confirmedBooking));
         when(assignmentRepository.existsByBookingIdAndAssignmentStatus(100L, OperatorAssignmentStatus.ASSIGNED)).thenReturn(false);
         when(operatorRepository.findById(1L)).thenReturn(Optional.of(approvedOperator));
-        when(assignmentRepository.existsOverlappingAssignment(
-                eq(1L), eq(OperatorAssignmentStatus.ASSIGNED), eq(confirmedBooking.getStartDate()), eq(confirmedBooking.getEndDate()))
+        when(assignmentRepository.existsActiveOverlappingAssignment(
+                eq(1L), any(), eq(confirmedBooking.getStartDate()), eq(confirmedBooking.getEndDate()), eq(100L))
         ).thenReturn(false);
 
         when(assignmentRepository.save(any(OperatorJobAssignment.class))).thenAnswer(invocation -> {
@@ -141,6 +141,9 @@ class OperatorAssignmentServiceTest {
         assertThat(response.getAssignmentStatus()).isEqualTo(OperatorAssignmentStatus.ASSIGNED);
         assertThat(response.getAssignedBy()).isEqualTo("ADMIN_USER");
         assertThat(response.getNotes()).isEqualTo("Tractor ploughing task assigned");
+
+        assertThat(confirmedBooking.getStatus()).isEqualTo(BookingStatus.OPERATOR_ASSIGNED);
+        assertThat(confirmedBooking.getOperator()).isEqualTo(approvedOperator);
 
         verify(bookingRepository).save(confirmedBooking);
         verify(assignmentRepository).save(any(OperatorJobAssignment.class));
@@ -269,8 +272,8 @@ class OperatorAssignmentServiceTest {
         when(bookingRepository.findById(100L)).thenReturn(Optional.of(confirmedBooking));
         when(assignmentRepository.existsByBookingIdAndAssignmentStatus(100L, OperatorAssignmentStatus.ASSIGNED)).thenReturn(false);
         when(operatorRepository.findById(1L)).thenReturn(Optional.of(approvedOperator));
-        when(assignmentRepository.existsOverlappingAssignment(
-                eq(1L), eq(OperatorAssignmentStatus.ASSIGNED), eq(confirmedBooking.getStartDate()), eq(confirmedBooking.getEndDate()))
+        when(assignmentRepository.existsActiveOverlappingAssignment(
+                eq(1L), any(), eq(confirmedBooking.getStartDate()), eq(confirmedBooking.getEndDate()), eq(100L))
         ).thenReturn(true);
 
         OperatorAssignmentRequest request = OperatorAssignmentRequest.builder()

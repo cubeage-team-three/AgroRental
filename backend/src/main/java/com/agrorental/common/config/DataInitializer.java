@@ -39,21 +39,27 @@ import com.agrorental.user.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Initializes rich mock seed data on application boot if in-memory database is empty.
- * Guarantees Partner ID 1, Farmer ID 1, Equipment, Operators, Bookings, Earnings, and Reviews exist.
+ * Gated by agrorental.seed.mock-data.enabled property; strictly disabled in production.
+ * Guarantees Partner ID 1, Farmer ID 1, Equipment, Operators, Bookings, Earnings, and Reviews exist for local dev.
  */
 @Slf4j
 @Component
 public class DataInitializer implements CommandLineRunner {
+
+    @Value("${agrorental.seed.mock-data.enabled:false}")
+    private boolean seedMockDataEnabled;
 
     @Value("${agrorental.operator.seed.default-password:${OPERATOR_SEED_PASSWORD:Operator@123}}")
     private String operatorSeedPassword;
@@ -72,6 +78,7 @@ public class DataInitializer implements CommandLineRunner {
     private final ReviewRepository reviewRepository;
     private final OperatorReviewRepository operatorReviewRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Environment environment;
 
     public DataInitializer(
             PartnerRepository partnerRepository,
@@ -87,7 +94,8 @@ public class DataInitializer implements CommandLineRunner {
             NotificationRepository notificationRepository,
             ReviewRepository reviewRepository,
             OperatorReviewRepository operatorReviewRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            Environment environment) {
         this.partnerRepository = partnerRepository;
         this.farmerRepository = farmerRepository;
         this.userRepository = userRepository;
@@ -102,12 +110,51 @@ public class DataInitializer implements CommandLineRunner {
         this.reviewRepository = reviewRepository;
         this.operatorReviewRepository = operatorReviewRepository;
         this.passwordEncoder = passwordEncoder;
+        this.environment = environment;
+    }
+
+    public boolean isSeedMockDataEnabled() {
+        return seedMockDataEnabled;
+    }
+
+    public void setSeedMockDataEnabled(boolean seedMockDataEnabled) {
+        this.seedMockDataEnabled = seedMockDataEnabled;
+    }
+
+    /**
+     * Determines whether mock data seeding should proceed.
+     * Evaluates explicit opt-in property and environment safety constraints.
+     */
+    public boolean shouldSeed() {
+        if (!seedMockDataEnabled) {
+            log.info("Mock-data seeding is disabled (agrorental.seed.mock-data.enabled is false or not configured). Skipping DataInitializer.");
+            return false;
+        }
+
+        List<String> activeProfiles = environment != null && environment.getActiveProfiles() != null 
+                ? Arrays.asList(environment.getActiveProfiles()) 
+                : List.of();
+        List<String> defaultProfiles = environment != null && environment.getDefaultProfiles() != null 
+                ? Arrays.asList(environment.getDefaultProfiles()) 
+                : List.of();
+
+        if (activeProfiles.contains("prod") || activeProfiles.contains("staging")
+                || defaultProfiles.contains("prod") || defaultProfiles.contains("staging")) {
+            log.warn("Mock-data seeding is strictly prohibited in production and staging profiles ('prod', 'staging'). Skipping DataInitializer.");
+            return false;
+        }
+
+        if (partnerRepository.count() > 0) {
+            log.info("Database already seeded. Skipping DataInitializer.");
+            return false;
+        }
+
+        return true;
     }
 
     @Override
     public void run(String... args) {
-        if (partnerRepository.count() > 0) {
-            log.info("Database already seeded. Skipping DataInitializer.");
+        if (!shouldSeed()) {
             return;
         }
 
@@ -311,6 +358,21 @@ public class DataInitializer implements CommandLineRunner {
         op3.setMobileVerified(true);
         op3.setPartner(partner);
         op3 = operatorRepository.save(op3);
+
+        Operator op4 = new Operator();
+        op4.setFullName("Sahil Karale");
+        op4.setMobileNumber("7385627789");
+        op4.setEmail("sahilkarale22@gmail.com");
+        op4.setAddress("Manchar, Pune, Maharashtra");
+        op4.setAadhaarNumber("123456789123");
+        op4.setDrivingLicenseNumber("MH-14-2021-001234");
+        op4.setExperience(3);
+        op4.setSkills("Tractor Operation, Combine Harvester, Rotavator & Cultivator");
+        op4.setPassword(passwordEncoder.encode(operatorSeedPassword));
+        op4.setStatus(OperatorStatus.APPROVED);
+        op4.setMobileVerified(true);
+        op4.setPartner(partner);
+        op4 = operatorRepository.save(op4);
 
         // 5. Seed Bookings
         LocalDate today = LocalDate.now();

@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,12 +34,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequestMapping("/api/partners")
-@CrossOrigin(origins = {
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:5176"
-})
 @RequiredArgsConstructor
 public class PartnerController {
 
@@ -206,14 +199,15 @@ public class PartnerController {
     public ResponseEntity<ApiResponse<String>> sendOtp(
             @PathVariable Long id) {
 
+        validatePartnerOwnership(id);
         log.info("Sending OTP for partner ID: {}", id);
 
-        String otp = partnerService.sendOtp(id);
+        partnerService.sendOtp(id);
 
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "OTP sent successfully",
-                        otp
+                        "OTP sent to registered mobile number"
                 )
         );
     }
@@ -227,6 +221,7 @@ public class PartnerController {
             @PathVariable Long id,
             @Valid @RequestBody PartnerOtpRequest request) {
 
+        validatePartnerOwnership(id);
         log.info("Verifying OTP for partner ID: {}", id);
 
         PartnerProfileResponse response =
@@ -248,14 +243,15 @@ public class PartnerController {
     public ResponseEntity<ApiResponse<String>> resendOtp(
             @PathVariable Long id) {
 
+        validatePartnerOwnership(id);
         log.info("Resending OTP for partner ID: {}", id);
 
-        String otp = partnerService.resendOtp(id);
+        partnerService.resendOtp(id);
 
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "OTP resent successfully",
-                        otp
+                        "OTP resent to registered mobile number"
                 )
         );
     }

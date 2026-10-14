@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Calendar, MapPin, CheckCircle, Clock, XCircle, ArrowLeft, CreditCard, FileText, UserCheck, ShieldCheck, Truck, AlertCircle } from 'lucide-react';
+import { useParams, Link } from 'react-router-dom';
+import { Calendar, MapPin, CheckCircle, XCircle, ArrowLeft, CreditCard, FileText, AlertCircle } from 'lucide-react';
 import { bookingService } from '../../services/bookingService';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
 function BookingDetails() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -123,7 +122,7 @@ function BookingDetails() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {booking.status !== 'CANCELLED' && (
+          {booking.status !== 'CANCELLED' && booking.status !== 'REJECTED' && booking.status !== 'COMPLETED' && booking.paymentStatus !== 'SUCCESS' && (
             <Link
               to={`/farmer/bookings/${booking.id}/pay`}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
@@ -132,12 +131,14 @@ function BookingDetails() {
             </Link>
           )}
 
-          <Link
-            to={`/farmer/bookings/${booking.id}/invoice`}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
-            <FileText className="h-4 w-4 text-emerald-600" /> Tax Invoice
-          </Link>
+          {booking.paymentStatus === 'SUCCESS' && (
+            <Link
+              to={`/farmer/bookings/${booking.id}/invoice`}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              <FileText className="h-4 w-4 text-emerald-600" /> Tax Invoice
+            </Link>
+          )}
         </div>
       </div>
 

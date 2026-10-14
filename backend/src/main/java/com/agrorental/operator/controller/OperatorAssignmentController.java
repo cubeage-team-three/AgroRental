@@ -11,6 +11,7 @@ import com.agrorental.operator.dto.OperatorJobHistorySummaryResponse;
 import com.agrorental.operator.enums.OperatorAssignmentStatus;
 import com.agrorental.operator.service.OperatorAssignmentService;
 import com.agrorental.security.principal.OperatorPrincipal;
+import com.agrorental.security.principal.PartnerPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,12 +39,6 @@ import java.time.LocalDate;
  */
 @Slf4j
 @RestController
-@CrossOrigin(origins = {
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:5176"
-})
 @RequiredArgsConstructor
 public class OperatorAssignmentController {
 
@@ -69,9 +63,20 @@ public class OperatorAssignmentController {
             Authentication authentication) {
 
         String assignedBy = authentication != null ? authentication.getName() : "ADMIN/PARTNER";
-        log.info("REST request to assign operator {} to booking {} by {}", request.getOperatorId(), bookingId, assignedBy);
+        Long partnerId = null;
+        if (authentication != null && authentication.getPrincipal() instanceof PartnerPrincipal pp) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (!isAdmin) {
+                partnerId = pp.getId();
+            }
+        }
+        log.info("REST request to assign operator {} to booking {} by {} (partnerId: {})",
+                request.getOperatorId(), bookingId, assignedBy, partnerId);
 
-        OperatorAssignmentResponse response = assignmentService.assignOperator(bookingId, request, assignedBy);
+        OperatorAssignmentResponse response = partnerId != null
+                ? assignmentService.assignOperator(bookingId, request, assignedBy, partnerId)
+                : assignmentService.assignOperator(bookingId, request, assignedBy);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

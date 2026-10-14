@@ -13,8 +13,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,6 +37,13 @@ public class OperatorOtpService {
     private final PasswordEncoder passwordEncoder;
     private final OtpDeliveryService otpDeliveryService;
 
+    private com.agrorental.auth.service.PasswordResetService passwordResetService;
+
+    @Autowired(required = false)
+    public void setPasswordResetService(com.agrorental.auth.service.PasswordResetService passwordResetService) {
+        this.passwordResetService = passwordResetService;
+    }
+
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Value("${app.otp.expiry-minutes:5}")
@@ -43,8 +55,11 @@ public class OperatorOtpService {
     @Value("${app.otp.resend-cooldown-seconds:30}")
     private int resendCooldownSeconds = 30;
 
-    @Value("${app.otp.include-dev-mock:true}")
-    private boolean includeDevMock = true;
+    @Value("${app.otp.include-dev-mock:false}")
+    private boolean includeDevMock = false;
+
+    @Autowired(required = false)
+    private Environment environment;
 
     /**
      * Generates and dispatches a secure 6-digit OTP for the given mobile number.
@@ -110,7 +125,7 @@ public class OperatorOtpService {
                 .message("OTP sent successfully to " + maskMobile(mobile))
                 .expiresAt(expiresAt)
                 .attemptsRemaining(maxAttempts)
-                .devMockOtp(includeDevMock ? rawOtp : null)
+                .devMockOtp(isDevMockOtpAllowed() ? rawOtp : null)
                 .build();
     }
 
@@ -157,19 +172,27 @@ public class OperatorOtpService {
         otpRecord.setVerified(true);
         operatorOtpRepository.save(otpRecord);
 
-        // Mark Operator mobileVerified = true if account exists
+        // Mark Operator mobileVerified = true if account exists and purpose is MOBILE_VERIFICATION
         Optional<Operator> operatorOpt = operatorRepository.findByMobileNumber(mobile);
-        if (operatorOpt.isPresent()) {
+        if (operatorOpt.isPresent() && purpose == OtpPurpose.MOBILE_VERIFICATION) {
             Operator operator = operatorOpt.get();
             operator.setMobileVerified(true);
             operatorRepository.save(operator);
             log.info("Updated mobileVerified=true for operator ID: {}", operator.getId());
         }
 
+        String resetToken = null;
+        if (purpose == OtpPurpose.PASSWORD_RESET && operatorOpt.isPresent() && passwordResetService != null) {
+            resetToken = passwordResetService.createOperatorResetToken(operatorOpt.get().getId(), mobile);
+        }
+
         return OperatorOtpResponse.builder()
                 .mobileNumber(mobile)
                 .verified(true)
-                .message("Mobile number verified successfully.")
+                .message(purpose == OtpPurpose.PASSWORD_RESET
+                        ? "OTP verified successfully. You can now reset your password."
+                        : "Mobile number verified successfully.")
+                .resetToken(resetToken)
                 .build();
     }
 
@@ -178,5 +201,63 @@ public class OperatorOtpService {
             return "******";
         }
         return "******" + mobile.substring(mobile.length() - 4);
+    }
+
+    @PostConstruct
+    public void validateConfiguration() {
+        if (isProductionOrStagingEnvironment()) {
+            if (includeDevMock) {
+                log.warn("CRITICAL SECURITY NOTICE: 'app.otp.include-dev-mock' was set to true, but dev mock OTP disclosure " +
+                        "is strictly prohibited in staging/production profiles. Mock OTP will NOT be exposed.");
+            }
+            log.info("Operator OTP service initialized in secure mode (mock OTP disclosure strictly disabled).");
+        } else {
+            log.info("Operator OTP service initialized (devMockOtp enabled: {}).", includeDevMock);
+        }
+    }
+
+    /**
+     * Determines whether mock OTP disclosure in API responses is permitted.
+     * Guaranteed to return false in staging or production environments, regardless of property configuration.
+     */
+    public boolean isDevMockOtpAllowed() {
+        if (isProductionOrStagingEnvironment()) {
+            return false;
+        }
+        return includeDevMock;
+    }
+
+    private boolean isProductionOrStagingEnvironment() {
+        if (environment == null) {
+            return false;
+        }
+        String[] activeProfilesArr = environment.getActiveProfiles();
+        List<String> activeProfiles = activeProfilesArr != null ? Arrays.asList(activeProfilesArr) : Collections.emptyList();
+
+        String[] defaultProfilesArr = environment.getDefaultProfiles();
+        List<String> defaultProfiles = defaultProfilesArr != null ? Arrays.asList(defaultProfilesArr) : Collections.emptyList();
+
+        return activeProfiles.contains("prod") || activeProfiles.contains("staging")
+                || defaultProfiles.contains("prod") || defaultProfiles.contains("staging");
+    }
+
+    public void setIncludeDevMock(boolean includeDevMock) {
+        this.includeDevMock = includeDevMock;
+    }
+
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
+    }
+
+    public void setOtpExpiryMinutes(int otpExpiryMinutes) {
+        this.otpExpiryMinutes = otpExpiryMinutes;
+    }
+
+    public void setMaxAttempts(int maxAttempts) {
+        this.maxAttempts = maxAttempts;
+    }
+
+    public void setResendCooldownSeconds(int resendCooldownSeconds) {
+        this.resendCooldownSeconds = resendCooldownSeconds;
     }
 }

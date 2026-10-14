@@ -5,7 +5,10 @@ import com.agrorental.common.exception.GlobalExceptionHandler;
 import com.agrorental.operator.controller.OperatorController;
 import com.agrorental.operator.dto.OperatorRegistrationRequest;
 import com.agrorental.operator.dto.OperatorResponse;
+import com.agrorental.operator.dto.OperatorSummaryResponse;
+import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
+import com.agrorental.operator.mapper.OperatorMapper;
 import com.agrorental.operator.service.OperatorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,11 +21,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,6 +41,9 @@ class OperatorControllerTest {
 
     @Mock
     private OperatorService operatorService;
+
+    @Mock
+    private OperatorMapper operatorMapper;
 
     @InjectMocks
     private OperatorController operatorController;
@@ -155,5 +165,55 @@ class OperatorControllerTest {
                 .andExpect(jsonPath("$.data.email").exists())
                 .andExpect(jsonPath("$.data.experience").exists())
                 .andExpect(jsonPath("$.data.password").exists());
+    }
+    @Test
+    @DisplayName("GET /api/operators - Should return list of OperatorSummaryResponse")
+    void shouldGetAllOperators() throws Exception {
+        Operator operator = new Operator();
+        operator.setId(1L);
+        OperatorSummaryResponse summary = OperatorSummaryResponse.builder().id(1L).fullName("Suresh").build();
+
+        when(operatorService.getAllOperators()).thenReturn(List.of(operator));
+        when(operatorMapper.toSummaryResponseList(anyList())).thenReturn(List.of(summary));
+
+        mockMvc.perform(get("/api/operators"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].fullName").value("Suresh"));
+    }
+
+    @Test
+    @DisplayName("GET /api/operators/available - Should return list of OperatorSummaryResponse")
+    void shouldGetAvailableOperators() throws Exception {
+        Operator operator = new Operator();
+        operator.setId(2L);
+        OperatorSummaryResponse summary = OperatorSummaryResponse.builder().id(2L).fullName("Ramesh").build();
+
+        when(operatorService.getAvailableOperators(any(), any(), any())).thenReturn(List.of(operator));
+        when(operatorMapper.toSummaryResponseList(anyList())).thenReturn(List.of(summary));
+
+        mockMvc.perform(get("/api/operators/available"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(2))
+                .andExpect(jsonPath("$.data[0].fullName").value("Ramesh"));
+    }
+
+    @Test
+    @DisplayName("GET /api/operators/partner/{id} - Should return list of OperatorSummaryResponse")
+    void shouldGetOperatorsByPartner() throws Exception {
+        Operator operator = new Operator();
+        operator.setId(3L);
+        OperatorSummaryResponse summary = OperatorSummaryResponse.builder().id(3L).fullName("Mahesh").build();
+
+        when(operatorService.getOperatorsByPartner(10L)).thenReturn(List.of(operator));
+        when(operatorMapper.toSummaryResponseList(anyList())).thenReturn(List.of(summary));
+
+        mockMvc.perform(get("/api/operators/partner/10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(3))
+                .andExpect(jsonPath("$.data[0].fullName").value("Mahesh"));
     }
 }

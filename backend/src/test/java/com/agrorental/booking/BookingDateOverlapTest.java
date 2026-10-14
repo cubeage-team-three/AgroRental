@@ -59,12 +59,28 @@ class BookingDateOverlapTest {
 
     @BeforeEach
     void setUp() {
+        com.agrorental.security.principal.FarmerPrincipal principal = com.agrorental.security.principal.FarmerPrincipal.builder()
+                .id(10L)
+                .role("FARMER")
+                .mobileNumber("9876543210")
+                .build();
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        principal, null, java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_FARMER"))
+                )
+        );
+
         testEquipment = new Equipment();
         testEquipment.setId(1L);
         testEquipment.setName("Mahindra 575 DI");
         testEquipment.setRentalPrice(BigDecimal.valueOf(1800));
         testEquipment.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
         testEquipment.setIsDisabled(false);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 
     @Test

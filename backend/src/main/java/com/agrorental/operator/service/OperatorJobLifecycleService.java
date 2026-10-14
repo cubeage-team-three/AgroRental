@@ -143,6 +143,13 @@ public class OperatorJobLifecycleService {
 
         locationRepository.deactivateTrackingForAssignment(assignment.getId());
 
+        if (assignment.getBooking() != null && bookingRepository != null) {
+            Booking booking = assignment.getBooking();
+            booking.setOperator(null);
+            booking.setStatus(com.agrorental.booking.entity.BookingStatus.CONFIRMED);
+            bookingRepository.save(booking);
+        }
+
         OperatorJobAssignment saved = assignmentRepository.save(assignment);
         notifyStakeholders(saved, "Job Declined", "Operator " + saved.getOperator().getFullName() + " declined job #" + saved.getBooking().getId() + ". Reason: " + saved.getRejectionReason());
 

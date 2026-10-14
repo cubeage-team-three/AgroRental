@@ -17,6 +17,8 @@ public class LoginRequest {
 
     private String password;
 
+    private String role; // "FARMER", "PARTNER", "OPERATOR", "ADMIN"
+
     private String loginType; // "PASSWORD" or "OTP"
 
     private String otp;

@@ -16,8 +16,26 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ResetPasswordRequest {
 
-    @NotBlank(message = "Password reset token is required")
+    /**
+     * Recovery token string (used for email link and OTP token redemption flows).
+     */
     private String token;
+
+    /**
+     * Target role validation ("FARMER", "PARTNER", or "OPERATOR").
+     * Prevents cross-role token redemption.
+     */
+    private String role;
+
+    /**
+     * Mobile number for direct OTP verification fallback.
+     */
+    private String mobileNumber;
+
+    /**
+     * OTP code for direct OTP verification fallback.
+     */
+    private String otp;
 
     @NotBlank(message = "New password is required")
     @Size(min = 6, message = "Password must be at least 6 characters long")

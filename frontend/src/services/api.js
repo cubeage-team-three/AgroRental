@@ -67,9 +67,11 @@ export async function apiRequest(endpoint, method = 'GET', body = null) {
     }
 
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error(
+      const netErr = new Error(
         'Network error: Unable to connect to backend server. Please check if the backend service is running on http://localhost:8080.'
       );
+      netErr.status = 0;
+      throw netErr;
     }
 
     throw error;

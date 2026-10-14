@@ -3,18 +3,28 @@ package com.agrorental.booking.repository;
 import com.agrorental.booking.entity.Booking;
 import com.agrorental.booking.entity.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Spring Data JPA Repository interface for Booking entity persistence and query execution.
  */
 @Repository
-public interface BookingRepository extends JpaRepository<Booking, Long> {
+public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpecificationExecutor<Booking> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Booking b WHERE b.id = :id")
+    Optional<Booking> findByIdWithLock(@Param("id") Long id);
 
     /**
      * Retrieves all bookings for a specific farmer.
@@ -80,4 +90,11 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      * @return Up to 10 most recent bookings, newest first
      */
     List<Booking> findTop10ByOrderByCreatedAtDesc();
+
+    long countByStatus(BookingStatus status);
+
+    long countByStatusIn(Collection<BookingStatus> statuses);
+
+    @Query("SELECT COALESCE(SUM(b.totalCost), 0) FROM Booking b WHERE b.status NOT IN :excludedStatuses")
+    BigDecimal sumTotalCostByStatusNotIn(@Param("excludedStatuses") Collection<BookingStatus> excludedStatuses);
 }

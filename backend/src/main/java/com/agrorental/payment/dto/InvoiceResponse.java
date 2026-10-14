@@ -32,4 +32,5 @@ public class InvoiceResponse {
     private PaymentMethod paymentMethod;
     private LocalDateTime paymentDate;
     private String status;
+    private String bookingStatus;
 }

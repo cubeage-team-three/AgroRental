@@ -318,7 +318,7 @@ export const operatorService = {
   /**
    * Resumes field work (PATCH /api/operators/jobs/:assignmentId/resume).
    */
-  resumeJob: async (assignmentId) => {
+  resumeWork: async (assignmentId) => {
     return await request(`/operators/jobs/${assignmentId}/resume`, {
       method: 'PATCH',
     });

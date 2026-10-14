@@ -1,10 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function LanguageSelector() {
   const { language, setLanguage, LANGUAGES } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const location = useLocation();
+
+  const isAuthRoute =
+    location.pathname.startsWith('/login') ||
+    location.pathname.startsWith('/register') ||
+    location.pathname.startsWith('/operator/login') ||
+    location.pathname.startsWith('/operator/auth') ||
+    location.pathname.startsWith('/auth/operator') ||
+    location.pathname.startsWith('/verify-otp') ||
+    location.pathname.startsWith('/verify-email') ||
+    location.pathname.startsWith('/forgot-password') ||
+    location.pathname.startsWith('/reset-password');
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -15,6 +28,10 @@ export default function LanguageSelector() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  if (isAuthRoute) {
+    return null;
+  }
 
   const currentLangObj = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
 
@@ -45,13 +62,13 @@ export default function LanguageSelector() {
                   }}
                   className={`w-full px-3 py-2 rounded-xl text-left text-xs font-bold flex items-center justify-between transition-all ${
                     isActive
-                      ? 'bg-[#3E7B27] text-white shadow-md'
-                      : 'text-gray-700 hover:bg-emerald-50 hover:text-[#3E7B27]'
+                      ? 'bg-emerald-700 text-white shadow-md'
+                      : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-700'
                   }`}
                 >
                   <span className="flex items-center gap-2">
                     <span>{lang.native}</span>
-                    <span className={`text-[10px] font-normal ${isActive ? 'text-emerald-100' : 'text-gray-400'}`}>
+                    <span className={`text-[10px] font-normal ${isActive ? 'text-emerald-100' : 'text-slate-400'}`}>
                       ({lang.label})
                     </span>
                   </span>
@@ -65,7 +82,7 @@ export default function LanguageSelector() {
 
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="px-4 py-3 bg-[#3E7B27] hover:bg-[#2E6F22] text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center gap-2.5 border-2 border-white/20 active:scale-95 group"
+        className="px-4 py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center gap-2.5 border-2 border-white/20 active:scale-95 group"
         title="Change Regional Language"
       >
         <span className="text-lg group-hover:rotate-45 transition-transform duration-300">🌐</span>

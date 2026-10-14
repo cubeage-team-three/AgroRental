@@ -31,6 +31,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CorsProperties corsProperties;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -80,11 +81,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/farmers/send-otp", "/api/farmers/verify-otp", "/api/farmers/resend-otp").permitAll()
                         .requestMatchers("/api/farmers", "/api/farmers/**", "/api/farmers/farms", "/api/farmers/farms/**").hasRole("FARMER")
 
-                        // Partner: registration + OTP are public; KYC approval and the full partner
+                        // Partner: registration is public; KYC approval and the full partner
                         // listing are admin actions; a partner's own dashboard/detail is viewable
                         // by that partner or an admin, everything else is partner self-service
                         .requestMatchers(HttpMethod.POST, "/api/partners/register").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/partners/*/otp/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/partners", "/api/partners/").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/partners/*/kyc/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/partners/*/dashboard").hasAnyRole("ADMIN", "PARTNER")
@@ -125,10 +125,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedOrigins(corsProperties.getAllowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

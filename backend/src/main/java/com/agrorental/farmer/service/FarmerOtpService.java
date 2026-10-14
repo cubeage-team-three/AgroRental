@@ -37,7 +37,7 @@ public class FarmerOtpService {
         Farmer farmer = farmerRepository.findByMobileNumber(mobile)
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer not found with mobile number: " + mobile));
 
-        // Generate a 6-digit numeric OTP (e.g. 123456 in dev/test for easy
+        // Generate a 6-digit numeric OTP (e.g. 523123 in dev/test for easy
         // verification)
         String generatedOtp = String.format("%06d", RANDOM.nextInt(900000) + 100000);
 
@@ -74,10 +74,14 @@ public class FarmerOtpService {
                         "No active OTP request found for this mobile number. Please request a new OTP."));
 
         if (Boolean.TRUE.equals(otpRecord.getVerified())) {
-            log.info("OTP already verified for mobile: {}", mobile);
-            Farmer alreadyVerifiedFarmer = farmerRepository.findByMobileNumber(mobile)
-                    .orElseThrow(() -> new ResourceNotFoundException("Farmer not found for mobile: " + mobile));
-            return buildSessionResponse(alreadyVerifiedFarmer, "Mobile number is already verified.");
+            if (otpRecord.getOtp().equals(submittedOtp)) {
+                log.info("OTP already verified for mobile: {}", mobile);
+                Farmer alreadyVerifiedFarmer = farmerRepository.findByMobileNumber(mobile)
+                        .orElseThrow(() -> new ResourceNotFoundException("Farmer not found for mobile: " + mobile));
+                return buildSessionResponse(alreadyVerifiedFarmer, "Mobile number is already verified.");
+            }
+            log.warn("Attempt to use already verified OTP with mismatched code for mobile: {}", mobile);
+            throw new BadRequestException("OTP has already been used or is invalid. Please request a new OTP.");
         }
 
         // Rule 1: Check Expiry

@@ -3,7 +3,9 @@ package com.agrorental.operator.controller;
 import com.agrorental.common.dto.ApiResponse;
 import com.agrorental.operator.dto.OperatorRegistrationRequest;
 import com.agrorental.operator.dto.OperatorResponse;
+import com.agrorental.operator.dto.OperatorSummaryResponse;
 import com.agrorental.operator.entity.Operator;
+import com.agrorental.operator.mapper.OperatorMapper;
 import com.agrorental.operator.service.OperatorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,16 +24,11 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/operators")
-@CrossOrigin(origins = {
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:5176"
-})
 @RequiredArgsConstructor
 public class OperatorController {
 
     private final OperatorService operatorService;
+    private final OperatorMapper operatorMapper;
 
     /**
      * Registers a new operator in the system.
@@ -51,24 +48,27 @@ public class OperatorController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Operator>>> getAllOperators() {
+    public ResponseEntity<ApiResponse<List<OperatorSummaryResponse>>> getAllOperators() {
         List<Operator> list = operatorService.getAllOperators();
-        return ResponseEntity.ok(ApiResponse.success("Operators retrieved successfully", list));
+        List<OperatorSummaryResponse> responseList = operatorMapper.toSummaryResponseList(list);
+        return ResponseEntity.ok(ApiResponse.success("Operators retrieved successfully", responseList));
     }
 
     @GetMapping("/available")
-    public ResponseEntity<ApiResponse<List<Operator>>> getAvailableOperators(
+    public ResponseEntity<ApiResponse<List<OperatorSummaryResponse>>> getAvailableOperators(
             @RequestParam(required = false) Long partnerId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
         List<Operator> list = operatorService.getAvailableOperators(partnerId, startDate, endDate);
-        return ResponseEntity.ok(ApiResponse.success("Available operators retrieved successfully", list));
+        List<OperatorSummaryResponse> responseList = operatorMapper.toSummaryResponseList(list);
+        return ResponseEntity.ok(ApiResponse.success("Available operators retrieved successfully", responseList));
     }
 
     @GetMapping("/partner/{partnerId}")
-    public ResponseEntity<ApiResponse<List<Operator>>> getOperatorsByPartner(@PathVariable Long partnerId) {
+    public ResponseEntity<ApiResponse<List<OperatorSummaryResponse>>> getOperatorsByPartner(@PathVariable Long partnerId) {
         List<Operator> list = operatorService.getOperatorsByPartner(partnerId);
-        return ResponseEntity.ok(ApiResponse.success("Partner operators retrieved successfully", list));
+        List<OperatorSummaryResponse> responseList = operatorMapper.toSummaryResponseList(list);
+        return ResponseEntity.ok(ApiResponse.success("Partner operators retrieved successfully", responseList));
     }
 }

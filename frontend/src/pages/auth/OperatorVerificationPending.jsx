@@ -104,7 +104,7 @@ function OperatorVerificationPending() {
 
       {/* Action Buttons */}
       <RevealItem className="mt-8 space-y-3">
-        <Link to="/login/operator" className="block w-full">
+        <Link to="/login?role=OPERATOR" className="block w-full">
           <MagneticButton className="w-full">
             <motion.div
               animate={{

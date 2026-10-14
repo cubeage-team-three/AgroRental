@@ -98,7 +98,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     userId, operator.isActive(), operator.getStatus());
                         }
                     } else {
-                        log.warn("Operator ID {} from token not found in database", userId);
+                        // Fallback check against core User repository with Role.OPERATOR
+                        Optional<User> userOpt = userRepository != null ? userRepository.findById(userId) : Optional.empty();
+                        if (userOpt.isPresent() && userOpt.get().isEnabled() && userOpt.get().getRole() == Role.OPERATOR) {
+                            User user = userOpt.get();
+                            OperatorPrincipal principal = OperatorPrincipal.builder()
+                                    .id(user.getId())
+                                    .mobileNumber(user.getEmail())
+                                    .fullName(user.getName())
+                                    .role("OPERATOR")
+                                    .build();
+
+                            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                    principal,
+                                    null,
+                                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_OPERATOR"))
+                            );
+
+                            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                            log.debug("Authenticated core user operator ID {} in SecurityContext", user.getId());
+                        } else {
+                            log.warn("Operator ID {} from token not found in database", userId);
+                        }
                     }
                 } else if (userId != null && "ADMIN".equalsIgnoreCase(role)) {
                     // Admin, Farmer, and User each have independent auto-increment IDs, so a
@@ -135,7 +157,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // Database validation against stale/deactivated tokens
                     Optional<Partner> partnerOpt = partnerRepository != null ? partnerRepository.findById(userId) : Optional.empty();
 
-                    if (partnerOpt.isPresent() && partnerOpt.get().isActive()) {
+                    if (partnerOpt.isPresent() && partnerOpt.get().isActive()
+                            && partnerOpt.get().getVerificationStatus() == Partner.VerificationStatus.APPROVED) {
                         Partner partner = partnerOpt.get();
                         PartnerPrincipal principal = PartnerPrincipal.builder()
                                 .id(partner.getId())
@@ -153,7 +176,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         SecurityContextHolder.getContext().setAuthentication(authentication);
                         log.debug("Authenticated partner ID {} in SecurityContext", userId);
                     } else {
-                        log.warn("Partner ID {} token rejected: not found or inactive", userId);
+                        log.warn("Partner ID {} token rejected: not found, inactive, or not approved", userId);
                     }
                 } else if (userId != null && "FARMER".equalsIgnoreCase(role)) {
                     // Check core User repository first — same cross-table ID collision

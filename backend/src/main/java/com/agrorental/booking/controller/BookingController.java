@@ -23,7 +23,6 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/bookings")
-@CrossOrigin(origins = "http://localhost:5173")
 public class BookingController {
 
     private final BookingService bookingService;
@@ -64,12 +63,22 @@ public class BookingController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
-            @AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
+            @AuthenticationPrincipal Object principal,
             @Valid @RequestBody BookingCreateRequest request) {
 
-        if (principal != null && request.getFarmerId() == null) {
-            request.setFarmerId(principal.getId());
+        if (principal == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Authentication is required to create a booking.");
         }
+        if (!(principal instanceof com.agrorental.security.principal.FarmerPrincipal farmerPrincipal)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Access is denied. Only farmers are permitted to create bookings.");
+        }
+
+        if (request.getFarmerId() != null && !request.getFarmerId().equals(farmerPrincipal.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Access is denied. You cannot create a booking for another farmer.");
+        }
+        request.setFarmerId(farmerPrincipal.getId());
 
         BookingResponse response = bookingService.createBooking(request);
 
@@ -188,12 +197,14 @@ public class BookingController {
 
     /**
      * Updates the status of a booking or assigns an operator.
+     * Restricted to ADMIN to prevent bypassing established lifecycle rules and ownership checks.
      *
      * @param id Booking identifier
      * @param request Status update payload
      * @return ResponseEntity containing HTTP 200 OK and updated BookingResponse
      */
     @PatchMapping("/{id}/status")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<BookingResponse>> updateBookingStatus(
             @PathVariable Long id,
             @Valid @RequestBody BookingStatusUpdateRequest request) {

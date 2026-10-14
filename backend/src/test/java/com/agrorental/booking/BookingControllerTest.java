@@ -45,6 +45,17 @@ class BookingControllerTest {
                 .setCustomArgumentResolvers(new org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver())
                 .build();
 
+        com.agrorental.security.principal.FarmerPrincipal principal = com.agrorental.security.principal.FarmerPrincipal.builder()
+                .id(10L)
+                .role("FARMER")
+                .mobileNumber("9876543210")
+                .build();
+        SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        principal, null, java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_FARMER"))
+                )
+        );
+
         sampleResponse = BookingResponse.builder()
                 .id(100L)
                 .farmerId(10L)

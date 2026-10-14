@@ -7,6 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -18,6 +20,10 @@ import java.util.Optional;
 @Repository
 public interface OperatorRepository extends JpaRepository<Operator, Long> {
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Operator o WHERE o.id = :id")
+    Optional<Operator> findByIdWithLock(@Param("id") Long id);
+
     boolean existsByMobileNumber(String mobileNumber);
 
     Optional<Operator> findByMobileNumber(String mobileNumber);
@@ -28,7 +34,12 @@ public interface OperatorRepository extends JpaRepository<Operator, Long> {
 
     Optional<Operator> findByEmail(String email);
 
+    Optional<Operator> findByEmailIgnoreCase(String email);
+
     Optional<Operator> findByMobileNumberOrEmail(String mobileNumber, String email);
+
+    @Query("SELECT o FROM Operator o WHERE o.mobileNumber = :mobile OR LOWER(o.email) = LOWER(:email)")
+    Optional<Operator> findByMobileNumberOrEmailIgnoreCase(@Param("mobile") String mobile, @Param("email") String email);
 
     Page<Operator> findByStatus(OperatorStatus status, Pageable pageable);
 

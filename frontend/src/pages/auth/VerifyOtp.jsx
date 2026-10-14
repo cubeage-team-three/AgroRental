@@ -214,12 +214,12 @@ function VerifyOtp() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F6F0] flex flex-col items-center justify-start py-6 px-4 sm:px-6 font-sans">
+    <div className="min-h-screen bg-[#F8FAF8] flex flex-col items-center justify-start py-6 px-4 sm:px-6 font-sans">
       
       {/* Top Header Navigation Brand */}
       <div className="w-full max-w-xl flex items-center justify-between py-3 mb-4">
-        <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-[#2E6F22] tracking-tight">
-          <span className="w-9 h-9 rounded-full bg-[#3E7B27] text-white flex items-center justify-center font-bold text-lg shadow-sm">
+        <Link to="/" className="flex items-center gap-2 text-2xl font-black text-slate-900 tracking-tight">
+          <span className="w-9 h-9 rounded-xl bg-[#0F382C] text-white flex items-center justify-center font-bold text-lg shadow-sm">
             🌱
           </span>
           <span>AgroRent</span>
@@ -227,25 +227,25 @@ function VerifyOtp() {
       </div>
 
       {/* Main Container Card */}
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100/80 transition-all duration-300">
+      <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 transition-all duration-300">
         
         {/* Banner Hero Image Header */}
-        <div className="relative h-28 sm:h-32 bg-gradient-to-r from-emerald-800 to-green-900 overflow-hidden flex items-center justify-center">
+        <div className="relative h-28 sm:h-32 bg-gradient-to-r from-[#0F382C] via-[#194D3E] to-[#2E7D32] overflow-hidden flex items-center justify-center">
           <img
             src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80"
             alt="Agro Field Banner"
-            className="absolute inset-0 w-full h-full object-cover opacity-50"
+            className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay"
           />
           <div className="relative z-10 text-center px-4">
-            <span className="text-xs uppercase tracking-widest font-semibold text-emerald-200 block mb-0.5">Security & Access</span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-wide drop-shadow-md">OTP Verification</h2>
+            <span className="text-xs uppercase tracking-widest font-bold text-lime-300 block mb-0.5">Security & Access</span>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-wide drop-shadow-md">OTP Verification</h2>
           </div>
         </div>
 
         {/* Form Container */}
         <div className="p-6 sm:p-8">
           <div className="text-center mb-6">
-            <div className="w-14 h-14 bg-[#F1F8EE] rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner border border-[#3E7B27]/20">
+            <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner border border-emerald-100">
               📱
             </div>
             <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Verify Your Mobile</h1>
@@ -291,11 +291,11 @@ function VerifyOtp() {
           {/* Mobile Number Entry (if state wasn't passed) */}
           {!initialMobile && (
             <div className="mb-5">
-              <label htmlFor="mobile" className="block text-xs font-semibold text-gray-700 mb-1.5">
+              <label htmlFor="mobile" className="block text-xs font-bold text-slate-700 mb-1.5">
                 Mobile Number
               </label>
-              <div className="flex rounded-xl overflow-hidden border border-transparent focus-within:ring-2 focus-within:ring-[#3E7B27]">
-                <span className="inline-flex items-center px-3.5 bg-[#E6E4DC] text-gray-700 text-xs font-bold">
+              <div className="flex rounded-xl overflow-hidden border border-slate-200 focus-within:ring-2 focus-within:ring-emerald-600/20 focus-within:border-emerald-600">
+                <span className="inline-flex items-center px-3.5 bg-slate-100 text-slate-700 text-xs font-bold border-r border-slate-200">
                   IN +91
                 </span>
                 <input
@@ -305,7 +305,7 @@ function VerifyOtp() {
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   placeholder="98765 43210"
-                  className="w-full px-4 py-3 bg-[#F0EFE9] text-gray-900 text-sm focus:outline-none focus:bg-white transition-all"
+                  className="w-full px-4 py-3 bg-slate-50 text-slate-900 text-sm focus:outline-none focus:bg-white transition-all font-semibold"
                 />
               </div>
             </div>
@@ -314,7 +314,7 @@ function VerifyOtp() {
           {/* 6-Digit OTP Segmented Input */}
           <form onSubmit={handleVerify} className="space-y-6">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-3 text-center">
+              <label className="block text-xs font-bold text-slate-700 mb-3 text-center">
                 Enter 6-Digit Security Code
               </label>
               <div className="flex items-center justify-center gap-2 sm:gap-3">
@@ -328,17 +328,17 @@ function VerifyOtp() {
                     value={digit}
                     onChange={(e) => handleDigitChange(idx, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(idx, e)}
-                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-bold text-gray-900 bg-[#F0EFE9] border-2 border-transparent rounded-xl focus:border-[#3E7B27] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#3E7B27]/10 transition-all shadow-sm"
+                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-black text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-600/10 transition-all shadow-xs"
                   />
                 ))}
               </div>
             </div>
 
             {/* Countdown Timer & Resend */}
-            <div className="flex items-center justify-between text-xs text-gray-600 px-1 pt-1">
+            <div className="flex items-center justify-between text-xs text-slate-600 px-1 pt-1">
               <div className="flex items-center gap-1.5 font-medium">
-                <span className="text-gray-400">Expires in:</span>
-                <span className={`font-mono font-bold ${timerSeconds < 60 ? 'text-red-600 animate-pulse' : 'text-[#2E6F22]'}`}>
+                <span className="text-slate-400">Expires in:</span>
+                <span className={`font-mono font-bold ${timerSeconds < 60 ? 'text-red-600 animate-pulse' : 'text-emerald-700'}`}>
                   {formatTime(timerSeconds)}
                 </span>
               </div>
@@ -347,7 +347,7 @@ function VerifyOtp() {
                 type="button"
                 onClick={handleResendOtp}
                 disabled={resending || (isTimerActive && timerSeconds > 240)} // Enabled when timer < 4 mins remaining or expired
-                className="font-bold text-[#3E7B27] hover:text-[#2E6F22] disabled:opacity-50 disabled:cursor-not-allowed hover:underline transition-all"
+                className="font-bold text-emerald-700 hover:text-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed hover:underline transition-all"
               >
                 {resending ? 'Resending...' : 'Resend OTP'}
               </button>
@@ -357,7 +357,7 @@ function VerifyOtp() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 px-6 bg-[#3E7B27] hover:bg-[#32641F] text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full py-3.5 px-6 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -377,14 +377,14 @@ function VerifyOtp() {
           </form>
 
           {/* Footer Back & Login Links */}
-          <div className="flex items-center justify-between mt-6 text-xs font-semibold text-gray-500">
-            <Link to="/register" className="hover:text-[#3E7B27] transition-colors">
+          <div className="flex items-center justify-between mt-6 text-xs font-semibold text-slate-500">
+            <Link to="/register" className="hover:text-emerald-700 transition-colors">
               ← Back to Registration
             </Link>
             <Link
               to="/login"
               state={{ mobileNumber }}
-              className="text-[#3E7B27] font-bold hover:underline transition-colors"
+              className="text-emerald-700 font-bold hover:underline transition-colors"
             >
               Log In to Account →
             </Link>

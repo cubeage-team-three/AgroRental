@@ -7,7 +7,6 @@ import {
   Wheat,
   Users,
   Tractor,
-  BarChart3,
   CheckCircle2,
   Navigation,
   Globe2,
@@ -38,13 +37,6 @@ const roleCards = [
     iconBg: "bg-amber-500",
     title: "I Own Equipment",
     description: "Manage machines, accept bookings, track earnings",
-  },
-  {
-    to: "/admin/login",
-    icon: BarChart3,
-    iconBg: "bg-sky-500",
-    title: "Platform Admin",
-    description: "Operations, analytics, approvals, and control",
   },
 ];
 

@@ -8,6 +8,7 @@ import com.agrorental.common.exception.ForbiddenException;
 import com.agrorental.common.exception.ResourceNotFoundException;
 import com.agrorental.notification.service.NotificationService;
 import com.agrorental.equipment.entity.Equipment;
+import com.agrorental.equipment.enums.AvailabilityStatus;
 import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.operator.dto.EligibleOperatorResponse;
 import com.agrorental.operator.dto.OperatorAssignedJobResponse;
@@ -33,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -51,6 +53,15 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class OperatorAssignmentService {
 
+    public static final java.util.List<OperatorAssignmentStatus> ACTIVE_ASSIGNMENT_STATUSES = java.util.List.of(
+            OperatorAssignmentStatus.ASSIGNED,
+            OperatorAssignmentStatus.ACCEPTED,
+            OperatorAssignmentStatus.TRAVELING,
+            OperatorAssignmentStatus.REACHED,
+            OperatorAssignmentStatus.IN_PROGRESS,
+            OperatorAssignmentStatus.PAUSED
+    );
+
     private final BookingRepository bookingRepository;
     private final OperatorRepository operatorRepository;
     private final OperatorJobAssignmentRepository assignmentRepository;
@@ -68,33 +79,61 @@ public class OperatorAssignmentService {
      * @param assignedBy Identity/username of the administrative or partner user performing assignment
      * @return Populated OperatorAssignmentResponse DTO
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public OperatorAssignmentResponse assignOperator(Long bookingId, OperatorAssignmentRequest request, String assignedBy) {
-        log.info("Processing operator assignment for booking ID {} with operator ID {} by {}",
-                bookingId, request.getOperatorId(), assignedBy);
+        return assignOperator(bookingId, request, assignedBy, null);
+    }
 
-        // 1. Validate Booking existence
-        Booking booking = bookingRepository.findById(bookingId)
+    /**
+     * Assigns an eligible approved Operator to a confirmed Booking with optional Partner ownership validation.
+     *
+     * @param bookingId Target confirmed booking ID
+     * @param request Validated assignment request containing operatorId and optional notes
+     * @param assignedBy Identity/username of the administrative or partner user performing assignment
+     * @param requestingPartnerId Optional Partner ID to enforce ownership validation
+     * @return Populated OperatorAssignmentResponse DTO
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public OperatorAssignmentResponse assignOperator(Long bookingId, OperatorAssignmentRequest request, String assignedBy, Long requestingPartnerId) {
+        log.info("Processing operator assignment for booking ID {} with operator ID {} by {} (partnerId: {})",
+                bookingId, request != null ? request.getOperatorId() : null, assignedBy, requestingPartnerId);
+
+        if (request == null || request.getOperatorId() == null) {
+            throw new BadRequestException("Operator ID is required.");
+        }
+
+        // 1. Validate Booking existence and acquire pessimistic lock for concurrency control
+        Booking booking = bookingRepository.findByIdWithLock(bookingId)
+                .or(() -> bookingRepository.findById(bookingId))
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + bookingId));
 
-        // 2. Validate Booking assignable state
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
-            log.warn("Assignment rejected: Booking {} has status {}, only CONFIRMED bookings can be assigned",
+        // 2. Validate Partner ownership
+        if (requestingPartnerId != null && booking.getPartner() != null && !booking.getPartner().getId().equals(requestingPartnerId)) {
+            log.warn("Assignment rejected: Booking {} belongs to partner {}, requesting partner was {}",
+                    bookingId, booking.getPartner().getId(), requestingPartnerId);
+            throw new BadRequestException("Unauthorized: Booking does not belong to the specified partner.");
+        }
+
+        // 3. Validate Booking assignable state
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.OPERATOR_ASSIGNED) {
+            log.warn("Assignment rejected: Booking {} has status {}, only CONFIRMED or OPERATOR_ASSIGNED bookings can be assigned",
                     bookingId, booking.getStatus());
             throw new BadRequestException("Booking with status " + booking.getStatus() + " is not eligible for operator assignment");
         }
 
-        // 3. Validate Booking does not already have an active assignment
-        if (assignmentRepository.existsByBookingIdAndAssignmentStatus(bookingId, OperatorAssignmentStatus.ASSIGNED)) {
+        // 4. Validate Booking does not already have an active assignment across any active state
+        if (assignmentRepository.existsByBookingIdAndAssignmentStatus(bookingId, OperatorAssignmentStatus.ASSIGNED)
+                || assignmentRepository.existsByBookingIdAndAssignmentStatusIn(bookingId, ACTIVE_ASSIGNMENT_STATUSES)) {
             log.warn("Assignment rejected: Booking {} already has an active operator assignment", bookingId);
             throw new BadRequestException("Booking is already assigned to an active operator");
         }
 
-        // 4. Validate Operator existence
-        Operator operator = operatorRepository.findById(request.getOperatorId())
+        // 5. Validate Operator existence and acquire pessimistic lock to serialize concurrent assignments for this operator
+        Operator operator = operatorRepository.findByIdWithLock(request.getOperatorId())
+                .or(() -> operatorRepository.findById(request.getOperatorId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Operator not found with ID: " + request.getOperatorId()));
 
-        // 5. Validate Operator eligibility
+        // 6. Validate Operator eligibility
         if (!operator.isActive()) {
             log.warn("Assignment rejected: Operator {} is inactive", operator.getId());
             throw new ForbiddenException("Operator account is inactive");
@@ -110,24 +149,34 @@ public class OperatorAssignmentService {
             throw new ForbiddenException("Operator mobile number is not verified");
         }
 
-        // 6. Validate schedule conflict / overlapping active assignments
-        if (booking.getStartDate() != null && booking.getEndDate() != null) {
-            boolean hasConflict = assignmentRepository.existsOverlappingAssignment(
-                    operator.getId(),
-                    OperatorAssignmentStatus.ASSIGNED,
-                    booking.getStartDate(),
-                    booking.getEndDate()
-            );
-
-            if (hasConflict) {
-                log.warn("Assignment rejected: Operator {} has overlapping assignment for {} to {}",
-                        operator.getId(), booking.getStartDate(), booking.getEndDate());
-                throw new BadRequestException("Operator already has an active assignment for overlapping dates (" +
-                        booking.getStartDate() + " to " + booking.getEndDate() + ")");
-            }
+        // 7. Validate schedule conflict / overlapping active assignments across all active states
+        if (booking.getStartDate() == null || booking.getEndDate() == null) {
+            log.warn("Assignment rejected: Booking {} has missing schedule dates (start: {}, end: {})",
+                    bookingId, booking.getStartDate(), booking.getEndDate());
+            throw new BadRequestException("Booking start date and end date are mandatory for operator assignment.");
+        }
+        if (booking.getStartDate().isAfter(booking.getEndDate())) {
+            log.warn("Assignment rejected: Booking {} start date {} is after end date {}",
+                    bookingId, booking.getStartDate(), booking.getEndDate());
+            throw new BadRequestException("Booking start date cannot be after end date.");
         }
 
-        // 7. Create and persist OperatorJobAssignment
+        boolean hasConflict = assignmentRepository.existsActiveOverlappingAssignment(
+                operator.getId(),
+                ACTIVE_ASSIGNMENT_STATUSES,
+                booking.getStartDate(),
+                booking.getEndDate(),
+                bookingId
+        );
+
+        if (hasConflict) {
+            log.warn("Assignment rejected: Operator {} has overlapping assignment for {} to {}",
+                    operator.getId(), booking.getStartDate(), booking.getEndDate());
+            throw new BadRequestException("Operator already has an active assignment for overlapping dates (" +
+                    booking.getStartDate() + " to " + booking.getEndDate() + ")");
+        }
+
+        // 8. Create and persist OperatorJobAssignment
         OperatorJobAssignment assignment = OperatorJobAssignment.builder()
                 .operator(operator)
                 .booking(booking)
@@ -139,11 +188,16 @@ public class OperatorAssignmentService {
 
         OperatorJobAssignment savedAssignment = assignmentRepository.save(assignment);
 
-        // 8. Synchronize booking relationship
+        // 9. Synchronize booking relationship and transition status to OPERATOR_ASSIGNED
         booking.setOperator(operator);
+        booking.setStatus(BookingStatus.OPERATOR_ASSIGNED);
+        Equipment equipment = booking.getEquipment();
+        if (equipment != null) {
+            equipment.setAvailabilityStatus(AvailabilityStatus.BOOKED);
+        }
         bookingRepository.save(booking);
 
-        // 9. Dispatch notifications
+        // 10. Dispatch notifications
         try {
             String equipName = booking.getEquipment() != null ? booking.getEquipment().getName() : "Machinery";
             notificationService.sendNotification(

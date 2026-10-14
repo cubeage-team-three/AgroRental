@@ -228,8 +228,8 @@ function PartnerProfile() {
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-[#1B4D3E] font-bold text-base bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <RefreshCw className="w-6 h-6 animate-spin text-[#3E7B27]" />
+        <div className="flex items-center gap-3 text-slate-800 font-bold text-base bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <RefreshCw className="w-6 h-6 animate-spin text-emerald-700" />
           <span>Loading Partner Profile...</span>
         </div>
       </div>
@@ -256,10 +256,10 @@ function PartnerProfile() {
       {/* Top Breadcrumb & Actions Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#142E1C] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Partner Profile & Operations
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Manage your registered machinery enterprise, verification documents, and account security.
           </p>
         </div>
@@ -268,7 +268,7 @@ function PartnerProfile() {
           <button
             type="button"
             onClick={() => setIsEditModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all duration-150"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all duration-150 cursor-pointer"
           >
             <Edit3 className="w-4 h-4" />
             <span>Edit Profile</span>
@@ -277,10 +277,10 @@ function PartnerProfile() {
       </div>
 
       {/* Hero Profile Header Card */}
-      <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
         
         {/* Agricultural Pattern Cover Banner */}
-        <div className="relative h-36 sm:h-44 bg-gradient-to-r from-[#142E1C] via-[#1B4D3E] to-[#2E7D32] overflow-hidden flex items-end p-6">
+        <div className="relative h-36 sm:h-44 bg-gradient-to-r from-[#0F382C] via-[#1B4D3E] to-[#2E7D32] overflow-hidden flex items-end p-6">
           <img
             src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1400&q=80"
             alt="Agro Fields Cover"
@@ -296,7 +296,7 @@ function PartnerProfile() {
             <span
               className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-sm ${
                 verificationStatus === 'APPROVED'
-                  ? 'bg-emerald-500 text-white'
+                  ? 'bg-emerald-600 text-white'
                   : 'bg-amber-500 text-white'
               }`}
             >
@@ -332,7 +332,7 @@ function PartnerProfile() {
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(true)}
-                  className="absolute bottom-0 right-0 p-1.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white rounded-xl shadow-md border-2 border-white transition-transform hover:scale-105"
+                  className="absolute bottom-0 right-0 p-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-md border-2 border-white transition-transform hover:scale-105 cursor-pointer"
                   title="Change Avatar URL"
                 >
                   <Camera className="w-3.5 h-3.5" />
@@ -342,7 +342,7 @@ function PartnerProfile() {
               {/* Names & Contact */}
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                     {partnerName}
                   </h2>
                   {verificationStatus === 'APPROVED' && (
@@ -350,19 +350,19 @@ function PartnerProfile() {
                   )}
                 </div>
 
-                <p className="text-sm font-bold text-[#2E6F22] flex items-center justify-center sm:justify-start gap-1.5">
+                <p className="text-sm font-bold text-emerald-700 flex items-center justify-center sm:justify-start gap-1.5">
                   <Building2 className="w-4 h-4" />
                   <span>{businessName}</span>
                 </p>
 
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs font-semibold text-gray-500 pt-0.5">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs font-semibold text-slate-500 pt-0.5">
                   <span className="flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-gray-400" />
+                    <Phone className="w-3.5 h-3.5 text-slate-400" />
                     +91 {mobileNumber}
                   </span>
-                  <span className="text-gray-300">•</span>
+                  <span className="text-slate-300">•</span>
                   <span className="flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5 text-gray-400" />
+                    <Mail className="w-3.5 h-3.5 text-slate-400" />
                     {email}
                   </span>
                 </div>
@@ -371,10 +371,10 @@ function PartnerProfile() {
             </div>
 
             {/* Quick Stat Pill */}
-            <div className="w-full sm:w-auto flex sm:flex-col items-center justify-between sm:items-end gap-2 bg-[#F7F6F0] p-3.5 rounded-2xl border border-gray-200/60">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Partner Since</span>
-              <span className="text-sm font-extrabold text-[#142E1C] flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-[#3E7B27]" />
+            <div className="w-full sm:w-auto flex sm:flex-col items-center justify-between sm:items-end gap-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Partner Since</span>
+              <span className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-emerald-700" />
                 {createdAtFormatted}
               </span>
             </div>
@@ -382,18 +382,18 @@ function PartnerProfile() {
           </div>
 
           {/* Quick Metrics Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-gray-100">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-slate-200">
             
-            <div className="p-4 bg-[#F8FAF8] rounded-2xl border border-emerald-900/5">
-              <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">Fleet Machinery</span>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Fleet Machinery</span>
               <div className="flex items-center gap-2 mt-1">
-                <Tractor className="w-5 h-5 text-[#3E7B27]" />
-                <span className="text-xl font-black text-gray-900">{equipmentCount} Units</span>
+                <Tractor className="w-5 h-5 text-emerald-700" />
+                <span className="text-xl font-black text-slate-900">{equipmentCount} Units</span>
               </div>
             </div>
 
-            <div className="p-4 bg-[#F8FAF8] rounded-2xl border border-emerald-900/5">
-              <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">Partner Status</span>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Partner Status</span>
               <div className="flex items-center gap-1.5 mt-1">
                 <ShieldCheck className="w-5 h-5 text-emerald-600" />
                 <span className="text-sm font-extrabold text-emerald-900 uppercase">
@@ -401,8 +401,8 @@ function PartnerProfile() {
                 </span>
               </div>
             </div>
-<div className="p-4 bg-[#F8FAF8] rounded-2xl border border-emerald-900/5">
-  <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">
+<div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
     OTP Verification
   </span>
 
@@ -413,16 +413,16 @@ function PartnerProfile() {
       <AlertCircle className="w-5 h-5 text-amber-500" />
     )}
 
-    <span className="text-sm font-extrabold text-gray-800">
+    <span className="text-sm font-extrabold text-slate-800">
       {partner?.otpVerified ? 'Verified' : 'Not Verified'}
     </span>
   </div>
 </div>
-            <div className="p-4 bg-[#F8FAF8] rounded-2xl border border-emerald-900/5">
-              <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">Partner Rating</span>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Partner Rating</span>
               <div className="flex items-center gap-1.5 mt-1">
                 <span className="text-amber-500 font-bold">★</span>
-                <span className="text-base font-extrabold text-gray-900">
+                <span className="text-base font-extrabold text-slate-900">
                   {ratingSummary?.averageRating ? `${ratingSummary.averageRating.toFixed(1)} / 5.0` : '0.0 / 5.0'}
                 </span>
               </div>
@@ -433,14 +433,14 @@ function PartnerProfile() {
         </div>
 
         {/* Tabbed Navigation Bar */}
-        <div className="flex items-center gap-2 bg-[#F0EFE9] px-6 py-2 border-t border-gray-200">
+        <div className="flex items-center gap-2 bg-slate-50 px-6 py-2 border-t border-slate-200">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
               activeTab === 'overview'
-                ? 'bg-white text-[#142E1C] shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             👤 Personal & Business Info
@@ -449,10 +449,10 @@ function PartnerProfile() {
           <button
             type="button"
             onClick={() => setActiveTab('security')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
               activeTab === 'security'
-                ? 'bg-white text-[#142E1C] shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             🔒 Password & Security
@@ -461,10 +461,10 @@ function PartnerProfile() {
           <button
             type="button"
             onClick={() => setActiveTab('kyc')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
               activeTab === 'kyc'
-                ? 'bg-white text-[#142E1C] shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             📜 KYC & Legal Verification
@@ -503,67 +503,67 @@ function PartnerProfile() {
           <div className="lg:col-span-2 space-y-6">
             
             {/* Personal Details */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 shadow-sm border border-gray-100 space-y-4">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                <h3 className="text-base font-extrabold text-gray-900 flex items-center gap-2">
-                  <User className="w-4 h-4 text-[#3E7B27]" />
+            <div className="bg-white rounded-3xl p-6 sm:p-7 shadow-sm border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <User className="w-4 h-4 text-emerald-700" />
                   <span>Personal Information</span>
                 </h3>
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(true)}
-                  className="text-xs font-bold text-[#3E7B27] hover:underline"
+                  className="text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
                 >
                   Edit
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 bg-[#F8FAF8] rounded-2xl">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Full Name</span>
-                  <span className="text-sm font-extrabold text-gray-900 mt-0.5 block">{partnerName}</span>
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Full Name</span>
+                  <span className="text-sm font-extrabold text-slate-900 mt-0.5 block">{partnerName}</span>
                 </div>
 
-                <div className="p-4 bg-[#F8FAF8] rounded-2xl">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Mobile Number</span>
-                  <span className="text-sm font-extrabold text-gray-900 mt-0.5 flex items-center gap-1.5">
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Mobile Number</span>
+                  <span className="text-sm font-extrabold text-slate-900 mt-0.5 flex items-center gap-1.5">
                     <span>+91 {mobileNumber}</span>
                     <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[9px] font-black rounded">VERIFIED</span>
                   </span>
                 </div>
 
-                <div className="sm:col-span-2 p-4 bg-[#F8FAF8] rounded-2xl">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Registered Email</span>
-                  <span className="text-sm font-extrabold text-gray-900 mt-0.5 block">{email}</span>
+                <div className="sm:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Registered Email</span>
+                  <span className="text-sm font-extrabold text-slate-900 mt-0.5 block">{email}</span>
                 </div>
               </div>
             </div>
 
             {/* Business Enterprise Details */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 shadow-sm border border-gray-100 space-y-4">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                <h3 className="text-base font-extrabold text-gray-900 flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-[#3E7B27]" />
+            <div className="bg-white rounded-3xl p-6 sm:p-7 shadow-sm border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-emerald-700" />
                   <span>Business & Operational Enterprise</span>
                 </h3>
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(true)}
-                  className="text-xs font-bold text-[#3E7B27] hover:underline"
+                  className="text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
                 >
                   Edit
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2 p-4 bg-[#F8FAF8] rounded-2xl">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Enterprise Name</span>
-                  <span className="text-base font-extrabold text-[#142E1C] mt-0.5 block">{businessName}</span>
+                <div className="sm:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Enterprise Name</span>
+                  <span className="text-base font-extrabold text-slate-900 mt-0.5 block">{businessName}</span>
                 </div>
 
-                <div className="sm:col-span-2 p-4 bg-[#F8FAF8] rounded-2xl">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Operational Hub / Base Address</span>
-                  <p className="text-sm font-semibold text-gray-800 mt-0.5 leading-relaxed">{address}</p>
+                <div className="sm:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Operational Hub / Base Address</span>
+                  <p className="text-sm font-semibold text-slate-800 mt-0.5 leading-relaxed">{address}</p>
                 </div>
               </div>
             </div>
@@ -574,30 +574,30 @@ function PartnerProfile() {
           <div className="space-y-6">
             
             {/* Legal & KYC Snapshot */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-4">
-              <h3 className="text-base font-extrabold text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-3">
-                <FileText className="w-4 h-4 text-[#3E7B27]" />
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+              <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
+                <FileText className="w-4 h-4 text-emerald-700" />
                 <span>Legal & Tax IDs</span>
               </h3>
 
               <div className="space-y-3 text-xs">
-                <div className="flex items-center justify-between p-3 bg-[#F8FAF8] rounded-xl">
-                  <span className="text-gray-500 font-semibold">GST Number</span>
-                  <span className="font-mono font-bold text-gray-800">
+                <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <span className="text-slate-500 font-semibold">GST Number</span>
+                  <span className="font-mono font-bold text-slate-800">
                     {partner?.gstNumber || 'Not Registered'}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-[#F8FAF8] rounded-xl">
-                  <span className="text-gray-500 font-semibold">PAN Card</span>
-                  <span className="font-mono font-bold text-gray-800">
+                <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <span className="text-slate-500 font-semibold">PAN Card</span>
+                  <span className="font-mono font-bold text-slate-800">
                     {partner?.panNumber || 'Not Provided'}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-[#F8FAF8] rounded-xl">
-                  <span className="text-gray-500 font-semibold">Aadhaar Card</span>
-                  <span className="font-mono font-bold text-gray-800">
+                <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <span className="text-slate-500 font-semibold">Aadhaar Card</span>
+                  <span className="font-mono font-bold text-slate-800">
                     {partner?.aadhaarNumber ? `•••• •••• ${partner.aadhaarNumber.slice(-4)}` : 'Not Provided'}
                   </span>
                 </div>
@@ -605,7 +605,7 @@ function PartnerProfile() {
             </div>
 
             {/* Quick Actions Card */}
-            <div className="bg-gradient-to-br from-[#142E1C] to-[#2E7D32] rounded-3xl p-6 text-white space-y-4 shadow-md">
+            <div className="bg-gradient-to-br from-[#0F382C] to-[#1E4D38] rounded-3xl p-6 text-white space-y-4 shadow-md">
               <h3 className="text-base font-bold flex items-center gap-2">
                 <Tractor className="w-5 h-5 text-lime-300" />
                 <span>Machinery Inventory</span>
@@ -616,7 +616,7 @@ function PartnerProfile() {
               <div className="pt-2 flex flex-col gap-2">
                 <a
                   href="/partner/equipment"
-                  className="w-full py-2.5 text-center bg-white text-[#142E1C] hover:bg-lime-300 rounded-xl text-xs font-black transition-colors shadow-xs"
+                  className="w-full py-2.5 text-center bg-white text-slate-900 hover:bg-lime-300 rounded-xl text-xs font-black transition-colors shadow-xs"
                 >
                   View My Listings
                 </a>
@@ -636,13 +636,13 @@ function PartnerProfile() {
 
       {/* TAB 2: Password & Security */}
       {activeTab === 'security' && (
-        <div className="max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6">
-          <div className="border-b border-gray-100 pb-4">
-            <h3 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-[#3E7B27]" />
+        <div className="max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+          <div className="border-b border-slate-200 pb-4">
+            <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-emerald-700" />
               <span>Change Account Password</span>
             </h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Ensure your Partner account is using a strong password for machinery operations and booking approvals.
             </p>
           </div>
@@ -651,7 +651,7 @@ function PartnerProfile() {
             
             {/* Current Password */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Current Password <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -662,12 +662,12 @@ function PartnerProfile() {
                   value={passwordData.currentPassword}
                   onChange={handlePasswordInputChange}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all pr-10"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPass(!showCurrentPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 text-xs"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-800 text-xs cursor-pointer"
                 >
                   {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -676,7 +676,7 @@ function PartnerProfile() {
 
             {/* New Password */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 New Password <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -688,12 +688,12 @@ function PartnerProfile() {
                   value={passwordData.newPassword}
                   onChange={handlePasswordInputChange}
                   placeholder="Minimum 6 characters"
-                  className="w-full px-4 py-3 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all pr-10"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPass(!showNewPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 text-xs"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-800 text-xs cursor-pointer"
                 >
                   {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -702,7 +702,7 @@ function PartnerProfile() {
 
             {/* Confirm New Password */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Confirm New Password <span className="text-red-500">*</span>
               </label>
               <input
@@ -712,7 +712,7 @@ function PartnerProfile() {
                 value={passwordData.confirmPassword}
                 onChange={handlePasswordInputChange}
                 placeholder="Re-type new password"
-                className="w-full px-4 py-3 bg-[#F0EFE9] border border-transparent rounded-xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
               />
             </div>
 
@@ -720,7 +720,7 @@ function PartnerProfile() {
               <button
                 type="submit"
                 disabled={changingPassword}
-                className="w-full py-3.5 px-6 bg-[#3E7B27] hover:bg-[#2E6F22] text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                className="w-full py-3.5 px-6 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer"
               >
                 {changingPassword ? (
                   <>
@@ -742,22 +742,22 @@ function PartnerProfile() {
 
       {/* TAB 3: KYC & Legal Verification */}
       {activeTab === 'kyc' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6">
-          <div className="border-b border-gray-100 pb-4">
-            <h3 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+          <div className="border-b border-slate-200 pb-4">
+            <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
               <span>Partner KYC & Business Verification Status</span>
             </h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               AgroRent partners require verified government and tax documents to enable high-value equipment rental payouts.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             
-            <div className="p-5 bg-[#F8FAF8] rounded-2xl border border-emerald-900/10 space-y-2">
+            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase text-gray-500">Aadhaar Verification</span>
+                <span className="text-xs font-bold uppercase text-slate-500">Aadhaar Verification</span>
                 <span
   className={`px-2 py-0.5 text-[10px] font-extrabold rounded ${
     partner?.verificationStatus === 'APPROVED'
@@ -768,15 +768,15 @@ function PartnerProfile() {
   {partner?.verificationStatus === 'APPROVED' ? 'VERIFIED' : 'PENDING'}
 </span>
               </div>
-              <p className="font-mono font-bold text-sm text-gray-900">
+              <p className="font-mono font-bold text-sm text-slate-900">
                 {partner?.aadhaarNumber ? `•••• •••• ${partner.aadhaarNumber.slice(-4)}` : '•••• •••• 9012'}
               </p>
-              <p className="text-[11px] text-gray-500">Identity and primary residency confirmed.</p>
+              <p className="text-[11px] text-slate-500">Identity and primary residency confirmed.</p>
             </div>
 
-            <div className="p-5 bg-[#F8FAF8] rounded-2xl border border-emerald-900/10 space-y-2">
+            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase text-gray-500">PAN Card</span>
+                <span className="text-xs font-bold uppercase text-slate-500">PAN Card</span>
                 <span
   className={`px-2 py-0.5 text-[10px] font-extrabold rounded ${
     partner?.verificationStatus === 'APPROVED'
@@ -787,21 +787,21 @@ function PartnerProfile() {
   {partner?.verificationStatus === 'APPROVED' ? 'VERIFIED' : 'PENDING'}
 </span>
               </div>
-              <p className="font-mono font-bold text-sm text-gray-900">
+              <p className="font-mono font-bold text-sm text-slate-900">
                 {partner?.panNumber || 'ABCDE1234F'}
               </p>
-              <p className="text-[11px] text-gray-500">Tax identification verified for banking receipts.</p>
+              <p className="text-[11px] text-slate-500">Tax identification verified for banking receipts.</p>
             </div>
 
-            <div className="p-5 bg-[#F8FAF8] rounded-2xl border border-emerald-900/10 space-y-2">
+            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase text-gray-500">GST Registration</span>
+                <span className="text-xs font-bold uppercase text-slate-500">GST Registration</span>
                 <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-extrabold rounded">OPTIONAL</span>
               </div>
-              <p className="font-mono font-bold text-sm text-gray-900">
+              <p className="font-mono font-bold text-sm text-slate-900">
                 {partner?.gstNumber || 'Not Registered'}
               </p>
-              <p className="text-[11px] text-gray-500">Required for commercial equipment fleets with GST billing.</p>
+              <p className="text-[11px] text-slate-500">Required for commercial equipment fleets with GST billing.</p>
             </div>
 
           </div>
@@ -812,10 +812,10 @@ function PartnerProfile() {
       {/* EDIT PROFILE MODAL (Figma-style) */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-gray-100 overflow-hidden my-8">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-8">
             
             {/* Modal Header */}
-            <div className="bg-[#142E1C] px-6 py-4 text-white flex items-center justify-between">
+            <div className="bg-[#0F382C] px-6 py-4 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <Edit3 className="w-5 h-5 text-lime-300" />
                 <h3 className="text-lg font-bold">Edit Partner Business Profile</h3>
@@ -823,7 +823,7 @@ function PartnerProfile() {
               <button
                 type="button"
                 onClick={() => setIsEditModalOpen(false)}
-                className="p-1 rounded-lg text-gray-300 hover:text-white hover:bg-white/10"
+                className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -836,7 +836,7 @@ function PartnerProfile() {
                 
                 {/* Full Name */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
                     Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -846,13 +846,13 @@ function PartnerProfile() {
                     value={formData.fullName}
                     onChange={handleInputChange}
                     placeholder="e.g. Rajesh Patel"
-                    className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white"
                   />
                 </div>
 
                 {/* Business Name */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
                     Business / Enterprise Name
                   </label>
                   <input
@@ -861,26 +861,26 @@ function PartnerProfile() {
                     value={formData.businessName}
                     onChange={handleInputChange}
                     placeholder="e.g. Patel Agro Fleet"
-                    className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white"
                   />
                 </div>
 
                 {/* Mobile (Read-Only) */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-                    Mobile Number <span className="text-xs font-normal text-gray-400">(Registered ID)</span>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                    Mobile Number <span className="text-xs font-normal text-slate-400">(Registered ID)</span>
                   </label>
                   <input
                     type="text"
                     disabled
                     value={`+91 ${mobileNumber}`}
-                    className="w-full px-3.5 py-2.5 bg-gray-100 text-gray-500 border border-transparent rounded-xl text-sm font-bold cursor-not-allowed"
+                    className="w-full px-3.5 py-2.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-xl text-sm font-bold cursor-not-allowed"
                   />
                 </div>
 
                 {/* Email Address */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
                     Email Address
                   </label>
                   <input
@@ -889,13 +889,13 @@ function PartnerProfile() {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="rajesh.patel@example.com"
-                    className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white"
                   />
                 </div>
 
                 {/* Profile Photo Avatar URL */}
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
                     Profile Photo / Avatar URL
                   </label>
                   <input
@@ -904,16 +904,16 @@ function PartnerProfile() {
                     value={formData.profilePhoto}
                     onChange={handleInputChange}
                     placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white"
                   />
-                  <p className="text-[10px] text-gray-500 mt-1">
+                  <p className="text-[10px] text-slate-500 mt-1">
                     Provide a valid HTTPS image link for your partner avatar badge.
                   </p>
                 </div>
 
                 {/* Address */}
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
                     Operational Hub / Address
                   </label>
                   <textarea
@@ -922,13 +922,13 @@ function PartnerProfile() {
                     value={formData.address}
                     onChange={handleInputChange}
                     placeholder="Plot / Street, APMC Market, Taluka, District, State, Pincode"
-                    className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white"
                   />
                 </div>
 
                 {/* GST Number */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
                     GST Number (Optional)
                   </label>
                   <input
@@ -937,13 +937,13 @@ function PartnerProfile() {
                     value={formData.gstNumber}
                     onChange={handleInputChange}
                     placeholder="27AABCP1234F1Z5"
-                    className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white"
                   />
                 </div>
 
                 {/* PAN Number */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
                     PAN Number (Optional)
                   </label>
                   <input
@@ -952,25 +952,25 @@ function PartnerProfile() {
                     value={formData.panNumber}
                     onChange={handleInputChange}
                     placeholder="ABCDE1234F"
-                    className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white"
                   />
                 </div>
 
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors"
+                  className="px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-70"
+                  className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-70 cursor-pointer"
                 >
                   {saving ? (
                     <>

@@ -48,6 +48,11 @@ public class UserRegistrationService {
         // Determine user role (defaults to FARMER if unspecified)
         Role targetRole = request.getRole() != null ? request.getRole() : Role.FARMER;
 
+        if (targetRole == Role.ADMIN) {
+            log.warn("Registration rejected: Cannot register as ADMIN directly");
+            throw new BadRequestException("Registration as ADMIN is not permitted.");
+        }
+
         // 2. Hash raw password securely using BCrypt PasswordEncoder
         String rawPassword = request.getPassword();
         String storedPassword = processPassword(rawPassword);

@@ -15,7 +15,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/farmers/bookings")
-@CrossOrigin(origins = "http://localhost:5173")
 public class FarmerBookingController {
 
     private final BookingService bookingService;
@@ -26,10 +25,22 @@ public class FarmerBookingController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
-            @AuthenticationPrincipal FarmerPrincipal principal,
+            @AuthenticationPrincipal Object principal,
             @Valid @RequestBody BookingCreateRequest request) {
 
-        request.setFarmerId(principal.getId());
+        if (principal == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Authentication is required to create a booking.");
+        }
+        if (!(principal instanceof FarmerPrincipal farmerPrincipal)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access is denied. Only farmers are permitted to create bookings.");
+        }
+
+        if (request.getFarmerId() != null && !request.getFarmerId().equals(farmerPrincipal.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Access is denied. You cannot create a booking for another farmer.");
+        }
+
+        request.setFarmerId(farmerPrincipal.getId());
         BookingResponse response = bookingService.createBooking(request);
 
         return ResponseEntity

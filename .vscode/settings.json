@@ -1,4 +1,12 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
-    "java.compile.nullAnalysis.mode": "automatic"
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.jdt.ls.lombokSupport.enabled": true,
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-21",
+            "path": "/opt/homebrew/Cellar/openjdk@21/21.0.8/libexec/openjdk.jdk/Contents/Home",
+            "default": true
+        }
+    ]
 }

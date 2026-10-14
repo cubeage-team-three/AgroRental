@@ -293,11 +293,13 @@ function AddEquipment() {
       setLoading(false);
       return;
     }
-    if (!formData.imageUrl.trim()) {
-      setError('At least one equipment image is required. Please upload an image.');
+    // Image Validation (Mandatory for equipment listing)
+    if (!formData.imageUrl || !formData.imageUrl.trim()) {
+      setError('At least one equipment image is required. Please upload a valid image before submitting.');
       setLoading(false);
       return;
     }
+
     if (!formData.description.trim()) {
       setError('Description is mandatory');
       setLoading(false);
@@ -391,15 +393,15 @@ function AddEquipment() {
           <div className="flex items-center gap-2">
             <Link
               to="/partner/equipment"
-              className="p-1.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
+              className="p-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#142E1C] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {editId ? 'Edit Equipment Listing' : 'Add New Equipment'}
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500">
+          <p className="text-xs sm:text-sm text-slate-500 font-medium">
             {editId
               ? 'Update specifications, rental rates, and location details.'
               : 'List new farm equipment to make it available for regional rental.'}
@@ -409,7 +411,7 @@ function AddEquipment() {
         <button
           type="button"
           onClick={() => navigate('/partner/equipment')}
-          className="text-xs font-bold text-gray-500 hover:text-gray-900 transition-colors"
+          className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
         >
           Cancel & Return
         </button>
@@ -417,7 +419,7 @@ function AddEquipment() {
 
       {/* Error & Warning Banners */}
       {error && (
-        <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-2xl text-red-700 text-sm font-medium flex items-center justify-between shadow-xs">
+        <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-2xl text-red-700 text-xs font-bold flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />
             <span>{error}</span>
@@ -426,7 +428,7 @@ function AddEquipment() {
       )}
 
       {conflictWarning && (
-        <div className="p-4 bg-amber-50 border-l-4 border-amber-500 rounded-2xl text-amber-800 text-sm font-medium flex items-center justify-between shadow-xs">
+        <div className="p-4 bg-amber-50 border-l-4 border-amber-500 rounded-2xl text-amber-800 text-xs font-bold flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-600" />
             <span>{conflictWarning}</span>
@@ -434,7 +436,7 @@ function AddEquipment() {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="px-3 py-1 bg-amber-700 text-white font-bold text-xs rounded-lg hover:bg-amber-800"
+            className="px-3 py-1 bg-amber-700 text-white font-bold text-xs rounded-xl hover:bg-amber-800 cursor-pointer"
           >
             Refresh
           </button>
@@ -442,13 +444,13 @@ function AddEquipment() {
       )}
 
       {/* Main Multi-Section Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 shadow-sm space-y-8">
+      <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-8">
 
         {/* Section 1: Equipment Identification */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-            <Tractor className="w-5 h-5 text-[#3E7B27]" />
-            <h2 className="text-base font-black text-[#142E1C] uppercase tracking-wider">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Tractor className="w-5 h-5 text-emerald-700" />
+            <h2 className="text-base font-black text-slate-900 uppercase tracking-wider">
               1. Equipment Identification & Specs
             </h2>
           </div>
@@ -457,7 +459,7 @@ function AddEquipment() {
 
             {/* Title / Name */}
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Equipment Title / Listing Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -467,12 +469,12 @@ function AddEquipment() {
                 placeholder="e.g. John Deere 5050D 50HP 4WD Tractor"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Equipment Category <span className="text-red-500">*</span>
               </label>
               <select
@@ -480,7 +482,7 @@ function AddEquipment() {
                 value={formData.category}
                 onChange={handleChange}
                 required
-                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all cursor-pointer"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all cursor-pointer"
               >
                 {EQUIPMENT_CATEGORIES.map((cat) => (
                   <option key={cat.value} value={cat.value}>
@@ -492,7 +494,7 @@ function AddEquipment() {
 
             {/* Fuel Type */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Fuel / Power Source <span className="text-red-500">*</span>
               </label>
               <select
@@ -500,7 +502,7 @@ function AddEquipment() {
                 value={formData.fuelType}
                 onChange={handleChange}
                 required
-                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all cursor-pointer"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all cursor-pointer"
               >
                 {FUEL_TYPES.map((fuel) => (
                   <option key={fuel.value} value={fuel.value}>
@@ -512,7 +514,7 @@ function AddEquipment() {
 
             {/* Brand */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Brand / Manufacturer <span className="text-red-500">*</span>
               </label>
               <input
@@ -522,12 +524,12 @@ function AddEquipment() {
                 placeholder="e.g. Mahindra, John Deere, Sonalika"
                 value={formData.brand}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Model Number / Variant <span className="text-red-500">*</span>
               </label>
               <input
@@ -537,12 +539,12 @@ function AddEquipment() {
                 placeholder="e.g. 575 DI / 5050D"
                 value={formData.model}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Manufacturing Year <span className="text-red-500">*</span>
               </label>
               <input
@@ -553,13 +555,13 @@ function AddEquipment() {
                 max={new Date().getFullYear()}
                 value={formData.manufacturingYear}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
               />
             </div>
 
             {/* Capacity / Power Specs */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Power / Engine Capacity Specs <span className="text-red-500">*</span>
               </label>
               <input
@@ -569,7 +571,7 @@ function AddEquipment() {
                 placeholder="e.g. 50 HP, 6 Feet Cut, 5 Ton"
                 value={formData.capacity}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
               />
             </div>
           </div>
@@ -577,9 +579,9 @@ function AddEquipment() {
 
         {/* Section 2: Pricing & Location */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-            <DollarSign className="w-5 h-5 text-[#3E7B27]" />
-            <h2 className="text-base font-black text-[#142E1C] uppercase tracking-wider">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <DollarSign className="w-5 h-5 text-emerald-700" />
+            <h2 className="text-base font-black text-slate-900 uppercase tracking-wider">
               2. Rental Pricing & Operational Hub
             </h2>
           </div>
@@ -588,11 +590,11 @@ function AddEquipment() {
 
             {/* Daily Rental Price */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Daily Rental Price (₹/day) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">₹</span>
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">₹</span>
                 <input
                   type="number"
                   name="rentalPrice"
@@ -602,14 +604,14 @@ function AddEquipment() {
                   placeholder="e.g. 2500"
                   value={formData.rentalPrice}
                   onChange={handleChange}
-                  className="w-full pl-8 pr-4 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-base font-black text-[#142E1C] focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                  className="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
                 />
               </div>
             </div>
 
             {/* Location Address */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Base Hub Location Address <span className="text-red-500">*</span>
               </label>
               <input
@@ -619,33 +621,33 @@ function AddEquipment() {
                 placeholder="e.g. Talegaon Dabhade, Pune, MH 410506"
                 value={formData.locationAddress}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
               />
             </div>
 
             {/* Latitude */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Latitude</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Latitude</label>
               <input
                 type="number"
                 step="any"
                 name="latitude"
                 value={formData.latitude}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
               />
             </div>
 
             {/* Longitude */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Longitude</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Longitude</label>
               <input
                 type="number"
                 step="any"
                 name="longitude"
                 value={formData.longitude}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
               />
             </div>
           </div>
@@ -653,9 +655,9 @@ function AddEquipment() {
 
         {/* Section 3: Photos & Description */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-            <ImageIcon className="w-5 h-5 text-[#3E7B27]" />
-            <h2 className="text-base font-black text-[#142E1C] uppercase tracking-wider">
+          <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+            <ImageIcon className="w-5 h-5 text-emerald-700" />
+            <h2 className="text-base font-black text-slate-900 uppercase tracking-wider">
               3. Equipment Photos & Operational Notes
             </h2>
           </div>
@@ -679,7 +681,7 @@ function AddEquipment() {
               className="hidden"
             />
 
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
               Equipment Primary Image <span className="text-red-500">*</span>
             </label>
 
@@ -693,7 +695,7 @@ function AddEquipment() {
                 <button
                   type="button"
                   onClick={() => setUploadError(null)}
-                  className="text-red-500 hover:text-red-700 text-xs font-bold"
+                  className="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer"
                 >
                   Dismiss
                 </button>
@@ -708,18 +710,18 @@ function AddEquipment() {
                 onDrop={handleDrop}
                 className={`relative border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer ${
                   isDragging
-                    ? 'border-[#3E7B27] bg-emerald-50/60 scale-[1.01]'
-                    : 'border-gray-300 bg-[#F0EFE9]/50 hover:bg-[#F0EFE9] hover:border-gray-400'
+                    ? 'border-emerald-600 bg-emerald-50/60 scale-[1.01]'
+                    : 'border-slate-300 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-400'
                 }`}
                 onClick={() => fileInputRef.current?.click()}
               >
-                <div className="mx-auto w-14 h-14 rounded-2xl bg-white border border-gray-200 flex items-center justify-center shadow-xs mb-3">
-                  <UploadCloud className="w-7 h-7 text-[#3E7B27]" />
+                <div className="mx-auto w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-xs mb-3">
+                  <UploadCloud className="w-7 h-7 text-emerald-700" />
                 </div>
-                <p className="text-sm font-extrabold text-[#142E1C] mb-1">
+                <p className="text-sm font-extrabold text-slate-900 mb-1">
                   Drag & drop machinery image here
                 </p>
-                <p className="text-xs text-gray-500 mb-4">
+                <p className="text-xs text-slate-500 mb-4">
                   or choose from gallery / capture photo on mobile
                 </p>
 
@@ -730,7 +732,7 @@ function AddEquipment() {
                       e.stopPropagation();
                       fileInputRef.current?.click();
                     }}
-                    className="px-4 py-2 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
+                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>Choose Image</span>
@@ -742,23 +744,23 @@ function AddEquipment() {
                       e.stopPropagation();
                       cameraInputRef.current?.click();
                     }}
-                    className="px-4 py-2 bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-xs sm:hidden"
+                    className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-xs sm:hidden cursor-pointer"
                   >
-                    <Camera className="w-3.5 h-3.5 text-gray-600" />
+                    <Camera className="w-3.5 h-3.5 text-slate-600" />
                     <span>Take Photo</span>
                   </button>
                 </div>
 
-                <p className="text-[11px] text-gray-400 font-medium mt-3">
+                <p className="text-[11px] text-slate-400 font-medium mt-3">
                   Supports: JPG, PNG, WebP • Maximum file size: 10MB
                 </p>
               </div>
             ) : (
               /* Selected / Uploaded Image Preview Box */
-              <div className="p-4 bg-[#F8FAF8] rounded-3xl border border-gray-200/80 space-y-4">
+              <div className="p-4 bg-slate-50/70 rounded-3xl border border-slate-200 space-y-4">
                 <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
                   <div className="flex items-center gap-4">
-                    <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-gray-200 shrink-0 border border-gray-200 shadow-xs">
+                    <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 shadow-xs">
                       <img
                         src={effectiveDisplayImage}
                         alt="Equipment Preview"
@@ -776,14 +778,14 @@ function AddEquipment() {
 
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <FileImage className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm font-black text-[#142E1C] truncate max-w-[200px]">
+                        <FileImage className="w-4 h-4 text-slate-500" />
+                        <span className="text-sm font-black text-slate-900 truncate max-w-[200px]">
                           {selectedFileDetails?.name || 'Equipment Photo'}
                         </span>
                       </div>
 
                       {selectedFileDetails?.size && (
-                        <span className="text-xs text-gray-500 font-medium block">
+                        <span className="text-xs text-slate-500 font-medium block">
                           Size: {selectedFileDetails.size}
                         </span>
                       )}
@@ -813,7 +815,7 @@ function AddEquipment() {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadingImage}
-                      className="px-3.5 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl transition-all disabled:opacity-50"
+                      className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all disabled:opacity-50 cursor-pointer"
                     >
                       Change Image
                     </button>
@@ -821,7 +823,7 @@ function AddEquipment() {
                       type="button"
                       onClick={handleRemoveImage}
                       disabled={uploadingImage}
-                      className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all disabled:opacity-50"
+                      className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all disabled:opacity-50 cursor-pointer"
                       title="Remove image"
                     >
                       <X className="w-4 h-4" />
@@ -833,7 +835,7 @@ function AddEquipment() {
 
             {/* Quick Presets Fallback Option */}
             <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
-              <span className="text-gray-400 font-bold text-[11px] uppercase">Quick Demo Presets:</span>
+              <span className="text-slate-400 font-bold text-[11px] uppercase">Quick Demo Presets:</span>
               {SAMPLE_PRESET_IMAGES.map((preset, idx) => (
                 <button
                   key={idx}
@@ -842,7 +844,7 @@ function AddEquipment() {
                     handleRemoveImage();
                     setFormData((prev) => ({ ...prev, imageUrl: preset.url }));
                   }}
-                  className="px-2.5 py-1 bg-gray-100 hover:bg-emerald-100 text-gray-700 hover:text-emerald-900 rounded-lg font-semibold transition-colors"
+                  className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-900 border border-slate-200/60 rounded-lg font-semibold transition-colors cursor-pointer"
                 >
                   📷 {preset.label}
                 </button>
@@ -851,7 +853,7 @@ function AddEquipment() {
 
             {/* Detailed Description */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Detailed Condition & Attachments Description <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -861,7 +863,7 @@ function AddEquipment() {
                 placeholder="Describe machine condition, attachments included, and operational instructions..."
                 value={formData.description}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
               />
             </div>
 
@@ -871,9 +873,9 @@ function AddEquipment() {
         {/* Section 4: Status & Maintenance (Edit mode only) */}
         {editId && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-              <AlertCircle className="w-5 h-5 text-[#3E7B27]" />
-              <h2 className="text-base font-black text-[#142E1C] uppercase tracking-wider">
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+              <AlertCircle className="w-5 h-5 text-emerald-700" />
+              <h2 className="text-base font-black text-slate-900 uppercase tracking-wider">
                 4. Availability & Status Settings
               </h2>
             </div>
@@ -881,7 +883,7 @@ function AddEquipment() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Availability Status */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Availability Status <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -889,7 +891,7 @@ function AddEquipment() {
                   value={formData.availabilityStatus}
                   onChange={handleChange}
                   required
-                  className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all cursor-pointer"
                 >
                   <option value="AVAILABLE">Available</option>
                   <option value="BOOKED">Booked</option>
@@ -900,7 +902,7 @@ function AddEquipment() {
 
               {/* Is Disabled */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Listing Status <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -913,7 +915,7 @@ function AddEquipment() {
                     }));
                   }}
                   required
-                  className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all cursor-pointer"
                 >
                   <option value="false">Active / Visible</option>
                   <option value="true">Disabled / Hidden</option>
@@ -922,7 +924,7 @@ function AddEquipment() {
 
               {/* Maintenance Notes */}
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Maintenance / Administrative Notes
                 </label>
                 <textarea
@@ -931,7 +933,7 @@ function AddEquipment() {
                   placeholder="Enter maintenance updates, reason for disabling, or administrative notes..."
                   value={formData.maintenanceNotes}
                   onChange={handleChange}
-                  className="w-full px-3.5 py-2.5 bg-[#F0EFE9] border border-transparent rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#3E7B27] focus:bg-white transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
                 />
               </div>
             </div>
@@ -939,18 +941,19 @@ function AddEquipment() {
         )}
 
         {/* Form Action Footer */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
           <button
             type="button"
             onClick={() => navigate('/partner/equipment')}
-            className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors"
+            className="px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={loading || uploadingImage}
-            className="px-6 py-2.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-extrabold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-70"
+            disabled={loading || uploadingImage || !formData.imageUrl?.trim()}
+            title={!formData.imageUrl?.trim() ? 'Please upload a valid equipment image before submitting' : ''}
+            className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {loading || uploadingImage ? (
               <>

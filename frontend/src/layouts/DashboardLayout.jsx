@@ -9,14 +9,14 @@ function DashboardLayout() {
 
   if (location.pathname.startsWith('/operator')) {
     if (!token || !user || (user.role !== 'OPERATOR' && user.role !== 'ROLE_OPERATOR')) {
-      return <Navigate to="/login/operator" replace state={{ from: location }} />;
+      return <Navigate to="/login?role=OPERATOR" replace state={{ from: location }} />;
     }
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-[#F8FAF8]">
       <Sidebar />
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0">
         <Outlet />
       </main>
     </div>

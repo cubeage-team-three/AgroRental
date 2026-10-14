@@ -149,6 +149,18 @@ class FarmerEndToEndFlowTest {
                 .deliveryAddress("Manchar, Pune")
                 .build();
         booking.setId(400L);
+
+        FarmerPrincipal principal = FarmerPrincipal.builder().id(100L).role("FARMER").mobileNumber("9876543210").build();
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        principal, null, java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_FARMER"))
+                )
+        );
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 
     @Test

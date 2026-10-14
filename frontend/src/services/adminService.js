@@ -66,6 +66,81 @@ export const adminService = {
   getRecentBookings: async () => {
     return await request('/admin/dashboard/recent-bookings');
   },
+
+  /**
+   * Retrieves paginated, filtered bookings for the Admin Booking Management table.
+   * @param {Object} params - Query parameters (page, size, status, search, startDate, endDate, sort)
+   * @returns {Promise<Object>} Page of BookingResponse
+   */
+  getBookings: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.status && params.status !== 'ALL') {
+      query.append('status', params.status);
+    }
+    if (params.search && params.search.trim()) {
+      query.append('search', params.search.trim());
+    }
+    if (params.startDate) {
+      query.append('startDate', params.startDate);
+    }
+    if (params.endDate) {
+      query.append('endDate', params.endDate);
+    }
+    if (params.page !== undefined) {
+      query.append('page', params.page);
+    }
+    if (params.size !== undefined) {
+      query.append('size', params.size);
+    }
+    if (params.sort) {
+      query.append('sort', params.sort);
+    }
+
+    const queryString = query.toString();
+    const endpoint = queryString ? `/admin/bookings?${queryString}` : '/admin/bookings';
+    return await request(endpoint);
+  },
+
+  /**
+   * Retrieves aggregate booking statistics for Admin Booking Management summary cards.
+   * @returns {Promise<Object>} AdminBookingStatsResponse
+   */
+  getBookingStats: async () => {
+    return await request('/admin/bookings/stats');
+  },
+
+  /**
+   * Retrieves full details for a single booking by ID.
+   * @param {number|string} id - Booking ID
+   * @returns {Promise<Object>} BookingResponse
+   */
+  getBookingById: async (id) => {
+    return await request(`/admin/bookings/${id}`);
+  },
+
+  /**
+   * Updates booking status or assigns operator with admin authorization.
+   * @param {number|string} id - Booking ID
+   * @param {Object} statusData - { status, operatorId, rejectionReason }
+   * @returns {Promise<Object>} Updated BookingResponse
+   */
+  updateBookingStatus: async (id, statusData) => {
+    return await request(`/admin/bookings/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(statusData),
+    });
+  },
+
+  /**
+   * Cancels a booking, restoring equipment availability and cleaning up operator assignments.
+   * @param {number|string} id - Booking ID
+   * @returns {Promise<Object>} Updated BookingResponse
+   */
+  cancelBooking: async (id) => {
+    return await request(`/admin/bookings/${id}/cancel`, {
+      method: 'PATCH',
+    });
+  },
 };
 
 export default adminService;

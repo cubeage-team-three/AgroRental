@@ -344,7 +344,7 @@ function OperatorOtpVerification() {
       <RevealItem className="mt-8 text-center text-sm text-slate-500 space-y-2">
         <div>
           Incorrect mobile number?{' '}
-          <Link to="/register/operator" className="font-bold text-emerald-700 hover:underline">
+          <Link to="/register?role=operator" className="font-bold text-emerald-700 hover:underline">
             ← Change Mobile / Re-enter Details
           </Link>
         </div>

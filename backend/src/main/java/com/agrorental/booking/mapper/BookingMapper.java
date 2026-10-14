@@ -11,6 +11,7 @@ import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.farmer.repository.FarmerRepository;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.partner.entity.Partner;
+import com.agrorental.payment.repository.PaymentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -23,9 +24,22 @@ import java.math.BigDecimal;
 public class BookingMapper {
 
     private final FarmerRepository farmerRepository;
+    private final PaymentRepository paymentRepository;
 
-    public BookingMapper(@Autowired(required = false) FarmerRepository farmerRepository) {
+    @Autowired
+    public BookingMapper(
+            @Autowired(required = false) FarmerRepository farmerRepository,
+            @Autowired(required = false) PaymentRepository paymentRepository) {
         this.farmerRepository = farmerRepository;
+        this.paymentRepository = paymentRepository;
+    }
+
+    public BookingMapper(FarmerRepository farmerRepository) {
+        this(farmerRepository, null);
+    }
+
+    public BookingMapper() {
+        this(null, null);
     }
 
     /**
@@ -84,7 +98,25 @@ public class BookingMapper {
             }
         }
 
-        Long partnerId = booking.getPartner() != null ? booking.getPartner().getId() : null;
+        Long partnerId = null;
+        String partnerName = null;
+        String partnerBusinessName = null;
+        String partnerMobile = null;
+        if (booking.getPartner() != null) {
+            partnerId = booking.getPartner().getId();
+            partnerName = booking.getPartner().getFullName();
+            partnerBusinessName = booking.getPartner().getBusinessName();
+            partnerMobile = booking.getPartner().getMobileNumber();
+        }
+
+        String paymentStatus = null;
+        if (paymentRepository != null && booking.getId() != null) {
+            try {
+                paymentStatus = paymentRepository.findByBookingId(booking.getId())
+                        .map(p -> p.getPaymentStatus() != null ? p.getPaymentStatus().name() : null)
+                        .orElse(null);
+            } catch (Exception ignored) {}
+        }
         
         Long operatorId = null;
         String operatorName = null;
@@ -134,6 +166,9 @@ public class BookingMapper {
                 .equipmentCategory(equipmentCategory)
                 .primaryImageUrl(primaryImageUrl)
                 .partnerId(partnerId)
+                .partnerName(partnerName)
+                .partnerBusinessName(partnerBusinessName)
+                .partnerMobile(partnerMobile)
                 .operatorId(operatorId)
                 .operatorName(operatorName)
                 .operatorMobile(operatorMobile)
@@ -141,6 +176,7 @@ public class BookingMapper {
                 .endDate(booking.getEndDate())
                 .totalCost(booking.getTotalCost())
                 .status(booking.getStatus())
+                .paymentStatus(paymentStatus)
                 .deliveryAddress(booking.getDeliveryAddress())
                 .notes(booking.getNotes())
                 .rejectionReason(booking.getRejectionReason())

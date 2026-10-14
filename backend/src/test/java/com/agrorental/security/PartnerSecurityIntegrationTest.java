@@ -250,4 +250,52 @@ class PartnerSecurityIntegrationTest {
                 .andExpect(jsonPath("$.success", is(false)))
                 .andExpect(jsonPath("$.message", is("Access is denied. You do not have the required permissions.")));
     }
+
+    @Test
+    @DisplayName("Partner JWT for PENDING account is rejected by JwtAuthenticationFilter with 401")
+    void testPendingPartnerTokenRejectedByFilter() throws Exception {
+        Partner pendingPartner = Partner.builder()
+                .fullName("Pending Partner")
+                .mobileNumber("9876543299")
+                .verificationStatus(Partner.VerificationStatus.PENDING)
+                .build();
+        pendingPartner.setId(2L);
+        pendingPartner.setActive(true);
+
+        when(jwtService.validateToken("pending.jwt")).thenReturn(true);
+        when(jwtService.extractUserId("pending.jwt")).thenReturn(2L);
+        when(jwtService.extractRole("pending.jwt")).thenReturn("PARTNER");
+        when(partnerRepository.findById(2L)).thenReturn(Optional.of(pendingPartner));
+
+        partnerMockMvc.perform(get("/api/partners/2/dashboard")
+                        .header("Authorization", "Bearer pending.jwt")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Full authentication is required to access this resource")));
+    }
+
+    @Test
+    @DisplayName("Partner JWT for REJECTED account is rejected by JwtAuthenticationFilter with 401")
+    void testRejectedPartnerTokenRejectedByFilter() throws Exception {
+        Partner rejectedPartner = Partner.builder()
+                .fullName("Rejected Partner")
+                .mobileNumber("9876543288")
+                .verificationStatus(Partner.VerificationStatus.REJECTED)
+                .build();
+        rejectedPartner.setId(3L);
+        rejectedPartner.setActive(false);
+
+        when(jwtService.validateToken("rejected.jwt")).thenReturn(true);
+        when(jwtService.extractUserId("rejected.jwt")).thenReturn(3L);
+        when(jwtService.extractRole("rejected.jwt")).thenReturn("PARTNER");
+        when(partnerRepository.findById(3L)).thenReturn(Optional.of(rejectedPartner));
+
+        partnerMockMvc.perform(get("/api/partners/3/dashboard")
+                        .header("Authorization", "Bearer rejected.jwt")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Full authentication is required to access this resource")));
+    }
 }

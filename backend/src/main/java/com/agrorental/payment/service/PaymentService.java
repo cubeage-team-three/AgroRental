@@ -1,7 +1,9 @@
 package com.agrorental.payment.service;
 
 import com.agrorental.booking.dto.BookingResponse;
+import com.agrorental.booking.entity.BookingStatus;
 import com.agrorental.booking.service.BookingService;
+import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.common.exception.ResourceNotFoundException;
 import com.agrorental.farmer.dto.FarmerProfileResponse;
 import com.agrorental.farmer.service.FarmerProfileService;
@@ -11,8 +13,15 @@ import com.agrorental.payment.entity.Payment;
 import com.agrorental.payment.entity.PaymentMethod;
 import com.agrorental.payment.entity.PaymentStatus;
 import com.agrorental.payment.repository.PaymentRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.agrorental.security.principal.FarmerPrincipal;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -20,9 +29,11 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 public class PaymentService {
@@ -30,6 +41,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final BookingService bookingService;
     private final FarmerProfileService farmerProfileService;
+    private final PaymentTransactionHelper paymentTransactionHelper;
     
     @Autowired(required = false)
     private NotificationService notificationService;
@@ -37,32 +49,63 @@ public class PaymentService {
     public PaymentService(PaymentRepository paymentRepository,
                           BookingService bookingService,
                           FarmerProfileService farmerProfileService) {
+        this(paymentRepository, bookingService, farmerProfileService, new PaymentTransactionHelper(paymentRepository));
+    }
+
+    @Autowired
+    public PaymentService(PaymentRepository paymentRepository,
+                          BookingService bookingService,
+                          FarmerProfileService farmerProfileService,
+                          PaymentTransactionHelper paymentTransactionHelper) {
         this.paymentRepository = paymentRepository;
         this.bookingService = bookingService;
         this.farmerProfileService = farmerProfileService;
+        this.paymentTransactionHelper = paymentTransactionHelper != null
+                ? paymentTransactionHelper
+                : new PaymentTransactionHelper(paymentRepository);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PaymentResponse processPayment(PaymentRequest request) {
         BookingResponse booking = bookingService.getBookingById(request.getBookingId());
 
-        String transactionId = "TXN-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-        String invoiceRef = "INV-2026-" + String.format("%05d", System.currentTimeMillis() % 100000);
+        if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.REJECTED) {
+            throw new BadRequestException("Cannot process payment for a booking with status: " + booking.getStatus());
+        }
 
-        Payment payment = Payment.builder()
-                .bookingId(request.getBookingId())
-                .farmerId(request.getFarmerId())
-                .partnerId(booking != null ? booking.getPartnerId() : null)
-                .amount(request.getAmount())
-                .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : PaymentMethod.UPI)
-                .paymentReference(transactionId)
-                .transactionId(transactionId)
-                .paymentStatus(PaymentStatus.SUCCESS)
-                .paymentDate(LocalDateTime.now())
-                .invoiceReference(invoiceRef)
-                .build();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin && request.getFarmerId() != null && booking.getFarmerId() != null && !booking.getFarmerId().equals(request.getFarmerId())) {
+            throw new AccessDeniedException("Access is denied. You are not authorized to pay for another farmer's booking.");
+        }
 
-        Payment saved = paymentRepository.save(payment);
+        if (booking.getTotalCost() != null && request.getAmount() != null && request.getAmount().compareTo(booking.getTotalCost()) < 0) {
+            throw new BadRequestException("Payment amount is less than the required booking total cost: ₹" + booking.getTotalCost());
+        }
+
+        Optional<Payment> existingPayment = paymentRepository.findByBookingId(request.getBookingId());
+        if (existingPayment.isPresent() && existingPayment.get().getPaymentStatus() == PaymentStatus.SUCCESS) {
+            return mapToResponse(existingPayment.get());
+        }
+
+        Payment saved;
+        try {
+            saved = paymentTransactionHelper.processPaymentInTransaction(request, booking);
+        } catch (DataIntegrityViolationException ex) {
+            log.warn("Database constraint collision during payment creation for booking {}: {}",
+                    request.getBookingId(), ex.getMessage());
+
+            // Safely recover: check if another concurrent thread committed the winning payment
+            Optional<Payment> winningPayment = paymentTransactionHelper.findByBookingIdInNewTransaction(request.getBookingId());
+            if (winningPayment.isPresent() && winningPayment.get().getPaymentStatus() == PaymentStatus.SUCCESS) {
+                log.info("Concurrent payment resolved idempotently for booking ID {}. Returning winning transaction: {}",
+                        request.getBookingId(), winningPayment.get().getTransactionId());
+                return mapToResponse(winningPayment.get());
+            }
+
+            // Unrelated constraint collision or winning payment is not SUCCESS - rethrow
+            throw ex;
+        }
 
         if (notificationService != null && booking != null) {
             try {
@@ -88,7 +131,7 @@ public class PaymentService {
         return mapToResponse(saved);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PaymentResponse createPayment(PaymentCreateRequest request) {
         PaymentRequest req = PaymentRequest.builder()
                 .bookingId(request.getBookingId())
@@ -383,23 +426,22 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public InvoiceResponse generateInvoice(Long bookingId) {
         BookingResponse booking = bookingService.getBookingById(bookingId);
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (!isAdmin) {
+                Object principal = auth.getPrincipal();
+                if (principal instanceof FarmerPrincipal farmerPrincipal) {
+                    if (booking.getFarmerId() != null && !booking.getFarmerId().equals(farmerPrincipal.getId())) {
+                        throw new AccessDeniedException("Access is denied. You are not authorized to view another farmer's invoice.");
+                    }
+                }
+            }
+        }
+
         Payment payment = paymentRepository.findByBookingId(bookingId)
-                .orElseGet(() -> {
-                    String txn = "TXN-" + System.currentTimeMillis();
-                    String inv = "INV-2026-" + String.format("%05d", bookingId);
-                    return Payment.builder()
-                            .bookingId(bookingId)
-                            .farmerId(booking.getFarmerId())
-                            .partnerId(booking.getPartnerId() != null ? booking.getPartnerId() : null)
-                            .amount(booking.getTotalCost() != null ? booking.getTotalCost() : BigDecimal.valueOf(1500))
-                            .paymentMethod(PaymentMethod.UPI)
-                            .transactionId(txn)
-                            .paymentReference(txn)
-                            .paymentStatus(PaymentStatus.SUCCESS)
-                            .paymentDate(LocalDateTime.now())
-                            .invoiceReference(inv)
-                            .build();
-                });
+                .orElseThrow(() -> new ResourceNotFoundException("No payment transaction found for booking ID: " + bookingId));
 
         FarmerProfileResponse farmer = null;
         try {
@@ -413,21 +455,31 @@ public class PaymentService {
             days = Math.max(1, ChronoUnit.DAYS.between(booking.getStartDate(), booking.getEndDate()) + 1);
         }
 
-        BigDecimal total = payment.getAmount() != null ? payment.getAmount() : BigDecimal.valueOf(1500);
+        BigDecimal total = payment.getAmount() != null ? payment.getAmount() : (booking.getTotalCost() != null ? booking.getTotalCost() : BigDecimal.ZERO);
         BigDecimal subtotal = total.multiply(BigDecimal.valueOf(0.82)).setScale(2, RoundingMode.HALF_UP);
         BigDecimal gst = total.subtract(subtotal);
-        BigDecimal rate = subtotal.divide(BigDecimal.valueOf(days), 2, RoundingMode.HALF_UP);
+        BigDecimal rate = days > 0 ? subtotal.divide(BigDecimal.valueOf(days), 2, RoundingMode.HALF_UP) : subtotal;
+
+        String farmerName = farmer != null && farmer.getFullName() != null
+                ? farmer.getFullName()
+                : (booking.getFarmerName() != null ? booking.getFarmerName() : "Farmer #" + booking.getFarmerId());
+        String farmerMobile = farmer != null && farmer.getMobileNumber() != null
+                ? farmer.getMobileNumber()
+                : (booking.getFarmerMobile() != null ? booking.getFarmerMobile() : "N/A");
+        String partnerName = booking.getPartnerBusinessName() != null
+                ? booking.getPartnerBusinessName()
+                : (booking.getPartnerName() != null ? booking.getPartnerName() : "Partner #" + (booking.getPartnerId() != null ? booking.getPartnerId() : 1));
 
         return InvoiceResponse.builder()
                 .invoiceReference(payment.getInvoiceReference())
                 .transactionId(payment.getTransactionId())
                 .bookingId(booking.getId())
                 .farmerId(booking.getFarmerId())
-                .farmerName(farmer != null ? farmer.getFullName() : "Farmer #" + booking.getFarmerId())
-                .farmerMobile(farmer != null ? farmer.getMobileNumber() : "N/A")
-                .equipmentName(booking.getEquipmentName())
-                .equipmentCategory(booking.getEquipmentCategory())
-                .partnerName("Partner #" + (booking.getPartnerId() != null ? booking.getPartnerId() : 1))
+                .farmerName(farmerName)
+                .farmerMobile(farmerMobile)
+                .equipmentName(booking.getEquipmentName() != null ? booking.getEquipmentName() : "Agricultural Equipment")
+                .equipmentCategory(booking.getEquipmentCategory() != null ? booking.getEquipmentCategory() : "EQUIPMENT")
+                .partnerName(partnerName)
                 .bookingStartDate(booking.getStartDate())
                 .bookingEndDate(booking.getEndDate())
                 .rentalRatePerDay(rate)
@@ -437,7 +489,8 @@ public class PaymentService {
                 .totalAmount(total)
                 .paymentMethod(payment.getPaymentMethod())
                 .paymentDate(payment.getPaymentDate())
-                .status(payment.getPaymentStatus().name())
+                .status(payment.getPaymentStatus() != null ? payment.getPaymentStatus().name() : "SUCCESS")
+                .bookingStatus(booking.getStatus() != null ? booking.getStatus().name() : null)
                 .build();
     }
 

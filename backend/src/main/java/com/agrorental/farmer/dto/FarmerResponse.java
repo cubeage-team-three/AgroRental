@@ -19,5 +19,6 @@ public class FarmerResponse {
     private String email;
     private String preferredLanguage;
     private String accountStatus;
+    private String address;
     private LocalDateTime createdAt;
 }

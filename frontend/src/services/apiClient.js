@@ -6,7 +6,8 @@ import { API_BASE_URL } from '../utils/constants';
  */
 export async function request(endpoint, options = {}) {
   const cleanEndpoint = endpoint.startsWith('/api') ? endpoint.substring(4) : endpoint;
-  const url = `${API_BASE_URL}${cleanEndpoint}`;
+  const formattedEndpoint = cleanEndpoint.startsWith('/') ? cleanEndpoint : `/${cleanEndpoint}`;
+  const url = `${API_BASE_URL}${formattedEndpoint}`;
 
   const defaultHeaders = {};
   if (!(options.body instanceof FormData)) {

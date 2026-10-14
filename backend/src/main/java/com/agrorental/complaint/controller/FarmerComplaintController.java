@@ -17,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/farmers/complaints")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class FarmerComplaintController {
 
     private final ComplaintService complaintService;

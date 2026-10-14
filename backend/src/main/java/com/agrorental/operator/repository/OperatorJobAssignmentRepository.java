@@ -23,7 +23,22 @@ public interface OperatorJobAssignmentRepository extends JpaRepository<OperatorJ
 
     Optional<OperatorJobAssignment> findByBookingId(Long bookingId);
 
+    List<OperatorJobAssignment> findAllByBookingId(Long bookingId);
+
     boolean existsByBookingIdAndAssignmentStatus(Long bookingId, OperatorAssignmentStatus assignmentStatus);
+
+    /**
+     * Checks if any active assignment exists for the booking across any of the specified assignment statuses.
+     */
+    @Query("""
+        SELECT COUNT(a) > 0 FROM OperatorJobAssignment a
+        WHERE a.booking.id = :bookingId
+          AND a.assignmentStatus IN :statuses
+    """)
+    boolean existsByBookingIdAndAssignmentStatusIn(
+            @Param("bookingId") Long bookingId,
+            @Param("statuses") java.util.Collection<OperatorAssignmentStatus> statuses
+    );
 
     Page<OperatorJobAssignment> findByOperatorId(Long operatorId, Pageable pageable);
 
@@ -35,14 +50,45 @@ public interface OperatorJobAssignmentRepository extends JpaRepository<OperatorJ
 
     /**
      * Checks if the operator has any conflicting active assignment for overlapping booking dates.
+     * Considers all active assignment statuses (ASSIGNED, ACCEPTED, TRAVELING, REACHED, IN_PROGRESS, PAUSED)
+     * and excludes terminal booking statuses (CANCELLED, REJECTED, COMPLETED).
+     * Excludes the specified booking ID to allow reassignment scenarios if applicable.
+     */
+    @Query("""
+        SELECT COUNT(a) > 0 FROM OperatorJobAssignment a
+        JOIN a.booking b
+        WHERE a.operator.id = :operatorId
+          AND a.assignmentStatus IN :activeStatuses
+          AND (:excludeBookingId IS NULL OR b.id != :excludeBookingId)
+          AND b.status NOT IN (
+              com.agrorental.booking.entity.BookingStatus.CANCELLED,
+              com.agrorental.booking.entity.BookingStatus.REJECTED,
+              com.agrorental.booking.entity.BookingStatus.COMPLETED
+          )
+          AND (b.startDate <= :endDate AND b.endDate >= :startDate)
+    """)
+    boolean existsActiveOverlappingAssignment(
+            @Param("operatorId") Long operatorId,
+            @Param("activeStatuses") java.util.Collection<OperatorAssignmentStatus> activeStatuses,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("excludeBookingId") Long excludeBookingId
+    );
+
+    /**
+     * Checks if the operator has any conflicting assignment for overlapping booking dates matching a single status.
      */
     @Query("""
         SELECT COUNT(a) > 0 FROM OperatorJobAssignment a
         JOIN a.booking b
         WHERE a.operator.id = :operatorId
           AND a.assignmentStatus = :status
-          AND b.status = com.agrorental.booking.entity.BookingStatus.CONFIRMED
-          AND NOT (b.endDate < :startDate OR b.startDate > :endDate)
+          AND b.status NOT IN (
+              com.agrorental.booking.entity.BookingStatus.CANCELLED,
+              com.agrorental.booking.entity.BookingStatus.REJECTED,
+              com.agrorental.booking.entity.BookingStatus.COMPLETED
+          )
+          AND (b.startDate <= :endDate AND b.endDate >= :startDate)
     """)
     boolean existsOverlappingAssignment(
             @Param("operatorId") Long operatorId,

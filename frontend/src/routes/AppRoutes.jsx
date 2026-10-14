@@ -14,15 +14,10 @@ import Home from '../pages/Home';
 import NotFound from '../pages/NotFound';
 
 import Login from '../pages/auth/Login';
-import OperatorLogin from '../pages/auth/OperatorLogin';
-import OperatorAuthChoice from '../pages/auth/OperatorAuthChoice';
 import OperatorOtpVerification from '../pages/auth/OperatorOtpVerification';
 import OperatorKyc from '../pages/auth/OperatorKyc';
 import OperatorVerificationPending from '../pages/auth/OperatorVerificationPending';
 import Register from '../pages/auth/Register';
-import RegisterFarmer from '../pages/auth/RegisterFarmer';
-import RegisterPartner from '../pages/auth/RegisterPartner';
-import RegisterOperator from '../pages/auth/RegisterOperator';
 import VerifyOtp from '../pages/auth/VerifyOtp';
 import VerifyEmail from '../pages/auth/VerifyEmail';
 import ForgotPassword from '../pages/auth/ForgotPassword';
@@ -83,21 +78,21 @@ function AppRoutes() {
       {/* Public / Auth routes */}
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
-        <Route path="register/farmer" element={<RegisterFarmer />} />
         <Route path="verify-otp" element={<VerifyOtp />} />
       </Route>
 
       {/* Cinematic split-screen auth pages */}
       <Route element={<AuthLayout />}>
         <Route path="login" element={<Login />} />
-        <Route path="login/operator" element={<OperatorLogin />} />
-        <Route path="operator/login" element={<OperatorLogin />} />
-        <Route path="auth/operator" element={<OperatorAuthChoice />} />
-        <Route path="operator/auth" element={<OperatorAuthChoice />} />
+        <Route path="login/operator" element={<Login initialRole="OPERATOR" />} />
+        <Route path="operator/login" element={<Login initialRole="OPERATOR" />} />
+        <Route path="auth/operator" element={<Navigate to="/register?role=operator" replace />} />
+        <Route path="operator/auth" element={<Navigate to="/register?role=operator" replace />} />
         <Route path="verify-otp/operator" element={<OperatorOtpVerification />} />
         <Route path="register" element={<Register />} />
-        <Route path="register/partner" element={<RegisterPartner />} />
-        <Route path="register/operator" element={<RegisterOperator />} />
+        <Route path="register/farmer" element={<Register initialRole="farmer" />} />
+        <Route path="register/partner" element={<Register initialRole="partner" />} />
+        <Route path="register/operator" element={<Register initialRole="operator" />} />
         <Route path="register/operator/kyc" element={<OperatorKyc />} />
         <Route path="register/operator/pending" element={<OperatorVerificationPending />} />
         <Route path="verify-email" element={<VerifyEmail />} />
@@ -106,7 +101,7 @@ function AppRoutes() {
       </Route>
 
       {/* Protected Farmer routes */}
-      <Route element={<ProtectedRoute allowedRoles={['FARMER', 'ADMIN']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['FARMER']} />}>
         <Route path="/farmer" element={<DashboardLayout />}>
           <Route path="dashboard" element={<FarmerDashboard />} />
           <Route path="profile" element={<FarmerProfile />} />
@@ -131,7 +126,7 @@ function AppRoutes() {
       </Route>
 
       {/* Protected Partner routes */}
-      <Route element={<ProtectedRoute allowedRoles={['PARTNER', 'ADMIN']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['PARTNER']} />}>
         <Route path="/partner" element={<PartnerLayout />}>
           <Route path="dashboard" element={<PartnerDashboard />} />
           <Route path="profile" element={<PartnerProfile />} />
@@ -149,7 +144,7 @@ function AppRoutes() {
       </Route>
 
       {/* Protected Operator routes */}
-      <Route element={<ProtectedRoute allowedRoles={['OPERATOR', 'ADMIN']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['OPERATOR']} />}>
         <Route path="/operator" element={<DashboardLayout />}>
           <Route path="dashboard" element={<OperatorDashboard />} />
           <Route path="profile" element={<OperatorProfile />} />

@@ -47,7 +47,7 @@ class OperatorOtpControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/operators/otp/send - Should return 200 OK with safe OTP send response")
+    @DisplayName("POST /api/operators/otp/send - Dev mode: returns 200 OK with devMockOtp present")
     void shouldSendOtpSuccessfully() throws Exception {
         OperatorOtpResponse response = OperatorOtpResponse.builder()
                 .mobileNumber("9876543210")
@@ -55,7 +55,7 @@ class OperatorOtpControllerTest {
                 .message("OTP sent successfully to ******3210")
                 .expiresAt(LocalDateTime.now().plusMinutes(5))
                 .attemptsRemaining(3)
-                .devMockOtp("123456")
+                .devMockOtp("654321")
                 .build();
 
         when(operatorOtpService.sendOtp(any(OperatorOtpSendRequest.class))).thenReturn(response);
@@ -73,11 +73,43 @@ class OperatorOtpControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.mobileNumber").value("9876543210"))
                 .andExpect(jsonPath("$.data.verified").value(false))
+                .andExpect(jsonPath("$.data.devMockOtp").value("654321"))
                 .andExpect(jsonPath("$.data.otpHash").doesNotExist());
     }
 
     @Test
-    @DisplayName("POST /api/operators/otp/verify - Should return 200 OK when OTP is verified")
+    @DisplayName("POST /api/operators/otp/send - Production mode: returns 200 OK with devMockOtp strictly omitted")
+    void shouldSendOtpInProductionMode_WithoutDevMockOtp() throws Exception {
+        OperatorOtpResponse response = OperatorOtpResponse.builder()
+                .mobileNumber("9876543210")
+                .verified(false)
+                .message("OTP sent successfully to ******3210")
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .attemptsRemaining(3)
+                .devMockOtp(null)
+                .build();
+
+        when(operatorOtpService.sendOtp(any(OperatorOtpSendRequest.class))).thenReturn(response);
+
+        String jsonPayload = """
+                {
+                    "mobileNumber": "9876543210"
+                }
+                """;
+
+        mockMvc.perform(post("/api/operators/otp/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.mobileNumber").value("9876543210"))
+                .andExpect(jsonPath("$.data.verified").value(false))
+                .andExpect(jsonPath("$.data.devMockOtp").doesNotExist())
+                .andExpect(jsonPath("$.data.otpHash").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("POST /api/operators/otp/verify - Should return 200 OK when OTP is verified without leaking OTP")
     void shouldVerifyOtpSuccessfully() throws Exception {
         OperatorOtpResponse response = OperatorOtpResponse.builder()
                 .mobileNumber("9876543210")
@@ -90,7 +122,7 @@ class OperatorOtpControllerTest {
         String jsonPayload = """
                 {
                     "mobileNumber": "9876543210",
-                    "otp": "123456"
+                    "otp": "654321"
                 }
                 """;
 
@@ -99,7 +131,9 @@ class OperatorOtpControllerTest {
                         .content(jsonPayload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.verified").value(true));
+                .andExpect(jsonPath("$.data.verified").value(true))
+                .andExpect(jsonPath("$.data.devMockOtp").doesNotExist())
+                .andExpect(jsonPath("$.data.otpHash").doesNotExist());
     }
 
     @Test

@@ -13,6 +13,7 @@ export const adminAuthService = {
       body: JSON.stringify({
         mobileOrEmail: email,
         password,
+        role: 'ADMIN',
         loginType: 'PASSWORD',
       }),
     });

@@ -16,12 +16,22 @@ import com.agrorental.farmer.entity.Farm;
 import com.agrorental.farmer.repository.FarmRepository;
 import com.agrorental.notification.service.NotificationService;
 import com.agrorental.operator.entity.Operator;
+import com.agrorental.operator.entity.OperatorJobAssignment;
+import com.agrorental.operator.enums.OperatorAssignmentStatus;
+import com.agrorental.operator.dto.OperatorAssignmentRequest;
+import com.agrorental.operator.service.OperatorAssignmentService;
+import com.agrorental.operator.repository.OperatorJobAssignmentRepository;
+import com.agrorental.operator.repository.OperatorLocationRepository;
 import com.agrorental.operator.repository.OperatorRepository;
 import com.agrorental.partner.entity.Partner;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -38,6 +48,9 @@ public class BookingService {
     private final FarmRepository farmRepository;
     private final NotificationService notificationService;
     private final BookingMapper bookingMapper;
+    private final OperatorJobAssignmentRepository operatorJobAssignmentRepository;
+    private final OperatorLocationRepository operatorLocationRepository;
+    private final OperatorAssignmentService operatorAssignmentService;
 
     public BookingService(
             BookingRepository bookingRepository,
@@ -46,12 +59,41 @@ public class BookingService {
             FarmRepository farmRepository,
             NotificationService notificationService,
             BookingMapper bookingMapper) {
+        this(bookingRepository, equipmentRepository, operatorRepository, farmRepository, notificationService, bookingMapper, null, null, null);
+    }
+
+    public BookingService(
+            BookingRepository bookingRepository,
+            EquipmentRepository equipmentRepository,
+            OperatorRepository operatorRepository,
+            FarmRepository farmRepository,
+            NotificationService notificationService,
+            BookingMapper bookingMapper,
+            OperatorJobAssignmentRepository operatorJobAssignmentRepository,
+            OperatorLocationRepository operatorLocationRepository) {
+        this(bookingRepository, equipmentRepository, operatorRepository, farmRepository, notificationService, bookingMapper, operatorJobAssignmentRepository, operatorLocationRepository, null);
+    }
+
+    @Autowired
+    public BookingService(
+            BookingRepository bookingRepository,
+            EquipmentRepository equipmentRepository,
+            OperatorRepository operatorRepository,
+            FarmRepository farmRepository,
+            NotificationService notificationService,
+            BookingMapper bookingMapper,
+            OperatorJobAssignmentRepository operatorJobAssignmentRepository,
+            OperatorLocationRepository operatorLocationRepository,
+            @Lazy OperatorAssignmentService operatorAssignmentService) {
         this.bookingRepository = bookingRepository;
         this.equipmentRepository = equipmentRepository;
         this.operatorRepository = operatorRepository;
         this.farmRepository = farmRepository;
         this.notificationService = notificationService;
         this.bookingMapper = bookingMapper;
+        this.operatorJobAssignmentRepository = operatorJobAssignmentRepository;
+        this.operatorLocationRepository = operatorLocationRepository;
+        this.operatorAssignmentService = operatorAssignmentService;
     }
 
     /**
@@ -62,6 +104,25 @@ public class BookingService {
      */
     @Transactional
     public BookingResponse createBooking(BookingCreateRequest request) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || (auth.getPrincipal() instanceof String && "anonymousUser".equals(auth.getPrincipal()))) {
+            throw new org.springframework.security.access.AccessDeniedException("Authentication is required to create a booking.");
+        }
+        if (!(auth.getPrincipal() instanceof com.agrorental.security.principal.FarmerPrincipal farmerPrincipal)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Access is denied. Only farmers are permitted to create bookings.");
+        }
+
+        if (request.getFarmerId() != null && !request.getFarmerId().equals(farmerPrincipal.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Access is denied. You cannot create a booking for another farmer.");
+        }
+        request.setFarmerId(farmerPrincipal.getId());
+
+        if (request.getFarmerId() == null) {
+            throw new BadRequestException("Farmer ID is required");
+        }
+
         if (request.getEndDate().isBefore(request.getStartDate())) {
             throw new BadRequestException("End date cannot be before start date");
         }
@@ -186,7 +247,8 @@ public class BookingService {
      */
     @Transactional
     public BookingResponse acceptBooking(Long id, Long partnerId) {
-        Booking booking = bookingRepository.findById(id)
+        Booking booking = bookingRepository.findByIdWithLock(id)
+                .or(() -> bookingRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + id));
 
         if (partnerId != null && booking.getPartner() != null && !booking.getPartner().getId().equals(partnerId)) {
@@ -242,7 +304,8 @@ public class BookingService {
      */
     @Transactional
     public BookingResponse rejectBooking(Long id, Long partnerId, String rejectionReason) {
-        Booking booking = bookingRepository.findById(id)
+        Booking booking = bookingRepository.findByIdWithLock(id)
+                .or(() -> bookingRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + id));
 
         if (partnerId != null && booking.getPartner() != null && !booking.getPartner().getId().equals(partnerId)) {
@@ -261,6 +324,8 @@ public class BookingService {
             equipment.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
             equipmentRepository.save(equipment);
         }
+
+        cleanupOperatorAssignments(booking);
 
         Booking saved = bookingRepository.save(booking);
 
@@ -285,9 +350,21 @@ public class BookingService {
      * @param operatorId Operator identifier
      * @return Updated BookingResponse
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponse assignOperator(Long bookingId, Long partnerId, Long operatorId) {
-        Booking booking = bookingRepository.findById(bookingId)
+        if (operatorAssignmentService != null) {
+            OperatorAssignmentRequest request = OperatorAssignmentRequest.builder()
+                    .operatorId(operatorId)
+                    .notes(partnerId != null ? "Assigned by partner " + partnerId : "Assigned by system")
+                    .build();
+            String assignedBy = partnerId != null ? "PARTNER_" + partnerId : "ADMIN/PARTNER";
+            operatorAssignmentService.assignOperator(bookingId, request, assignedBy, partnerId);
+            return getBookingById(bookingId);
+        }
+
+        // Fallback for tests running without OperatorAssignmentService
+        Booking booking = bookingRepository.findByIdWithLock(bookingId)
+                .or(() -> bookingRepository.findById(bookingId))
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + bookingId));
 
         if (partnerId != null && booking.getPartner() != null && !booking.getPartner().getId().equals(partnerId)) {
@@ -309,11 +386,23 @@ public class BookingService {
                 .anyMatch(b -> !b.getStartDate().isAfter(booking.getEndDate()) && !b.getEndDate().isBefore(booking.getStartDate()));
 
         if (hasConflict) {
-            throw new BadRequestException("Operator " + operator.getFullName() + " is already assigned to another active booking during these dates.");
+            throw new BadRequestException("Operator already has an active assignment for overlapping dates (" +
+                    booking.getStartDate() + " to " + booking.getEndDate() + ")");
         }
 
         booking.setOperator(operator);
         booking.setStatus(BookingStatus.OPERATOR_ASSIGNED);
+
+        if (operatorJobAssignmentRepository != null) {
+            OperatorJobAssignment assignment = OperatorJobAssignment.builder()
+                    .operator(operator)
+                    .booking(booking)
+                    .assignmentStatus(OperatorAssignmentStatus.ASSIGNED)
+                    .assignedAt(LocalDateTime.now())
+                    .assignedBy(partnerId != null ? "PARTNER_" + partnerId : "SYSTEM")
+                    .build();
+            operatorJobAssignmentRepository.save(assignment);
+        }
 
         Booking saved = bookingRepository.save(booking);
 
@@ -371,7 +460,8 @@ public class BookingService {
      */
     @Transactional
     public BookingResponse cancelBooking(Long id, Long requestingFarmerId) {
-        Booking booking = bookingRepository.findById(id)
+        Booking booking = bookingRepository.findByIdWithLock(id)
+                .or(() -> bookingRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + id));
 
         if (requestingFarmerId != null && !booking.getFarmerId().equals(requestingFarmerId)) {
@@ -389,6 +479,8 @@ public class BookingService {
             equipment.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
             equipmentRepository.save(equipment);
         }
+
+        cleanupOperatorAssignments(booking);
 
         Booking saved = bookingRepository.save(booking);
 
@@ -421,12 +513,35 @@ public class BookingService {
      * @param request Status update payload
      * @return Updated BookingResponse DTO
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponse updateBookingStatus(Long id, BookingStatusUpdateRequest request) {
-        Booking booking = bookingRepository.findById(id)
+        Booking booking = bookingRepository.findByIdWithLock(id)
+                .or(() -> bookingRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + id));
 
         BookingStatus newStatus = request.getStatus();
+
+        // If target status is OPERATOR_ASSIGNED with an operator, route through canonical assignment service
+        if (newStatus == BookingStatus.OPERATOR_ASSIGNED && request.getOperatorId() != null) {
+            if (operatorAssignmentService != null) {
+                OperatorAssignmentRequest assignRequest = OperatorAssignmentRequest.builder()
+                        .operatorId(request.getOperatorId())
+                        .notes("Assigned via status update")
+                        .build();
+                operatorAssignmentService.assignOperator(id, assignRequest, "ADMIN", null);
+                if (request.getRejectionReason() != null && !request.getRejectionReason().isBlank()) {
+                    Booking reloaded = bookingRepository.findById(id).orElse(booking);
+                    reloaded.setRejectionReason(request.getRejectionReason().trim());
+                    bookingRepository.save(reloaded);
+                }
+                return getBookingById(id);
+            }
+        }
+
+        if (newStatus == BookingStatus.OPERATOR_ASSIGNED && request.getOperatorId() == null && booking.getOperator() == null) {
+            throw new BadRequestException("Operator ID is required when updating status to OPERATOR_ASSIGNED");
+        }
+
         booking.setStatus(newStatus);
 
         if (request.getRejectionReason() != null && !request.getRejectionReason().isBlank()) {
@@ -438,6 +553,9 @@ public class BookingService {
             if (equipment != null) {
                 equipment.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
                 equipmentRepository.save(equipment);
+            }
+            if (newStatus == BookingStatus.CANCELLED || newStatus == BookingStatus.REJECTED) {
+                cleanupOperatorAssignments(booking);
             }
         } else if (newStatus == BookingStatus.CONFIRMED || newStatus == BookingStatus.ACCEPTED || newStatus == BookingStatus.OPERATOR_ASSIGNED || newStatus == BookingStatus.ON_THE_WAY || newStatus == BookingStatus.WORK_STARTED) {
             Equipment equipment = booking.getEquipment();
@@ -451,6 +569,16 @@ public class BookingService {
             Operator operator = operatorRepository.findById(request.getOperatorId())
                     .orElseThrow(() -> new ResourceNotFoundException("Operator not found with ID: " + request.getOperatorId()));
             booking.setOperator(operator);
+            if (newStatus == BookingStatus.OPERATOR_ASSIGNED && operatorJobAssignmentRepository != null) {
+                OperatorJobAssignment assignment = OperatorJobAssignment.builder()
+                        .operator(operator)
+                        .booking(booking)
+                        .assignmentStatus(OperatorAssignmentStatus.ASSIGNED)
+                        .assignedAt(LocalDateTime.now())
+                        .assignedBy("ADMIN")
+                        .build();
+                operatorJobAssignmentRepository.save(assignment);
+            }
         }
 
         Booking saved = bookingRepository.save(booking);
@@ -470,11 +598,90 @@ public class BookingService {
             }
         }
 
-        if (request.getOperatorId() != null) {
+        if (request.getOperatorId() != null && newStatus != BookingStatus.OPERATOR_ASSIGNED) {
             notificationService.sendNotification("OPERATOR", request.getOperatorId(), "New Job Assignment", "You have been assigned to job #" + saved.getId() + " (" + equipName + ").", "OPERATOR_ASSIGNED", saved.getId());
             notificationService.sendNotification("FARMER", saved.getFarmerId(), "Operator Assigned", "An operator has been assigned to your booking #" + saved.getId() + ".", "OPERATOR_ASSIGNED", saved.getId());
         }
 
         return bookingMapper.toResponse(saved);
+    }
+
+    /**
+     * Cleans up operator job assignments and stops GPS tracking when a booking is cancelled or rejected.
+     * Prevents active assignments from dangling on operator dashboards, deactivates tracking,
+     * dispatches cancellation notifications, and preserves terminal assignments (COMPLETED, REJECTED, CANCELLED).
+     *
+     * @param booking Target booking being cancelled or rejected
+     */
+    private void cleanupOperatorAssignments(Booking booking) {
+        if (booking == null || booking.getId() == null) {
+            return;
+        }
+
+        java.util.Set<Long> notifiedOperatorIds = new java.util.HashSet<>();
+
+        if (operatorJobAssignmentRepository != null) {
+            List<OperatorJobAssignment> assignments = operatorJobAssignmentRepository.findAllByBookingId(booking.getId());
+            if (assignments != null) {
+                for (OperatorJobAssignment assignment : assignments) {
+                    OperatorAssignmentStatus currentStatus = assignment.getAssignmentStatus();
+                    // Clean up active assignments only; never mutate terminal assignments (COMPLETED, REJECTED, CANCELLED)
+                    if (currentStatus == OperatorAssignmentStatus.ASSIGNED
+                            || currentStatus == OperatorAssignmentStatus.ACCEPTED
+                            || currentStatus == OperatorAssignmentStatus.TRAVELING
+                            || currentStatus == OperatorAssignmentStatus.REACHED
+                            || currentStatus == OperatorAssignmentStatus.IN_PROGRESS
+                            || currentStatus == OperatorAssignmentStatus.PAUSED) {
+
+                        assignment.setAssignmentStatus(OperatorAssignmentStatus.CANCELLED);
+                        operatorJobAssignmentRepository.save(assignment);
+
+                        if (operatorLocationRepository != null) {
+                            try {
+                                operatorLocationRepository.deactivateTrackingForAssignment(assignment.getId());
+                            } catch (Exception e) {
+                                // Fallback to maintain transaction integrity
+                            }
+                        }
+
+                        if (assignment.getOperator() != null && assignment.getOperator().getId() != null) {
+                            Long opId = assignment.getOperator().getId();
+                            notifiedOperatorIds.add(opId);
+                            try {
+                                notificationService.sendNotification(
+                                        "OPERATOR",
+                                        opId,
+                                        "Job Assignment Cancelled",
+                                        "Job assignment for booking #" + booking.getId() + " has been cancelled.",
+                                        "JOB_CANCELLED",
+                                        booking.getId()
+                                );
+                            } catch (Exception e) {
+                                // Fallback to maintain transaction integrity
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // If booking held direct operator reference and wasn't notified yet, notify them
+        if (booking.getOperator() != null && booking.getOperator().getId() != null) {
+            Long directOpId = booking.getOperator().getId();
+            if (!notifiedOperatorIds.contains(directOpId)) {
+                try {
+                    notificationService.sendNotification(
+                            "OPERATOR",
+                            directOpId,
+                            "Job Assignment Cancelled",
+                            "Job assignment for booking #" + booking.getId() + " has been cancelled.",
+                            "JOB_CANCELLED",
+                            booking.getId()
+                    );
+                } catch (Exception e) {
+                    // Fallback to maintain transaction integrity
+                }
+            }
+        }
     }
 }

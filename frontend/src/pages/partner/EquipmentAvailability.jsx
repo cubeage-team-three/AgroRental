@@ -117,19 +117,19 @@ function EquipmentAvailability() {
     <div className="max-w-7xl mx-auto space-y-6 font-sans">
       
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#142E1C] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Fleet Operational & Availability Control
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Configure machine availability states, maintenance schedules, and operational search visibility.
           </p>
         </div>
 
         <Link
           to="/partner/equipment/add"
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs sm:text-sm font-extrabold rounded-xl shadow-md transition-all"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-extrabold rounded-xl shadow-md transition-all cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           <span>+ Add Machine</span>
@@ -143,7 +143,7 @@ function EquipmentAvailability() {
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>{successToast}</span>
           </div>
-          <button type="button" onClick={() => setSuccessToast('')} className="text-emerald-700 font-bold ml-2">✕</button>
+          <button type="button" onClick={() => setSuccessToast('')} className="text-emerald-700 font-bold ml-2 cursor-pointer">✕</button>
         </div>
       )}
 
@@ -153,7 +153,7 @@ function EquipmentAvailability() {
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
             <span>{error}</span>
           </div>
-          <button type="button" onClick={fetchEquipment} className="text-xs font-bold text-red-800 underline">
+          <button type="button" onClick={fetchEquipment} className="text-xs font-bold text-red-800 underline cursor-pointer">
             Retry
           </button>
         </div>
@@ -163,25 +163,25 @@ function EquipmentAvailability() {
       {loading ? (
         <div className="space-y-4 animate-pulse">
           {[1, 2, 3].map((idx) => (
-            <div key={idx} className="h-16 bg-gray-200 rounded-2xl" />
+            <div key={idx} className="h-16 bg-slate-100 rounded-2xl" />
           ))}
         </div>
       ) : equipmentList.length === 0 ? (
-        <div className="bg-white border border-gray-100 rounded-3xl p-12 text-center text-gray-500 space-y-3">
-          <Tractor className="w-10 h-10 text-gray-300 mx-auto" />
-          <p className="text-sm font-bold text-gray-700">No machinery listings in your fleet.</p>
+        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-500 space-y-3">
+          <Tractor className="w-10 h-10 text-slate-300 mx-auto" />
+          <p className="text-sm font-bold text-slate-700">No machinery listings in your fleet.</p>
           <Link
             to="/partner/equipment/add"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#3E7B27] text-white text-xs font-bold rounded-xl"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 text-white text-xs font-bold rounded-xl hover:bg-emerald-800 transition-colors"
           >
             Add Equipment
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-700">
-              <thead className="bg-[#F8FAF8] text-[11px] font-black text-gray-500 uppercase tracking-wider border-b border-gray-200/80">
+            <table className="w-full text-left text-sm text-slate-700">
+              <thead className="bg-slate-50 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-200">
                 <tr>
                   <th className="px-6 py-4">Machinery Details</th>
                   <th className="px-6 py-4">Category</th>
@@ -190,21 +190,21 @@ function EquipmentAvailability() {
                   <th className="px-6 py-4">Search Visibility Toggle</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-100">
                 {equipmentList.map((item) => {
                   const badge = getStatusBadgeInfo(item.availabilityStatus);
                   const isProcessing = actionLoading === item.id;
 
                   return (
-                    <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="font-extrabold text-gray-900">{item.name}</div>
-                        <div className="text-xs text-gray-500 font-medium">
+                        <div className="font-extrabold text-slate-900">{item.name}</div>
+                        <div className="text-xs text-slate-500 font-medium">
                           {item.brand} {item.model} • ₹{Number(item.rentalPrice).toLocaleString('en-IN')}/day
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 text-xs font-bold text-[#3E7B27]">
+                      <td className="px-6 py-4 text-xs font-bold text-emerald-700">
                         {formatCategoryLabel(item.category)}
                       </td>
 
@@ -219,7 +219,7 @@ function EquipmentAvailability() {
                           disabled={isProcessing || item.availabilityStatus === 'BOOKED'}
                           value={item.availabilityStatus}
                           onChange={(e) => handleStatusChange(item, e.target.value)}
-                          className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-800 bg-[#F0EFE9] focus:ring-2 focus:ring-[#3E7B27] focus:bg-white disabled:opacity-50 transition-all cursor-pointer"
+                          className="border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 bg-slate-50 focus:ring-2 focus:ring-emerald-500 focus:bg-white disabled:opacity-50 transition-all cursor-pointer"
                         >
                           {AVAILABILITY_STATUSES.map((st) => (
                             <option key={st.value} value={st.value} disabled={st.value === 'BOOKED'}>
@@ -233,7 +233,7 @@ function EquipmentAvailability() {
                         <button
                           disabled={isProcessing}
                           onClick={() => handleToggleEnable(item)}
-                          className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all ${
+                          className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
                             item.isDisabled
                               ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
                               : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'

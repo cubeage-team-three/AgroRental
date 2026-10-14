@@ -112,9 +112,9 @@ function OperatorRatings() {
   ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
+    <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
@@ -122,23 +122,23 @@ function OperatorRatings() {
               Verified Operator Performance
             </span>
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mt-1">Ratings & Customer Reviews</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-1">Ratings & Customer Reviews</h1>
+          <p className="text-slate-500 text-sm mt-0.5">
             Transparent feedback and star ratings submitted by verified farmers upon completed field tasks.
           </p>
         </div>
         <button
           onClick={() => fetchRatingsData(currentPage, true)}
           disabled={refreshing}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-xs text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
         >
-          <RefreshCw size={16} className={refreshing ? 'animate-spin text-emerald-600' : 'text-gray-500'} />
+          <RefreshCw size={16} className={refreshing ? 'animate-spin text-emerald-700' : 'text-slate-500'} />
           {refreshing ? 'Refreshing...' : 'Refresh Reviews'}
         </button>
       </div>
 
       {error && (
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start gap-3 text-rose-800">
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3 text-rose-800">
           <AlertCircle size={20} className="text-rose-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <h4 className="font-semibold text-sm">Error Loading Reviews</h4>
@@ -156,23 +156,23 @@ function OperatorRatings() {
       {/* Top Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Overall Score Card */}
-        <div className="bg-gradient-to-br from-emerald-800 to-teal-950 rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between relative overflow-hidden">
+        <div className="bg-gradient-to-r from-[#0F382C] via-[#194D3E] to-[#2E7D32] rounded-3xl p-6 text-white shadow-xl flex flex-col justify-between relative overflow-hidden">
           <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-10">
             <Star size={180} />
           </div>
           <div>
-            <span className="text-emerald-300 text-xs font-semibold uppercase tracking-wider">Overall Rating</span>
+            <span className="text-lime-300 text-xs font-bold uppercase tracking-wider">Overall Rating</span>
             <div className="flex items-baseline gap-3 mt-2">
               <span className="text-5xl font-black">{avgRating}</span>
-              <span className="text-emerald-300 text-lg font-medium">/ 5.0</span>
+              <span className="text-emerald-200 text-lg font-medium">/ 5.0</span>
             </div>
             <div className="flex items-center gap-1 mt-3">
               {renderStarVisual(Math.round(summary?.averageRating || 0), 5, 22)}
             </div>
           </div>
-          <div className="mt-6 pt-4 border-t border-emerald-700/50 flex items-center justify-between text-xs text-emerald-200">
+          <div className="mt-6 pt-4 border-t border-white/20 flex items-center justify-between text-xs text-emerald-100">
             <span className="flex items-center gap-1.5">
-              <ShieldCheck size={16} className="text-emerald-400" />
+              <ShieldCheck size={16} className="text-lime-300" />
               100% Verified Farmer Reviews
             </span>
             <span className="font-semibold">{totalReviews} {totalReviews === 1 ? 'Review' : 'Reviews'}</span>
@@ -180,48 +180,48 @@ function OperatorRatings() {
         </div>
 
         {/* Satisfaction & 5-Star Share Card */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">5-Star Satisfaction</span>
-              <span className="p-2 bg-emerald-50 text-emerald-700 rounded-lg">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">5-Star Satisfaction</span>
+              <span className="p-2 bg-emerald-50 text-emerald-700 rounded-xl">
                 <ThumbsUp size={18} />
               </span>
             </div>
             <div className="mt-2">
-              <div className="text-4xl font-extrabold text-gray-900">{fiveStarPercent}%</div>
-              <p className="text-xs text-gray-500 mt-1">
+              <div className="text-4xl font-black text-slate-900">{fiveStarPercent}%</div>
+              <p className="text-xs text-slate-500 mt-1">
                 {summary?.fiveStarCount || 0} of {totalReviews} farmers gave you a perfect 5-star rating.
               </p>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2 text-xs font-medium text-emerald-700">
+          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-emerald-700">
             <TrendingUp size={15} />
             <span>Top Tier Machine Operator Standing</span>
           </div>
         </div>
 
         {/* Rating Breakdown Bars */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Star Distribution</span>
-            <span className="text-xs font-medium text-gray-400">{totalReviews} Total</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Star Distribution</span>
+            <span className="text-xs font-semibold text-slate-400">{totalReviews} Total</span>
           </div>
           <div className="space-y-2">
             {starBreakdowns.map(({ star, count, color }) => {
               const pct = calculatePercentage(count, totalReviews);
               return (
                 <div key={star} className="flex items-center gap-2 text-xs">
-                  <span className="w-6 font-semibold text-gray-700 flex items-center gap-0.5">
+                  <span className="w-6 font-semibold text-slate-700 flex items-center gap-0.5">
                     {star} <Star size={11} className="text-amber-400 fill-amber-400" />
                   </span>
-                  <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                  <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
                     <div 
                       className={`h-full rounded-full ${color} transition-all duration-500`}
                       style={{ width: `${pct}%` }}
                     ></div>
                   </div>
-                  <span className="w-8 text-right font-medium text-gray-500">{count}</span>
+                  <span className="w-8 text-right font-medium text-slate-500">{count}</span>
                 </div>
               );
             })}
@@ -230,52 +230,52 @@ function OperatorRatings() {
       </div>
 
       {/* Reviews Ledger / Customer Feedback List */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
               <MessageSquare size={19} className="text-emerald-700" />
               Farmer Feedback Ledger
             </h2>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Chronological log of feedback comments left by verified field customers.
             </p>
           </div>
-          <span className="text-xs font-semibold bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
+          <span className="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-full">
             Page {(reviewsPage?.number || 0) + 1} of {reviewsPage?.totalPages || 1}
           </span>
         </div>
 
         {(!reviewsPage?.content || reviewsPage.content.length === 0) ? (
           <div className="p-12 text-center">
-            <div className="w-16 h-16 bg-emerald-50 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-emerald-50 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <MessageSquare size={28} />
             </div>
-            <h3 className="text-base font-bold text-gray-900">No Reviews Received Yet</h3>
-            <p className="text-xs text-gray-500 max-w-md mx-auto mt-1">
+            <h3 className="text-base font-black text-slate-900">No Reviews Received Yet</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
               Once you complete field machinery assignments, farmers will be able to submit their star rating and review comments here.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-slate-100">
             {reviewsPage.content.map((review) => (
-              <div key={review.reviewId} className="p-6 hover:bg-gray-50/70 transition-colors">
+              <div key={review.reviewId} className="p-6 hover:bg-slate-50/70 transition-colors">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-900 flex items-center justify-center font-black text-sm flex-shrink-0">
                       {review.farmerName ? review.farmerName.charAt(0).toUpperCase() : 'F'}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-sm text-gray-900">{review.farmerName || 'Verified Farmer'}</h4>
-                        <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                        <h4 className="font-extrabold text-sm text-slate-900">{review.farmerName || 'Verified Farmer'}</h4>
+                        <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
                           <UserCheck size={12} />
                           Verified Farmer
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                      <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
                         <span className="flex items-center gap-1">
-                          <Calendar size={13} className="text-gray-400" />
+                          <Calendar size={13} className="text-slate-400" />
                           {review.createdAt ? new Date(review.createdAt).toLocaleDateString('en-IN', {
                             day: 'numeric',
                             month: 'short',
@@ -283,15 +283,15 @@ function OperatorRatings() {
                           }) : 'Recent'}
                         </span>
                         <span>•</span>
-                        <span className="font-medium text-gray-600">Booking #{review.bookingId}</span>
+                        <span className="font-semibold text-slate-600">Booking #{review.bookingId}</span>
                         <span>•</span>
-                        <span className="font-medium text-gray-600">Assignment #{review.assignmentId}</span>
+                        <span className="font-semibold text-slate-600">Assignment #{review.assignmentId}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Rating Stars Badge */}
-                  <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg self-start">
+                  <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl self-start">
                     <span className="font-bold text-sm text-amber-900">{review.rating}.0</span>
                     <div className="flex items-center gap-0.5">
                       {renderStarVisual(review.rating, 5, 14)}
@@ -301,11 +301,11 @@ function OperatorRatings() {
 
                 {/* Comment Text */}
                 {review.comment ? (
-                  <div className="mt-3.5 pl-13 text-sm text-gray-700 bg-gray-50 rounded-xl p-3.5 border border-gray-100 font-normal italic">
+                  <div className="mt-3.5 pl-13 text-sm text-slate-700 bg-slate-50 rounded-2xl p-3.5 border border-slate-200 font-normal italic">
                     "{review.comment}"
                   </div>
                 ) : (
-                  <div className="mt-2 pl-13 text-xs text-gray-400 italic">
+                  <div className="mt-2 pl-13 text-xs text-slate-400 italic">
                     No written comment provided with star rating.
                   </div>
                 )}
@@ -316,26 +316,26 @@ function OperatorRatings() {
 
         {/* Pagination Footer */}
         {reviewsPage && reviewsPage.totalPages > 1 && (
-          <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-xs text-gray-500">
+          <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+            <span className="text-xs text-slate-500">
               Showing {(reviewsPage.number * pageSize) + 1} to {Math.min((reviewsPage.number + 1) * pageSize, reviewsPage.totalElements)} of {reviewsPage.totalElements} reviews
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 0}
-                className="p-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 aria-label="Previous Page"
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-xs font-semibold text-gray-700 px-2">
+              <span className="text-xs font-bold text-slate-700 px-2">
                 {currentPage + 1} / {reviewsPage.totalPages}
               </span>
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage >= reviewsPage.totalPages - 1}
-                className="p-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 aria-label="Next Page"
               >
                 <ChevronRight size={16} />
