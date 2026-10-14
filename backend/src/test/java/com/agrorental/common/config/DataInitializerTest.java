@@ -1,6 +1,7 @@
 package com.agrorental.common.config;
 
 import com.agrorental.booking.entity.Booking;
+import com.agrorental.booking.entity.BookingStatus;
 import com.agrorental.booking.repository.BookingRepository;
 import com.agrorental.equipment.entity.Equipment;
 import com.agrorental.equipment.repository.EquipmentRepository;
@@ -8,8 +9,12 @@ import com.agrorental.farmer.entity.Farm;
 import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.farmer.repository.FarmRepository;
 import com.agrorental.farmer.repository.FarmerRepository;
+import com.agrorental.notification.entity.Notification;
 import com.agrorental.notification.repository.NotificationRepository;
+import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorJobAssignment;
+import com.agrorental.operator.entity.OperatorJobPauseInterval;
+import com.agrorental.operator.entity.OperatorReview;
 import com.agrorental.operator.repository.OperatorJobAssignmentRepository;
 import com.agrorental.operator.repository.OperatorJobPauseIntervalRepository;
 import com.agrorental.operator.repository.OperatorRepository;
@@ -23,12 +28,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -105,9 +120,10 @@ class DataInitializerTest {
         );
     }
 
-    @Test
-    @DisplayName("Should seed mock data when property is enabled in development profile and database is empty")
-    void shouldSeed_WhenPropertyIsTrueAndDevProfileAndDatabaseEmpty_ReturnsTrueAndExecutesSeeding() {
+    private static final String TEST_OPERATOR_SEED_PASSWORD = "test-only-operator-seed-password";
+
+    /** Enables mock-data seeding in a dev profile and stubs the repositories used by every seeding run. */
+    private void stubCoreSeeding() {
         dataInitializer.setSeedMockDataEnabled(true);
         when(environment.getActiveProfiles()).thenReturn(new String[]{"dev"});
         when(partnerRepository.count()).thenReturn(0L);
@@ -129,11 +145,56 @@ class DataInitializerTest {
             return f;
         });
         when(equipmentRepository.save(any(Equipment.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(operatorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        AtomicLong bookingIds = new AtomicLong(100L);
         when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> {
             Booking b = inv.getArgument(0);
-            b.setId(100L);
+            b.setId(bookingIds.getAndIncrement());
             return b;
+        });
+    }
+
+    private void configureOperatorSeed(boolean enabled, String password) {
+        ReflectionTestUtils.setField(dataInitializer, "operatorSeedEnabled", enabled);
+        ReflectionTestUtils.setField(dataInitializer, "operatorSeedPassword", password);
+    }
+
+    private List<Booking> captureSavedBookings() {
+        ArgumentCaptor<Booking> bookingCaptor = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository, times(5)).save(bookingCaptor.capture());
+        return bookingCaptor.getAllValues();
+    }
+
+    private void assertOperatorDependentDataSkipped() {
+        verify(operatorRepository, never()).save(any());
+        verify(operatorJobAssignmentRepository, never()).save(any());
+        verify(pauseIntervalRepository, never()).save(any());
+        verify(operatorReviewRepository, never()).save(any());
+        // Only the three partner notifications that do not mention an operator are seeded
+        verify(notificationRepository, times(3)).save(any(Notification.class));
+
+        List<Booking> bookings = captureSavedBookings();
+        bookings.forEach(b -> assertNull(b.getOperator(), "Booking must not reference an operator that was never created"));
+        assertEquals(BookingStatus.CONFIRMED, bookings.get(2).getStatus(),
+                "Booking without an operator must not be marked OPERATOR_ASSIGNED");
+
+        // Non-operator seed data is still created
+        verify(partnerRepository, times(1)).save(any(Partner.class));
+        verify(farmerRepository, times(1)).save(any(Farmer.class));
+        verify(paymentRepository, times(3)).save(any());
+        verify(reviewRepository, times(2)).save(any());
+    }
+
+    @Test
+    @DisplayName("Should seed mock data, operators and operator-dependent data when operator seeding is enabled with a password")
+    void shouldSeed_WhenPropertyIsTrueAndDevProfileAndDatabaseEmpty_ReturnsTrueAndExecutesSeeding() {
+        stubCoreSeeding();
+        configureOperatorSeed(true, TEST_OPERATOR_SEED_PASSWORD);
+
+        AtomicLong operatorIds = new AtomicLong(1L);
+        when(operatorRepository.save(any(Operator.class))).thenAnswer(inv -> {
+            Operator o = inv.getArgument(0);
+            o.setId(operatorIds.getAndIncrement());
+            return o;
         });
         when(operatorJobAssignmentRepository.save(any(OperatorJobAssignment.class))).thenAnswer(inv -> {
             OperatorJobAssignment a = inv.getArgument(0);
@@ -146,7 +207,81 @@ class DataInitializerTest {
 
         verify(partnerRepository, times(1)).save(any(Partner.class));
         verify(farmerRepository, times(1)).save(any(Farmer.class));
-        verify(bookingRepository, atLeastOnce()).save(any(Booking.class));
+        verify(passwordEncoder, times(1)).encode(TEST_OPERATOR_SEED_PASSWORD);
+
+        // All four operators are saved with the encoded seed password
+        ArgumentCaptor<Operator> operatorCaptor = ArgumentCaptor.forClass(Operator.class);
+        verify(operatorRepository, times(4)).save(operatorCaptor.capture());
+        List<Operator> savedOperators = operatorCaptor.getAllValues();
+        assertEquals(List.of("9876543220", "9876543221", "9876543222", "7385627789"),
+                savedOperators.stream().map(Operator::getMobileNumber).toList());
+        savedOperators.forEach(o -> {
+            assertNotNull(o.getId());
+            assertEquals("hashed-test-password", o.getPassword());
+        });
+
+        // Every assignment references a saved operator and a saved booking
+        List<Booking> bookings = captureSavedBookings();
+        ArgumentCaptor<OperatorJobAssignment> assignmentCaptor = ArgumentCaptor.forClass(OperatorJobAssignment.class);
+        verify(operatorJobAssignmentRepository, times(3)).save(assignmentCaptor.capture());
+        assignmentCaptor.getAllValues().forEach(a -> {
+            assertNotNull(a.getOperator(), "Assignment must reference an operator");
+            assertTrue(savedOperators.stream().anyMatch(o -> o == a.getOperator()),
+                    "Assignment must reference an operator that was actually saved");
+            assertTrue(bookings.stream().anyMatch(b -> b == a.getBooking()),
+                    "Assignment must reference a booking that was actually saved");
+        });
+
+        ArgumentCaptor<OperatorJobPauseInterval> pauseCaptor = ArgumentCaptor.forClass(OperatorJobPauseInterval.class);
+        verify(pauseIntervalRepository, times(1)).save(pauseCaptor.capture());
+        assertTrue(savedOperators.stream().anyMatch(o -> o == pauseCaptor.getValue().getOperator()));
+
+        ArgumentCaptor<OperatorReview> reviewCaptor = ArgumentCaptor.forClass(OperatorReview.class);
+        verify(operatorReviewRepository, times(1)).save(reviewCaptor.capture());
+        assertTrue(savedOperators.stream().anyMatch(o -> o == reviewCaptor.getValue().getOperator()));
+
+        // Bookings with operators reference saved operators; the assigned booking keeps its status
+        bookings.stream().map(Booking::getOperator).filter(Objects::nonNull)
+                .forEach(op -> assertTrue(savedOperators.stream().anyMatch(o -> o == op)));
+        assertEquals(BookingStatus.OPERATOR_ASSIGNED, bookings.get(2).getStatus());
+
+        verify(notificationRepository, times(4)).save(any(Notification.class));
+    }
+
+    @Test
+    @DisplayName("Should skip operators and operator-dependent data when operator seeding is disabled")
+    void run_WhenOperatorSeedingDisabled_SkipsOperatorsAndDependentData() {
+        stubCoreSeeding();
+        configureOperatorSeed(false, TEST_OPERATOR_SEED_PASSWORD);
+
+        assertDoesNotThrow(() -> dataInitializer.run());
+
+        verify(passwordEncoder, never()).encode(TEST_OPERATOR_SEED_PASSWORD);
+        assertOperatorDependentDataSkipped();
+    }
+
+    @Test
+    @DisplayName("Should skip operators and operator-dependent data when operator seed password is blank")
+    void run_WhenOperatorSeedPasswordBlank_SkipsOperatorsAndDependentData() {
+        stubCoreSeeding();
+        configureOperatorSeed(true, "   ");
+
+        assertDoesNotThrow(() -> dataInitializer.run());
+
+        verify(passwordEncoder, never()).encode("   ");
+        assertOperatorDependentDataSkipped();
+    }
+
+    @Test
+    @DisplayName("Should skip operators and operator-dependent data when operator seed password is missing")
+    void run_WhenOperatorSeedPasswordMissing_SkipsOperatorsAndDependentData() {
+        stubCoreSeeding();
+        configureOperatorSeed(true, null);
+
+        assertDoesNotThrow(() -> dataInitializer.run());
+
+        verify(passwordEncoder, never()).encode(null);
+        assertOperatorDependentDataSkipped();
     }
 
     @Test
