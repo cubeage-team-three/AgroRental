@@ -39,6 +39,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -92,13 +93,16 @@ class OperatorJobLifecycleServiceTest {
                 .build();
         equipment.setId(10L);
 
+        // A booking whose operator phase is running, assigned to this job's operator (as the canonical
+        // assignment leaves it)
         testBooking = Booking.builder()
                 .farmerId(20L)
                 .equipment(equipment)
+                .operator(testOperator)
                 .startDate(LocalDate.now().plusDays(1))
                 .endDate(LocalDate.now().plusDays(3))
                 .totalCost(BigDecimal.valueOf(4500))
-                .status(BookingStatus.CONFIRMED)
+                .status(BookingStatus.OPERATOR_ASSIGNED)
                 .deliveryAddress("Pune Farm Plot 10")
                 .build();
         testBooking.setId(100L);
@@ -166,6 +170,31 @@ class OperatorJobLifecycleServiceTest {
         assertThat(response.getAssignmentStatus()).isEqualTo(OperatorAssignmentStatus.REJECTED);
         assertThat(response.getRejectedAt()).isNotNull();
         assertThat(response.getRejectionReason()).isEqualTo("Prior machinery engagement conflict");
+        // The booking returns to CONFIRMED without an operator, ready for reassignment
+        assertThat(testBooking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(testBooking.getOperator()).isNull();
+        verify(bookingRepository).save(testBooking);
+    }
+
+    @Test
+    @DisplayName("Rejection notifications quote at most 300 chars of the reason, never split a surrogate pair, and stay <= 500 chars")
+    void testRejectNotificationQuotesBoundedReason() {
+        String reason = "R".repeat(296) + "😀" + "S".repeat(100);
+        testOperator.setFullName("N".repeat(255));
+        when(operatorRepository.findById(1L)).thenReturn(Optional.of(testOperator));
+        when(assignmentRepository.findById(500L)).thenReturn(Optional.of(testAssignment));
+        when(assignmentRepository.save(any(OperatorJobAssignment.class))).thenAnswer(i -> i.getArgument(0));
+
+        OperatorAssignedJobResponse response = lifecycleService.rejectJob(500L, 1L,
+                OperatorJobRejectionRequest.builder().rejectionReason(reason).build());
+
+        assertThat(response.getRejectionReason()).isEqualTo(reason);
+        org.mockito.ArgumentCaptor<String> message = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(notificationService).sendNotification(org.mockito.ArgumentMatchers.eq("FARMER"), any(),
+                org.mockito.ArgumentMatchers.eq("Job Declined"), message.capture(), any(), any());
+        assertThat(message.getValue()).hasSizeLessThanOrEqualTo(500).endsWith("...");
+        assertThat(message.getValue().codePoints().noneMatch(cp -> Character.isSurrogate((char) cp) && cp <= 0xFFFF))
+                .as("no lone surrogate").isTrue();
     }
 
     @Test
@@ -310,6 +339,27 @@ class OperatorJobLifecycleServiceTest {
     }
 
     @Test
+    @DisplayName("Completion runs at READ_COMMITTED and locks the booking row before changing it (lock order booking -> others)")
+    void testCompletionLocksBookingFirst() throws Exception {
+        testAssignment.setAssignmentStatus(OperatorAssignmentStatus.IN_PROGRESS);
+        testBooking.setStatus(BookingStatus.WORK_STARTED);
+        when(operatorRepository.findById(1L)).thenReturn(Optional.of(testOperator));
+        when(assignmentRepository.findById(500L)).thenReturn(Optional.of(testAssignment));
+        when(assignmentRepository.save(any(OperatorJobAssignment.class))).thenAnswer(i -> i.getArgument(0));
+
+        lifecycleService.completeWork(500L, 1L, null);
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(bookingRepository, assignmentRepository);
+        order.verify(bookingRepository).findByIdWithLock(100L);
+        order.verify(bookingRepository).save(testBooking);
+        order.verify(assignmentRepository).save(testAssignment);
+        org.springframework.transaction.annotation.Transactional tx = OperatorJobLifecycleService.class
+                .getMethod("completeWork", Long.class, Long.class, OperatorJobCompletionRequest.class)
+                .getAnnotation(org.springframework.transaction.annotation.Transactional.class);
+        assertThat(tx.isolation()).isEqualTo(org.springframework.transaction.annotation.Isolation.READ_COMMITTED);
+    }
+
+    @Test
     @DisplayName("Should reject complete directly from ASSIGNED status")
     void testCompleteDirectlyFromAssignedFails() {
         testAssignment.setAssignmentStatus(OperatorAssignmentStatus.ASSIGNED);
@@ -352,6 +402,81 @@ class OperatorJobLifecycleServiceTest {
                 .hasMessageContaining("Access denied: You do not have permission to modify this assignment");
     }
 
+    // ==========================================
+    // 9. BOOKING CONSISTENCY GUARD
+    // ==========================================
+
+    @Test
+    @DisplayName("Should refuse any job step once the booking was closed elsewhere, and leave the booking untouched")
+    void testClosedBookingFreezesJob() {
+        for (BookingStatus closed : new BookingStatus[]{BookingStatus.COMPLETED, BookingStatus.CANCELLED,
+                BookingStatus.REJECTED, BookingStatus.CONFIRMED}) {
+            testBooking.setStatus(closed);
+            testAssignment.setAssignmentStatus(OperatorAssignmentStatus.ACCEPTED);
+            when(operatorRepository.findById(1L)).thenReturn(Optional.of(testOperator));
+            when(assignmentRepository.findById(500L)).thenReturn(Optional.of(testAssignment));
+
+            assertThatThrownBy(() -> lifecycleService.startTravel(500L, 1L))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessage("Booking #100 is " + closed + "; this job can no longer be updated.");
+            assertThat(testBooking.getStatus()).isEqualTo(closed);
+            assertThat(testAssignment.getAssignmentStatus()).isEqualTo(OperatorAssignmentStatus.ACCEPTED);
+        }
+        verify(bookingRepository, never()).save(any());
+        verify(assignmentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should refuse a job step when the booking now belongs to another operator")
+    void testRepointedBookingFreezesJob() {
+        Operator otherOperator = Operator.builder().fullName("Other Operator").build();
+        otherOperator.setId(2L);
+        testBooking.setOperator(otherOperator);
+        when(operatorRepository.findById(1L)).thenReturn(Optional.of(testOperator));
+        when(assignmentRepository.findById(500L)).thenReturn(Optional.of(testAssignment));
+
+        assertThatThrownBy(() -> lifecycleService.rejectJob(500L, 1L,
+                OperatorJobRejectionRequest.builder().rejectionReason("Not available").build()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Booking #100 is no longer assigned to you; this job can no longer be updated.");
+        assertThat(testBooking.getStatus()).isEqualTo(BookingStatus.OPERATOR_ASSIGNED);
+        assertThat(testBooking.getOperator()).isSameAs(otherOperator);
+    }
+
+    @Test
+    @DisplayName("Should never move the booking backwards when it is already further along")
+    void testBookingNeverMovesBackwards() {
+        testBooking.setStatus(BookingStatus.WORK_STARTED);
+        testAssignment.setAssignmentStatus(OperatorAssignmentStatus.ACCEPTED);
+        when(operatorRepository.findById(1L)).thenReturn(Optional.of(testOperator));
+        when(assignmentRepository.findById(500L)).thenReturn(Optional.of(testAssignment));
+        when(assignmentRepository.save(any(OperatorJobAssignment.class))).thenAnswer(i -> i.getArgument(0));
+
+        OperatorAssignedJobResponse response = lifecycleService.startTravel(500L, 1L);
+
+        assertThat(response.getAssignmentStatus()).isEqualTo(OperatorAssignmentStatus.TRAVELING);
+        assertThat(testBooking.getStatus()).isEqualTo(BookingStatus.WORK_STARTED);
+    }
+
+    @Test
+    @DisplayName("Should move the booking forward with the job (OPERATOR_ASSIGNED -> ON_THE_WAY -> WORK_STARTED -> COMPLETED)")
+    void testBookingMovesForwardWithJob() {
+        when(operatorRepository.findById(1L)).thenReturn(Optional.of(testOperator));
+        when(assignmentRepository.findById(500L)).thenReturn(Optional.of(testAssignment));
+        when(assignmentRepository.save(any(OperatorJobAssignment.class))).thenAnswer(i -> i.getArgument(0));
+
+        testAssignment.setAssignmentStatus(OperatorAssignmentStatus.ACCEPTED);
+        lifecycleService.startTravel(500L, 1L);
+        assertThat(testBooking.getStatus()).isEqualTo(BookingStatus.ON_THE_WAY);
+        lifecycleService.markReached(500L, 1L);
+        assertThat(testBooking.getStatus()).isEqualTo(BookingStatus.ON_THE_WAY);
+        lifecycleService.startWork(500L, 1L);
+        assertThat(testBooking.getStatus()).isEqualTo(BookingStatus.WORK_STARTED);
+        lifecycleService.completeWork(500L, 1L, null);
+        assertThat(testBooking.getStatus()).isEqualTo(BookingStatus.COMPLETED);
+        assertThat(testAssignment.getAssignmentStatus()).isEqualTo(OperatorAssignmentStatus.COMPLETED);
+    }
+
     @Test
     @DisplayName("Should reject lifecycle action when operator account is inactive")
     void testInactiveOperatorRejected() {
@@ -364,13 +489,30 @@ class OperatorJobLifecycleServiceTest {
     }
 
     @Test
-    @DisplayName("Should reject lifecycle action when operator is unverified")
+    @DisplayName("Contract v1.1: an APPROVED, active operator with an unverified mobile number can act on its job")
     void testUnverifiedOperatorRejected() {
         testOperator.setMobileVerified(false);
         when(operatorRepository.findById(1L)).thenReturn(Optional.of(testOperator));
+        when(assignmentRepository.findById(500L)).thenReturn(Optional.of(testAssignment));
+        when(assignmentRepository.save(any(OperatorJobAssignment.class))).thenAnswer(i -> i.getArgument(0));
 
-        assertThatThrownBy(() -> lifecycleService.acceptJob(500L, 1L))
-                .isInstanceOf(ForbiddenException.class)
-                .hasMessageContaining("Operator mobile number is not verified");
+        OperatorAssignedJobResponse response = lifecycleService.acceptJob(500L, 1L);
+
+        assertThat(response.getAssignmentStatus()).isEqualTo(OperatorAssignmentStatus.ACCEPTED);
+        assertThat(testOperator.isMobileVerified()).as("no workaround: the flag is left untouched").isFalse();
+    }
+
+    @Test
+    @DisplayName("Contract v1.1: a PENDING or REJECTED operator stays blocked from lifecycle actions")
+    void testNotApprovedOperatorRejected() {
+        for (OperatorStatus status : new OperatorStatus[]{OperatorStatus.PENDING, OperatorStatus.REJECTED}) {
+            testOperator.setStatus(status);
+            when(operatorRepository.findById(1L)).thenReturn(Optional.of(testOperator));
+
+            assertThatThrownBy(() -> lifecycleService.acceptJob(500L, 1L))
+                    .isInstanceOf(ForbiddenException.class)
+                    .hasMessageContaining("Operator is not approved");
+        }
+        assertThat(testAssignment.getAssignmentStatus()).isEqualTo(OperatorAssignmentStatus.ASSIGNED);
     }
 }

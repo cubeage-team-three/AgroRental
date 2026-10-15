@@ -47,8 +47,9 @@ public class OperatorRegistrationRequest {
     @NotBlank(message = "Skills are required")
     private String skills;
 
+    /** Must satisfy {@link com.agrorental.auth.service.PasswordPolicy} (8-64 characters, a letter and a digit). */
     @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must contain at least 8 characters")
+    @Size(min = 8, max = 64, message = "Password must be 8-64 characters long")
     private String password;
 
     private String profilePhoto;

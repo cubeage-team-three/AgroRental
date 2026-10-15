@@ -6,6 +6,7 @@ import com.agrorental.farmer.controller.FarmController;
 import com.agrorental.farmer.dto.FarmCreateRequest;
 import com.agrorental.farmer.dto.FarmResponse;
 import com.agrorental.farmer.service.FarmService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,12 @@ class FarmControllerTest {
     private FarmController farmController;
 
     private FarmResponse sampleResponse;
+
+    /** Never leak the authentication set here (or by the JWT filter) into later tests on this thread. */
+    @AfterEach
+    void clearSecurityContext() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+    }
 
     @BeforeEach
     void setUp() {

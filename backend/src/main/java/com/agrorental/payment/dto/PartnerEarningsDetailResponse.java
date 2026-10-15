@@ -25,6 +25,15 @@ public class PartnerEarningsDetailResponse {
     private BigDecimal completedPaymentsAmount;
     private long completedPaymentsCount;
 
+    // BIZ-20 refund breakdown (see RevenueCalculator). Headline revenue figures above are NET of completed refunds.
+    private BigDecimal grossCollected;
+    private BigDecimal refundsPendingAmount;
+    private long refundsPendingCount;
+    private BigDecimal refundsFailedAmount;
+    private long refundsFailedCount;
+    private BigDecimal refundsCompletedAmount;
+    private long refundsCompletedCount;
+
     // Trend breakdown for daily (last 7 days), weekly (last 4 weeks), monthly (last 12 months)
     private List<TimeRevenueEntry> dailyTrend;
     private List<TimeRevenueEntry> weeklyTrend;

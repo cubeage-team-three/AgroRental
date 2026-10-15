@@ -5,6 +5,7 @@ import com.agrorental.booking.dto.BookingResponse;
 import com.agrorental.booking.dto.BookingStatusUpdateRequest;
 import com.agrorental.booking.service.BookingService;
 import com.agrorental.common.dto.ApiResponse;
+import com.agrorental.security.principal.CurrentCaller;
 import com.agrorental.security.principal.PartnerPrincipal;
 import com.agrorental.common.exception.ForbiddenException;
 import com.agrorental.common.exception.UnauthorizedException;
@@ -23,7 +24,6 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/bookings")
-@CrossOrigin(origins = "http://localhost:5173")
 public class BookingController {
 
     private final BookingService bookingService;
@@ -64,12 +64,22 @@ public class BookingController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
-            @AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
+            @AuthenticationPrincipal Object principal,
             @Valid @RequestBody BookingCreateRequest request) {
 
-        if (principal != null && request.getFarmerId() == null) {
-            request.setFarmerId(principal.getId());
+        if (principal == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Authentication is required to create a booking.");
         }
+        if (!(principal instanceof com.agrorental.security.principal.FarmerPrincipal farmerPrincipal)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Access is denied. Only farmers are permitted to create bookings.");
+        }
+
+        if (request.getFarmerId() != null && !request.getFarmerId().equals(farmerPrincipal.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Access is denied. You cannot create a booking for another farmer.");
+        }
+        request.setFarmerId(farmerPrincipal.getId());
 
         BookingResponse response = bookingService.createBooking(request);
 
@@ -94,15 +104,10 @@ public class BookingController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(
             @PathVariable Long id,
-            @AuthenticationPrincipal Object principal) {
+            org.springframework.security.core.Authentication authentication) {
 
-        BookingResponse response = bookingService.getBookingById(id);
-
-        if (principal instanceof com.agrorental.security.principal.FarmerPrincipal farmerPrincipal) {
-            if (response.getFarmerId() != null && !response.getFarmerId().equals(farmerPrincipal.getId())) {
-                throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view another farmer's booking.");
-            }
-        }
+        // Owning farmer, owning partner, assigned operator or admin only (enforced in the service)
+        BookingResponse response = bookingService.getBookingForCaller(id, CurrentCaller.from(authentication));
 
         return ResponseEntity.ok(
                 ApiResponse.success("Booking retrieved successfully", response));
@@ -155,9 +160,11 @@ public class BookingController {
      */
     @GetMapping("/operator/{operatorId}")
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookingsByOperator(
-            @PathVariable Long operatorId) {
+            @PathVariable Long operatorId,
+            org.springframework.security.core.Authentication authentication) {
 
-        List<BookingResponse> response = bookingService.getBookingsByOperator(operatorId);
+        // The path ID must be the authenticated operator's own ID (enforced in the service)
+        List<BookingResponse> response = bookingService.getBookingsForOperator(operatorId, CurrentCaller.from(authentication));
 
         return ResponseEntity.ok(
                 ApiResponse.success("Operator bookings retrieved successfully", response));
@@ -188,12 +195,14 @@ public class BookingController {
 
     /**
      * Updates the status of a booking or assigns an operator.
+     * Restricted to ADMIN to prevent bypassing established lifecycle rules and ownership checks.
      *
      * @param id Booking identifier
      * @param request Status update payload
      * @return ResponseEntity containing HTTP 200 OK and updated BookingResponse
      */
     @PatchMapping("/{id}/status")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<BookingResponse>> updateBookingStatus(
             @PathVariable Long id,
             @Valid @RequestBody BookingStatusUpdateRequest request) {

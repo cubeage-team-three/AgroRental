@@ -228,44 +228,25 @@ class PartnerControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/partners/{id}/otp/send - Should return 200 OK with OTP")
-    void shouldSendOtp() throws Exception {
-        when(partnerService.sendOtp(1L)).thenReturn("123456");
-
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/partners/1/otp/send"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").value("123456"));
+    @DisplayName("POST /api/partners/{id}/otp/{send,verify,resend} - Retired: 410 Gone, service never touched")
+    void retiredOtpEndpointsAnswerGone() throws Exception {
+        for (String action : new String[]{"send", "verify", "resend"}) {
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/partners/1/otp/" + action)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"otp\":\"654321\"}"))
+                    .andExpect(status().isGone())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.message").value(PartnerController.PARTNER_OTP_RETIRED_MESSAGE));
+        }
+        org.mockito.Mockito.verifyNoInteractions(partnerService);
     }
 
     @Test
-    @DisplayName("POST /api/partners/{id}/otp/verify - Should return 200 OK on successful verification")
-    void shouldVerifyOtp() throws Exception {
-        when(partnerService.verifyOtp(eq(1L), eq("123456"))).thenReturn(testProfile);
-
-        String jsonPayload = """
-                {
-                    "otp": "123456"
-                }
-                """;
-
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/partners/1/otp/verify")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPayload))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("OTP verified successfully"));
-    }
-
-    @Test
-    @DisplayName("POST /api/partners/{id}/otp/resend - Should return 200 OK on OTP resend")
-    void shouldResendOtp() throws Exception {
-        when(partnerService.resendOtp(1L)).thenReturn("654321");
-
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/partners/1/otp/resend"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").value("654321"));
+    @DisplayName("POST /api/partners/{id}/otp/send - Retired endpoint still enforces ownership (another partner gets 403)")
+    void retiredOtpEndpointsKeepOwnershipCheck() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/partners/2/otp/send"))
+                .andExpect(status().isForbidden());
+        org.mockito.Mockito.verifyNoInteractions(partnerService);
     }
 
     @Test

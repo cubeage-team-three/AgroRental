@@ -4,8 +4,10 @@ import com.agrorental.booking.entity.Booking;
 import com.agrorental.booking.entity.BookingStatus;
 import com.agrorental.equipment.dto.EquipmentSearchRequest;
 import com.agrorental.equipment.entity.Equipment;
+import com.agrorental.partner.entity.Partner;
 import com.agrorental.review.entity.Review;
 import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
@@ -35,6 +37,8 @@ public class EquipmentSpecification {
 
             // Always enforce non-disabled state for public discovery
             predicates.add(cb.isFalse(root.get("isDisabled")));
+            // ...and hide equipment whose partner was rejected or deactivated (nobody could accept a booking)
+            predicates.add(ownerCanRent().toPredicate(root, query, cb));
 
             if (request != null) {
                 // Filter by Equipment Category
@@ -84,19 +88,14 @@ public class EquipmentSpecification {
                     Predicate toValid = cb.greaterThanOrEqualTo(root.get("availableToDate"), end);
                     predicates.add(cb.or(toNull, toValid));
 
-                    // Dynamic overlap exclusion: Exclude machinery with active bookings in [start, end]
+                    // Dynamic overlap exclusion: Exclude machinery with reserving bookings in [start, end]
+                    // (the same statuses that block booking creation, BIZ-13; ON_THE_WAY was missing here)
                     Subquery<Long> bookedSubquery = query.subquery(Long.class);
                     Root<Booking> bookingRoot = bookedSubquery.from(Booking.class);
                     bookedSubquery.select(bookingRoot.get("equipment").get("id"));
                     bookedSubquery.where(
                             cb.equal(bookingRoot.get("equipment").get("id"), root.get("id")),
-                            bookingRoot.get("status").in(List.of(
-                                    BookingStatus.PENDING,
-                                    BookingStatus.ACCEPTED,
-                                    BookingStatus.CONFIRMED,
-                                    BookingStatus.OPERATOR_ASSIGNED,
-                                    BookingStatus.WORK_STARTED
-                            )),
+                            bookingRoot.get("status").in(BookingStatus.RESERVING_STATUSES),
                             cb.lessThanOrEqualTo(bookingRoot.get("startDate"), end),
                             cb.greaterThanOrEqualTo(bookingRoot.get("endDate"), start)
                     );
@@ -141,6 +140,19 @@ public class EquipmentSpecification {
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    /**
+     * Equipment whose owning partner is active and not REJECTED. A rejected/deactivated partner can no longer log in,
+     * so a booking on their equipment could never be accepted and would only block those dates.
+     */
+    public static Specification<Equipment> ownerCanRent() {
+        return (root, query, cb) -> {
+            Path<Object> verification = root.get("partner").get("verificationStatus");
+            return cb.and(
+                    cb.isTrue(root.get("partner").get("active")),
+                    cb.or(cb.isNull(verification), cb.notEqual(verification, Partner.VerificationStatus.REJECTED)));
         };
     }
 

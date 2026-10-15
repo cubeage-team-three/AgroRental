@@ -23,4 +23,17 @@ public class TrackingResponse {
     private Integer workProgress;
     private String status;
     private LocalDateTime lastUpdated;
+
+    /** True only while the booking is in the field and a recorded (GPS or tracking-record) position exists. */
+    private boolean trackingAvailable;
+
+    /**
+     * Where latitude/longitude come from: OPERATOR_GPS (operator device), TRACKING_RECORD (stored tracking record),
+     * EQUIPMENT_BASE (the equipment's registered location, shown as a reference while no position has been
+     * recorded yet; not a live position), or null when no position is returned.
+     */
+    private String locationSource;
+
+    /** Human-readable explanation of the tracking state (e.g. why no live position is available). */
+    private String message;
 }

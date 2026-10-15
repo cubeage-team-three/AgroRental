@@ -1,7 +1,7 @@
-import { Navigate } from 'react-router-dom';
+import Register from './Register';
 
 function RegisterFarmer() {
-  return <Navigate to="/register" replace />;
+  return <Register initialRole="farmer" />;
 }
 
 export default RegisterFarmer;

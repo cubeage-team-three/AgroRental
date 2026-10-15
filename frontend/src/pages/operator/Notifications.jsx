@@ -62,12 +62,12 @@ function OperatorNotifications() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 font-sans">
-      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#142E1C] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Operator Job Alerts
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Real-time notifications for assigned field jobs and equipment dispatches.
           </p>
         </div>
@@ -76,7 +76,7 @@ function OperatorNotifications() {
           <button
             type="button"
             onClick={fetchNotifications}
-            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+            className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition shadow-xs"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -84,7 +84,7 @@ function OperatorNotifications() {
             <button
               type="button"
               onClick={handleMarkAllAsRead}
-              className="text-xs font-bold text-[#3E7B27] hover:underline"
+              className="text-xs font-bold text-emerald-700 hover:underline"
             >
               Mark all as read
             </button>
@@ -99,10 +99,10 @@ function OperatorNotifications() {
       )}
 
       {notifications.length === 0 ? (
-        <div className="bg-white border border-dashed border-gray-300 rounded-3xl p-12 text-center space-y-3">
-          <Bell className="w-12 h-12 text-gray-300 mx-auto" />
-          <h3 className="text-lg font-black text-gray-900">No Job Alerts</h3>
-          <p className="text-xs text-gray-500">You will receive alerts here when partners assign field jobs to you.</p>
+        <div className="bg-white border border-dashed border-slate-200 rounded-3xl p-12 text-center space-y-3">
+          <Bell className="w-12 h-12 text-slate-300 mx-auto" />
+          <h3 className="text-lg font-black text-slate-900">No Job Alerts</h3>
+          <p className="text-xs text-slate-500">You will receive alerts here when partners assign field jobs to you.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -112,33 +112,33 @@ function OperatorNotifications() {
               onClick={() => !n.isRead && handleMarkAsRead(n.id)}
               className={`p-5 rounded-3xl border transition-all flex items-start gap-4 cursor-pointer ${
                 !n.isRead
-                  ? 'bg-white border-blue-400/50 shadow-sm ring-1 ring-blue-100'
-                  : 'bg-white/60 border-gray-100'
+                  ? 'bg-white border-emerald-500/50 shadow-sm ring-1 ring-emerald-100'
+                  : 'bg-white/80 border-slate-200'
               }`}
             >
-              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
                 <HardHat className="w-5 h-5" />
               </div>
 
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-extrabold text-gray-900">{n.title}</h4>
-                  <span className="text-[11px] text-gray-400 font-medium">
+                  <h4 className="text-sm font-extrabold text-slate-900">{n.title}</h4>
+                  <span className="text-[11px] text-slate-400 font-medium">
                     {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
                   </span>
                 </div>
-                <p className="text-xs text-gray-600 font-medium leading-relaxed">{n.message}</p>
+                <p className="text-xs text-slate-600 font-medium leading-relaxed">{n.message}</p>
                 {n.bookingId && (
                   <div className="pt-1">
-                    <Link to={`/operator/jobs/${n.bookingId}`} className="text-xs font-bold text-blue-700 hover:underline flex items-center gap-1">
-                      Inspect Assigned Job <ArrowRight className="w-3.5 h-3.5" />
+                    <Link to="/operator/jobs" className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1">
+                      View Assigned Jobs <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 )}
               </div>
 
               {!n.isRead && (
-                <span className="w-2.5 h-2.5 bg-blue-600 rounded-full shrink-0 mt-2" />
+                <span className="w-2.5 h-2.5 bg-emerald-600 rounded-full shrink-0 mt-2" />
               )}
             </div>
           ))}

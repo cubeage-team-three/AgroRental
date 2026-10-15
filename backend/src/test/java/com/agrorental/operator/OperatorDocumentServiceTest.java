@@ -79,7 +79,7 @@ class OperatorDocumentServiceTest {
             return doc;
         });
 
-        OperatorDocumentResponse response = documentService.addDocument(1L, request);
+        OperatorDocumentResponse response = documentService.addDocument(1L, request, false);
 
         assertNotNull(response);
         assertEquals(10L, response.getId());
@@ -124,6 +124,6 @@ class OperatorDocumentServiceTest {
 
         when(operatorRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> documentService.addDocument(999L, request));
+        assertThrows(ResourceNotFoundException.class, () -> documentService.addDocument(999L, request, false));
     }
 }

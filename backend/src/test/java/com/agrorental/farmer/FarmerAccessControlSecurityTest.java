@@ -97,4 +97,42 @@ class FarmerAccessControlSecurityTest {
             assertEquals(1, response.getBody().getData().size());
         });
     }
+
+    @Test
+    @DisplayName("Farmer A cannot access Farmer B's payment by booking ID")
+    void testFarmerCannotAccessOtherFarmerPaymentByBookingId() {
+        when(paymentService.getPaymentByBookingId(99L)).thenReturn(
+                PaymentResponse.builder().id(10L).bookingId(99L).farmerId(200L).build()
+        );
+
+        assertThrows(AccessDeniedException.class, () -> {
+            paymentController.getPaymentByBookingId(farmer1, 99L);
+        });
+    }
+
+    @Test
+    @DisplayName("Farmer A cannot access Farmer B's payment by payment ID")
+    void testFarmerCannotAccessOtherFarmerPaymentById() {
+        when(paymentService.getPaymentById(10L)).thenReturn(
+                PaymentResponse.builder().id(10L).bookingId(99L).farmerId(200L).build()
+        );
+
+        assertThrows(AccessDeniedException.class, () -> {
+            paymentController.getPaymentById(farmer1, 10L);
+        });
+    }
+
+    @Test
+    @DisplayName("Farmer A can access their own payment by booking ID")
+    void testFarmerCanAccessOwnPaymentByBookingId() {
+        when(paymentService.getPaymentByBookingId(99L)).thenReturn(
+                PaymentResponse.builder().id(10L).bookingId(99L).farmerId(100L).build()
+        );
+
+        assertDoesNotThrow(() -> {
+            var response = paymentController.getPaymentByBookingId(farmer1, 99L);
+            assertNotNull(response.getBody());
+            assertEquals(10L, response.getBody().getData().getId());
+        });
+    }
 }

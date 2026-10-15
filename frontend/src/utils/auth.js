@@ -51,14 +51,29 @@ export const getUserRole = () => {
   return user?.role || null;
 };
 
+// Each account type signs in on its own page; admins use the separate admin console login
+const LOGIN_PATHS = {
+  ADMIN: '/admin/login',
+  PARTNER: '/login?role=PARTNER',
+  OPERATOR: '/login?role=OPERATOR',
+  FARMER: '/login',
+};
+
+/** Login page for a role (FARMER, PARTNER, OPERATOR, ADMIN; a ROLE_ prefix is ignored); '/login' when unknown. */
+export const getLoginPath = (role) => {
+  const key = String(role || '').toUpperCase().replace(/^ROLE_/, '');
+  return LOGIN_PATHS[key] || '/login';
+};
+
 export const isOperator = () => {
   return getUserRole() === 'OPERATOR';
 };
 
 export const getOperatorId = () => {
   const user = getCurrentUser();
-  if (user && user.id && user.role === 'OPERATOR') {
-    return user.id;
+  if (user) {
+    if (user.operatorId) return user.operatorId;
+    if (user.id && user.role === 'OPERATOR') return user.id;
   }
   const stored = localStorage.getItem('operatorId');
   return stored ? Number(stored) : null;

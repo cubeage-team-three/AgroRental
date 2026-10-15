@@ -1,19 +1,40 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, ArrowRight, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
+import { Mail, CheckCircle2, ArrowLeft, X, ShieldCheck, Info, FlaskConical } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
+import AuthTextField from '../../components/auth/AuthTextField';
+import AuthPrimaryButton from '../../components/auth/AuthPrimaryButton';
+
+const ROLES = [
+  { id: 'FARMER', label: 'Farmer' },
+  { id: 'PARTNER', label: 'Partner' },
+  { id: 'OPERATOR', label: 'Operator' },
+];
+
+const ROLE_IDS = ROLES.map((r) => r.id);
+
+function resolveRole(...candidates) {
+  const role = candidates.map((r) => r?.toUpperCase()).find((r) => r && ROLE_IDS.includes(r));
+  return role || 'FARMER';
+}
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState('');
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  const [role, setRole] = useState(() => resolveRole(searchParams.get('role'), location.state?.role));
+  const [identifier, setIdentifier] = useState(
+    location.state?.identifier || location.state?.mobileOrEmail || location.state?.email || ''
+  );
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [message, setMessage] = useState('');
+  const [result, setResult] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim()) {
-      setErrorMessage('Please enter your email address.');
+    if (!identifier.trim()) {
+      setErrorMessage('Please enter your registered mobile number or email address.');
       return;
     }
 
@@ -21,9 +42,16 @@ export default function ForgotPassword() {
     setErrorMessage('');
 
     try {
-      const res = await apiClient.post('/auth/forgot-password', { email: email.trim() });
-      setSubmitted(true);
-      setMessage(res.data || res.message || 'If an account with that email exists, password reset instructions have been sent.');
+      const data = await apiClient.post('/auth/forgot-password', {
+        role,
+        identifier: identifier.trim(),
+      });
+      setResult({
+        message: data?.message || 'Your request has been received.',
+        deliveryConfigured: Boolean(data?.deliveryConfigured),
+        devResetToken: data?.devResetToken || null,
+        devNotice: data?.devNotice || null,
+      });
     } catch (err) {
       console.error('Forgot password error:', err);
       setErrorMessage(err.message || 'Failed to process request. Please try again.');
@@ -32,81 +60,158 @@ export default function ForgotPassword() {
     }
   };
 
+  const roleLabel = ROLES.find((r) => r.id === role)?.label || 'Farmer';
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-xl rounded-2xl border border-slate-200/80 sm:px-10">
-          
-          <div className="mb-6 text-center">
-            <h2 className="text-2xl font-extrabold text-slate-900">Forgot Password?</h2>
-            <p className="text-sm text-slate-600 mt-1">Enter your registered email address to receive password reset instructions.</p>
+    <RevealGroup stagger={0.07} delayChildren={0.04}>
+      <RevealItem>
+        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          <span>Password Recovery</span>
+        </div>
+        <h1 className="font-display text-[28px] font-bold tracking-tight text-slate-900 sm:text-[32px]">
+          Forgot your password?
+        </h1>
+        <p className="mt-2 text-[15px] text-slate-500">
+          Choose your account type and enter the mobile number or email address you registered with.
+        </p>
+      </RevealItem>
+
+      {errorMessage && (
+        <RevealItem className="mt-5">
+          <div
+            role="alert"
+            className="flex items-start justify-between gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+          >
+            <span>{errorMessage}</span>
+            <button
+              type="button"
+              onClick={() => setErrorMessage('')}
+              aria-label="Dismiss error"
+              className="shrink-0 text-red-400 transition-colors hover:text-red-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </RevealItem>
+      )}
+
+      {result ? (
+        <RevealItem className="mt-6">
+          <div
+            role="status"
+            className={`flex items-start gap-3 rounded-2xl border p-4 text-sm font-medium ${
+              result.deliveryConfigured
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                : 'border-slate-200 bg-slate-50 text-slate-700'
+            }`}
+          >
+            {result.deliveryConfigured ? (
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+            ) : (
+              <Info className="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+            )}
+            <p>{result.message}</p>
           </div>
 
-          {submitted ? (
-            <div className="py-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 mx-auto mb-3">
-                <CheckCircle2 className="w-8 h-8" />
+          {result.devNotice && (
+            <div className="mt-4 rounded-2xl border-2 border-dashed border-amber-400 bg-amber-50 p-4 text-sm text-amber-900">
+              <div className="flex items-center gap-2 font-bold uppercase tracking-wide text-amber-800">
+                <FlaskConical className="h-4 w-4" />
+                Development only
               </div>
-              <p className="text-sm text-slate-700 font-medium mb-6">{message}</p>
-              <Link
-                to="/login"
-                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-all shadow-md"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Return to Log In</span>
-              </Link>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {errorMessage && (
-                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700">
-                  {errorMessage}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="farmer@example.com"
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-all shadow-md disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Sending Link...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Send Reset Instructions</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-
-              <div className="text-center pt-2">
-                <Link to="/login" className="text-xs font-semibold text-emerald-700 hover:underline inline-flex items-center gap-1">
-                  <ArrowLeft className="w-3 h-3" /> Back to Log In
+              <p className="mt-1.5 text-xs leading-relaxed">{result.devNotice}</p>
+              {result.devResetToken ? (
+                <Link
+                  to={`/reset-password?token=${encodeURIComponent(result.devResetToken)}`}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-amber-700"
+                >
+                  DEV-ONLY: open the reset link
                 </Link>
-              </div>
-            </form>
+              ) : (
+                <p className="mt-2 text-xs font-semibold">No reset token was issued for these details.</p>
+              )}
+            </div>
           )}
 
-        </div>
-      </div>
-    </div>
+          <Link
+            to={`/login?role=${role}`}
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-800 px-6 py-3.5 text-[15px] font-semibold text-white shadow-md transition-all hover:bg-emerald-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Return to {roleLabel} Log In</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setResult(null)}
+            className="mt-3 w-full text-center text-xs font-semibold text-emerald-700 underline-offset-2 hover:underline"
+          >
+            Try different details
+          </button>
+        </RevealItem>
+      ) : (
+        <RevealItem className="mt-6">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <div>
+              <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                Account Type
+              </span>
+              <div
+                role="tablist"
+                aria-label="Select the account type to recover"
+                className="grid grid-cols-3 gap-1 rounded-2xl bg-[#F0EFE9] p-1"
+              >
+                {ROLES.map((r) => {
+                  const isActive = role === r.id;
+                  return (
+                    <button
+                      key={r.id}
+                      id={`forgot-role-${r.id.toLowerCase()}`}
+                      role="tab"
+                      aria-selected={isActive}
+                      type="button"
+                      onClick={() => setRole(r.id)}
+                      className={`rounded-xl py-2.5 text-xs sm:text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${
+                        isActive
+                          ? 'bg-white text-emerald-800 shadow-sm font-bold'
+                          : 'text-slate-500 hover:text-slate-800 font-medium'
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <AuthTextField
+              id="identifier"
+              name="identifier"
+              label="Mobile Number or Email Address"
+              icon={Mail}
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              autoComplete="username"
+              required
+            />
+
+            <AuthPrimaryButton loading={loading} loadingText="Submitting...">
+              Reset Password
+            </AuthPrimaryButton>
+          </form>
+
+          <div className="mt-8 text-center text-sm text-slate-500">
+            Remember your password?{' '}
+            <Link
+              to={`/login?role=${role}`}
+              className="font-bold text-emerald-700 underline-offset-2 hover:underline"
+            >
+              Log In Here
+            </Link>
+          </div>
+        </RevealItem>
+      )}
+    </RevealGroup>
   );
 }

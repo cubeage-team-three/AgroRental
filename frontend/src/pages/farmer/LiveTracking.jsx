@@ -61,7 +61,17 @@ function LiveTracking() {
     );
   }
 
-  const progressPercent = tracking?.workProgress ?? 50;
+  // Only real data is shown: the backend sends nulls (and trackingAvailable=false) when nothing is known yet
+  const progressPercent = typeof tracking?.workProgress === 'number' ? tracking.workProgress : null;
+  const isLive = Boolean(tracking?.trackingAvailable);
+  const hasPosition = typeof tracking?.latitude === 'number' && typeof tracking?.longitude === 'number';
+  const currentStatus = tracking?.status || booking?.status || null;
+  const reached = (statuses) => statuses.includes(currentStatus);
+  const sourceLabel = {
+    OPERATOR_GPS: 'Operator GPS',
+    TRACKING_RECORD: 'Last reported position',
+    EQUIPMENT_BASE: 'Machine base location (not live)',
+  }[tracking?.locationSource] || null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 font-sans">
@@ -69,7 +79,7 @@ function LiveTracking() {
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-4">
         <div className="flex items-center gap-3">
           <Link
-            to="/farmer/my-bookings"
+            to="/farmer/bookings"
             className="p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 transition"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -82,13 +92,19 @@ function LiveTracking() {
               <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
                 Live Machine Tracking
               </h1>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                LIVE GPS
-              </span>
+              {isLive ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  LIVE
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-slate-100 text-slate-600 border border-slate-300">
+                  NOT LIVE
+                </span>
+              )}
             </div>
             <p className="text-xs text-gray-500 font-medium">
-              Booking Reservation #{id || '101'}
+              Booking Reservation #{id}
             </p>
           </div>
         </div>
@@ -132,13 +148,15 @@ function LiveTracking() {
               <div className="bg-slate-800/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-slate-700 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-emerald-400 animate-bounce" />
                 <span className="text-xs font-bold text-slate-200">
-                  Lat: {tracking?.latitude?.toFixed(4) || '18.5204'}, Lng: {tracking?.longitude?.toFixed(4) || '73.8567'}
+                  {hasPosition
+                    ? `Lat: ${tracking.latitude.toFixed(4)}, Lng: ${tracking.longitude.toFixed(4)}${sourceLabel ? ` · ${sourceLabel}` : ''}`
+                    : 'Location not available yet'}
                 </span>
               </div>
 
               <div className="bg-emerald-500/20 backdrop-blur-md text-emerald-300 border border-emerald-500/40 px-3.5 py-1.5 rounded-full text-xs font-black flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                <span>ETA: {tracking?.eta || '20 mins'}</span>
+                <span>ETA: {tracking?.eta || 'not available'}</span>
               </div>
             </div>
 
@@ -150,17 +168,19 @@ function LiveTracking() {
                     <Tractor className="w-7 h-7 text-emerald-400" />
                   </div>
                 </div>
-                <div className="absolute -top-1 -right-1 bg-emerald-500 text-slate-950 font-black text-[10px] px-1.5 py-0.5 rounded-full shadow-lg">
-                  ACTIVE
-                </div>
+                {isLive && (
+                  <div className="absolute -top-1 -right-1 bg-emerald-500 text-slate-950 font-black text-[10px] px-1.5 py-0.5 rounded-full shadow-lg">
+                    ACTIVE
+                  </div>
+                )}
               </div>
 
               <div className="text-center space-y-1">
                 <h3 className="text-base font-black text-white">
-                  {tracking?.equipmentName || booking?.equipmentName || 'Mahindra Tractor 575 DI'}
+                  {tracking?.equipmentName || booking?.equipmentName || 'Equipment'}
                 </h3>
                 <p className="text-xs text-slate-400 font-medium max-w-sm">
-                  {tracking?.routeInformation || 'En route to registered farm field'}
+                  {tracking?.routeInformation || tracking?.message || ''}
                 </p>
               </div>
             </div>
@@ -171,7 +191,7 @@ function LiveTracking() {
                 <Zap className="w-4 h-4 text-amber-400" /> Live Field Telemetry
               </span>
               <span className="text-[11px] text-slate-400 font-mono">
-                Updated: {tracking?.lastUpdated ? new Date(tracking.lastUpdated).toLocaleTimeString() : 'Just now'}
+                Updated: {tracking?.lastUpdated ? new Date(tracking.lastUpdated).toLocaleTimeString() : '—'}
               </span>
             </div>
           </div>
@@ -183,7 +203,7 @@ function LiveTracking() {
                 Work Completion Progress
               </h3>
               <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                {progressPercent}% Completed
+                {progressPercent !== null ? `${progressPercent}% Completed` : 'Not reported yet'}
               </span>
             </div>
 
@@ -191,28 +211,23 @@ function LiveTracking() {
             <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden p-0.5 border border-gray-200">
               <div
                 className="bg-gradient-to-r from-emerald-500 to-teal-600 h-full rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${progressPercent}%` }}
+                style={{ width: `${progressPercent ?? 0}%` }}
               />
             </div>
 
             {/* Status Milestones */}
             <div className="grid grid-cols-4 gap-2 pt-2 text-center text-[11px] font-bold text-gray-500">
-              <div className="space-y-1">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 mx-auto" />
-                <span className="text-gray-900">Dispatched</span>
-              </div>
-              <div className="space-y-1">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 mx-auto" />
-                <span className="text-gray-900">On the Way</span>
-              </div>
-              <div className="space-y-1">
-                <CheckCircle2 className={`w-4 h-4 ${progressPercent >= 30 ? 'text-emerald-600' : 'text-gray-300'} mx-auto`} />
-                <span className={progressPercent >= 30 ? 'text-gray-900' : ''}>Arrived at Farm</span>
-              </div>
-              <div className="space-y-1">
-                <CheckCircle2 className={`w-4 h-4 ${progressPercent >= 100 ? 'text-emerald-600' : 'text-gray-300'} mx-auto`} />
-                <span className={progressPercent >= 100 ? 'text-gray-900' : ''}>Job Completed</span>
-              </div>
+              {[
+                ['Dispatched', ['OPERATOR_ASSIGNED', 'ON_THE_WAY', 'WORK_STARTED', 'COMPLETED']],
+                ['On the Way', ['ON_THE_WAY', 'WORK_STARTED', 'COMPLETED']],
+                ['Work Started', ['WORK_STARTED', 'COMPLETED']],
+                ['Job Completed', ['COMPLETED']],
+              ].map(([label, statuses]) => (
+                <div key={label} className="space-y-1">
+                  <CheckCircle2 className={`w-4 h-4 ${reached(statuses) ? 'text-emerald-600' : 'text-gray-300'} mx-auto`} />
+                  <span className={reached(statuses) ? 'text-gray-900' : ''}>{label}</span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -229,11 +244,11 @@ function LiveTracking() {
 
             <div className="flex items-center gap-3 pt-1">
               <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 font-black text-lg flex items-center justify-center shrink-0 border border-emerald-200">
-                {tracking?.operatorName ? tracking.operatorName.charAt(0) : 'O'}
+                {tracking?.operatorName ? tracking.operatorName.charAt(0) : '–'}
               </div>
               <div>
                 <h4 className="text-sm font-black text-gray-900">
-                  {tracking?.operatorName || 'Verified Machinery Operator'}
+                  {tracking?.operatorName || 'No operator details yet'}
                 </h4>
                 <p className="text-xs text-gray-500 flex items-center gap-1 font-medium">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> AgroRental Certified
@@ -241,12 +256,14 @@ function LiveTracking() {
               </div>
             </div>
 
-            <a
-              href={`tel:${tracking?.operatorMobile || ''}`}
-              className="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-2"
-            >
-              <Phone className="w-4 h-4" /> Call Operator Now
-            </a>
+            {tracking?.operatorMobile && (
+              <a
+                href={`tel:${tracking.operatorMobile}`}
+                className="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-2"
+              >
+                <Phone className="w-4 h-4" /> Call Operator Now
+              </a>
+            )}
           </div>
 
           {/* Service Details Summary Card */}
@@ -262,11 +279,11 @@ function LiveTracking() {
               </div>
               <div className="flex justify-between py-1 text-emerald-100">
                 <span className="text-emerald-400">Status</span>
-                <span className="font-black text-emerald-300">{tracking?.status || 'WORK_STARTED'}</span>
+                <span className="font-black text-emerald-300">{currentStatus || '—'}</span>
               </div>
               <div className="flex justify-between py-1 text-emerald-100">
                 <span className="text-emerald-400">Destination</span>
-                <span className="font-bold truncate max-w-[150px]">{booking?.deliveryAddress || 'Primary Farm'}</span>
+                <span className="font-bold truncate max-w-[150px]">{booking?.deliveryAddress || '—'}</span>
               </div>
             </div>
 

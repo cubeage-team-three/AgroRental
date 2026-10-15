@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -35,4 +36,11 @@ public class OperatorResponse {
     private boolean active;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /**
+     * Registration response only: short-lived (2 h) token for uploading this operator's own KYC documents
+     * while the account is PENDING. Not a session token.
+     */
+    @ToString.Exclude
+    private String onboardingToken;
 }

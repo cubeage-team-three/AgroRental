@@ -89,7 +89,7 @@ function PartnerDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 font-sans">
-      
+
       {/* Error Alert */}
       {error && (
         <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-2xl text-red-700 text-sm font-medium flex items-center justify-between shadow-xs">
@@ -108,8 +108,8 @@ function PartnerDashboard() {
       )}
 
       {/* Hero Welcome Banner */}
-      <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="relative h-44 sm:h-52 bg-gradient-to-r from-[#142E1C] via-[#1B4D3E] to-[#2E7D32] overflow-hidden flex items-center px-6 sm:px-10">
+      <div className="bg-white rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
+        <div className="relative h-44 sm:h-52 bg-gradient-to-r from-[#0F382C] via-[#194D3E] to-[#2E7D32] overflow-hidden flex items-center px-6 sm:px-10">
           <img
             src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80"
             alt="Agro Field Banner"
@@ -157,22 +157,22 @@ function PartnerDashboard() {
 
       {/* KPI Metric Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        
+
         {/* Total Equipment */}
         <Link
           to="/partner/equipment"
-          className="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-[#3E7B27] hover:shadow-md transition-all group"
+          className="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-600 hover:shadow-md transition-all group"
         >
           <div className="flex items-center justify-between mb-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#3E7B27] flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center group-hover:scale-110 transition-transform">
               <Tractor className="w-6 h-6" />
             </div>
-            <span className="text-xs font-bold text-[#3E7B27] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+            <span className="text-xs font-bold text-emerald-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
               Fleet →
             </span>
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Total Machinery</span>
-          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">{totalEquipmentCount}</p>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Total Machinery</span>
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{totalEquipmentCount}</p>
           <span className="text-[11px] text-emerald-600 font-semibold mt-1 block">
             {activeMachinesCount} Active & Ready for Rent
           </span>
@@ -181,7 +181,7 @@ function PartnerDashboard() {
         {/* Monthly Revenue */}
         <Link
           to="/partner/earnings"
-          className="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-[#3E7B27] hover:shadow-md transition-all group"
+          className="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-600 hover:shadow-md transition-all group"
         >
           <div className="flex items-center justify-between mb-3">
             <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -191,8 +191,8 @@ function PartnerDashboard() {
               Payouts →
             </span>
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Monthly Revenue</span>
-          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Monthly Revenue</span>
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
             ₹{Number(monthlyRevenue).toLocaleString('en-IN')}
           </p>
           <span className="text-[11px] text-amber-600 font-semibold mt-1 block flex items-center gap-1">
@@ -203,7 +203,7 @@ function PartnerDashboard() {
         {/* Pending Requests */}
         <Link
           to="/partner/bookings"
-          className="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-[#3E7B27] hover:shadow-md transition-all group"
+          className="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-600 hover:shadow-md transition-all group"
         >
           <div className="flex items-center justify-between mb-3">
             <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -213,8 +213,8 @@ function PartnerDashboard() {
               Review →
             </span>
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Pending Requests</span>
-          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">{pendingRequestsCount}</p>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Pending Requests</span>
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{pendingRequestsCount}</p>
           <span className="text-[11px] text-purple-600 font-semibold mt-1 block">
             {completedBookingsCount} Completed Orders
           </span>
@@ -223,7 +223,7 @@ function PartnerDashboard() {
         {/* Customer Rating */}
         <Link
           to="/partner/reviews"
-          className="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-[#3E7B27] hover:shadow-md transition-all group"
+          className="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-600 hover:shadow-md transition-all group"
         >
           <div className="flex items-center justify-between mb-3">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -233,8 +233,8 @@ function PartnerDashboard() {
               Reviews →
             </span>
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">Customer Rating</span>
-          <p className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Customer Rating</span>
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
             {customerRating > 0 ? `${customerRating.toFixed(1)} ★` : '0.0 ★'}
           </p>
           <span className="text-[11px] text-blue-600 font-semibold mt-1 block">
@@ -245,69 +245,69 @@ function PartnerDashboard() {
       </div>
 
       {/* Quick Action Hub */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-4">
-        <h2 className="text-lg font-black text-[#142E1C] flex items-center gap-2">
+      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-4">
+        <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
           <span>⚡</span> Quick Management Actions
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          
+
           <Link
             to="/partner/equipment/add"
-            className="p-5 rounded-2xl border border-gray-200 hover:border-[#3E7B27] hover:bg-[#F8FAF8] transition-all group"
+            className="p-5 rounded-2xl border border-slate-200 hover:border-emerald-600 hover:bg-[#F8FAF8] transition-all group"
           >
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#3E7B27] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <PlusCircle className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#3E7B27] transition-colors">
+            <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
               List New Machinery
             </h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Add tractors, harvesters, seeders or sprayers.
             </p>
           </Link>
 
           <Link
             to="/partner/equipment/availability"
-            className="p-5 rounded-2xl border border-gray-200 hover:border-[#3E7B27] hover:bg-[#F8FAF8] transition-all group"
+            className="p-5 rounded-2xl border border-slate-200 hover:border-emerald-600 hover:bg-[#F8FAF8] transition-all group"
           >
             <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <ToggleLeft className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#3E7B27] transition-colors">
+            <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
               Fleet Availability
             </h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Toggle operational states & maintenance schedules.
             </p>
           </Link>
 
           <Link
             to="/partner/bookings"
-            className="p-5 rounded-2xl border border-gray-200 hover:border-[#3E7B27] hover:bg-[#F8FAF8] transition-all group"
+            className="p-5 rounded-2xl border border-slate-200 hover:border-emerald-600 hover:bg-[#F8FAF8] transition-all group"
           >
             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <CalendarCheck className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#3E7B27] transition-colors">
+            <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
               Booking Requests
             </h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Review and approve incoming farmer rental inquiries.
             </p>
           </Link>
 
           <Link
             to="/partner/profile"
-            className="p-5 rounded-2xl border border-gray-200 hover:border-[#3E7B27] hover:bg-[#F8FAF8] transition-all group"
+            className="p-5 rounded-2xl border border-slate-200 hover:border-emerald-600 hover:bg-[#F8FAF8] transition-all group"
           >
             <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
               <User className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#3E7B27] transition-colors">
+            <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
               Partner Profile & KYC
             </h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Update enterprise address, GST, and security.
             </p>
           </Link>
@@ -316,20 +316,20 @@ function PartnerDashboard() {
       </div>
 
       {/* Fleet Machinery Overview Section */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6">
+      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-black text-[#142E1C] flex items-center gap-2">
-              <Tractor className="w-5 h-5 text-[#3E7B27]" />
+            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <Tractor className="w-5 h-5 text-emerald-700" />
               <span>Fleet Machinery Overview</span>
             </h2>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Live snapshot of your registered equipment listings.
             </p>
           </div>
           <Link
             to="/partner/equipment"
-            className="text-xs font-bold text-[#3E7B27] hover:underline flex items-center gap-1"
+            className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1"
           >
             <span>View All ({equipmentList.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -337,12 +337,12 @@ function PartnerDashboard() {
         </div>
 
         {equipmentList.length === 0 ? (
-          <div className="p-8 border border-dashed border-gray-200 rounded-2xl text-center space-y-3">
-            <Tractor className="w-10 h-10 text-gray-300 mx-auto" />
-            <p className="text-sm font-bold text-gray-700">No machinery listings added yet</p>
+          <div className="p-8 border border-dashed border-slate-200 rounded-2xl text-center space-y-3">
+            <Tractor className="w-10 h-10 text-slate-400 mx-auto" />
+            <p className="text-sm font-bold text-slate-700">No machinery listings added yet</p>
             <Link
               to="/partner/equipment/add"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#3E7B27] text-white text-xs font-bold rounded-xl"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition-colors"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Add Your First Machine</span>
@@ -357,7 +357,7 @@ function PartnerDashboard() {
               return (
                 <div
                   key={item.id}
-                  className="bg-[#F8FAF8] rounded-2xl border border-emerald-900/5 overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow"
+                  className="bg-[#F8FAF8] rounded-2xl border border-slate-200 overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow"
                 >
                   <div>
                     <div className="relative h-36 w-full bg-gray-100 overflow-hidden">
@@ -378,33 +378,33 @@ function PartnerDashboard() {
                     </div>
 
                     <div className="p-4 space-y-2">
-                      <span className="text-[10px] font-black uppercase text-[#3E7B27]">
+                      <span className="text-[10px] font-black uppercase text-emerald-700">
                         {formatCategoryLabel(item.category)}
                       </span>
-                      <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{item.name}</h4>
-                      <p className="text-xs text-gray-500 flex items-center gap-1 truncate">
-                        <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <h4 className="text-sm font-bold text-slate-900 line-clamp-1">{item.name}</h4>
+                      <p className="text-xs text-slate-500 flex items-center gap-1 truncate">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span>{item.locationAddress}</span>
                       </p>
-                      <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between">
-                        <span className="text-base font-black text-[#142E1C]">
-                          ₹{Number(item.rentalPrice).toLocaleString('en-IN')} <span className="text-[10px] text-gray-500 font-normal">/ day</span>
+                      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                        <span className="text-base font-black text-slate-900">
+                          ₹{Number(item.rentalPrice).toLocaleString('en-IN')} <span className="text-[10px] text-slate-500 font-normal">/ day</span>
                         </span>
-                        <span className="text-xs font-semibold text-gray-500">{item.brand} {item.model}</span>
+                        <span className="text-xs font-semibold text-slate-500">{item.brand} {item.model}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-white border-t border-gray-100 flex items-center justify-between">
+                  <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-between">
                     <button
                       onClick={() => navigate(`/partner/equipment/add?edit=${item.id}`)}
-                      className="text-xs font-bold text-gray-700 hover:text-[#3E7B27]"
+                      className="text-xs font-bold text-slate-700 hover:text-emerald-700 transition-colors"
                     >
                       Edit Machine
                     </button>
                     <Link
                       to="/partner/equipment"
-                      className="text-xs font-bold text-[#3E7B27] hover:underline"
+                      className="text-xs font-bold text-emerald-700 hover:underline"
                     >
                       Manage Listing →
                     </Link>

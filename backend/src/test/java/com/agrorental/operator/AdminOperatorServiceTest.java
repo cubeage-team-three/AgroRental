@@ -145,19 +145,23 @@ class AdminOperatorServiceTest {
     }
 
     @Test
-    @DisplayName("verifyOperator() - Should reject approval if operator mobile is NOT verified")
-    void shouldRejectApprovalIfMobileNotVerified() {
+    @DisplayName("verifyOperator() - Approves a PENDING operator whose mobile was never OTP-verified (contract v1.1: informational flag)")
+    void shouldApproveOperatorWithoutMobileVerification() {
         when(operatorRepository.findById(2L)).thenReturn(Optional.of(pendingUnverifiedOperator));
+        when(operatorRepository.save(any(Operator.class))).thenAnswer(i -> i.getArgument(0));
 
         OperatorVerificationRequest request = OperatorVerificationRequest.builder()
                 .status(OperatorStatus.APPROVED)
                 .build();
 
-        BadRequestException ex = assertThrows(BadRequestException.class,
-                () -> adminOperatorService.verifyOperator(2L, request));
+        OperatorDetailResponse response = adminOperatorService.verifyOperator(2L, request);
 
-        assertTrue(ex.getMessage().contains("mobile number must be verified"));
-        verify(operatorRepository, never()).save(any(Operator.class));
+        assertEquals(OperatorStatus.APPROVED, response.getStatus());
+        assertTrue(response.isActive());
+        // Approval does not pretend the mobile number was verified
+        assertFalse(pendingUnverifiedOperator.isMobileVerified());
+        assertFalse(response.isMobileVerified());
+        verify(operatorRepository).save(pendingUnverifiedOperator);
     }
 
     @Test

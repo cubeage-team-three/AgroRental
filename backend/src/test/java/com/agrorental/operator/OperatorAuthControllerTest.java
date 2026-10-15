@@ -1,16 +1,12 @@
 package com.agrorental.operator;
 
-import tools.jackson.databind.ObjectMapper;
-import com.agrorental.common.exception.ForbiddenException;
 import com.agrorental.common.exception.GlobalExceptionHandler;
-import com.agrorental.common.exception.UnauthorizedException;
 import com.agrorental.operator.controller.OperatorAuthController;
 import com.agrorental.operator.dto.AuthenticatedOperatorResponse;
-import com.agrorental.operator.dto.OperatorLoginRequest;
-import com.agrorental.operator.dto.OperatorLoginResponse;
 import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.service.OperatorAuthService;
 import com.agrorental.security.principal.OperatorPrincipal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,8 +29,7 @@ import org.springframework.core.MethodParameter;
 import java.util.Collections;
 
 import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -45,6 +40,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("OperatorAuthController MockMvc Standalone Unit Tests")
 class OperatorAuthControllerTest {
 
+    /** Standalone MockMvc tests set principals on this thread; never leak them into later test classes. */
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
     private MockMvc mockMvc;
 
     @Mock
@@ -52,8 +53,6 @@ class OperatorAuthControllerTest {
 
     @InjectMocks
     private OperatorAuthController operatorAuthController;
-
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
@@ -84,96 +83,31 @@ class OperatorAuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/operators/login - Success (200 OK)")
-    void testLoginSuccess() throws Exception {
-        OperatorLoginRequest request = OperatorLoginRequest.builder()
-                .mobileNumber("9876543210")
-                .password("Password@123")
-                .build();
-
-        AuthenticatedOperatorResponse authOperator = AuthenticatedOperatorResponse.builder()
-                .id(1L)
-                .fullName("Rajesh Shinde")
-                .mobileNumber("9876543210")
-                .email("rajesh@agrorental.com")
-                .status(OperatorStatus.APPROVED)
-                .mobileVerified(true)
-                .active(true)
-                .role("OPERATOR")
-                .build();
-
-        OperatorLoginResponse response = OperatorLoginResponse.builder()
-                .accessToken("mocked.jwt.token")
-                .tokenType("Bearer")
-                .expiresIn(3600L)
-                .operator(authOperator)
-                .build();
-
-        when(operatorAuthService.login(any(OperatorLoginRequest.class))).thenReturn(response);
-
+    @DisplayName("POST /api/operators/login - Retired: 410 Gone even with credentials, no token, service never called")
+    void testRetiredLoginWithCredentials() throws Exception {
         mockMvc.perform(post("/api/operators/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.message", is("Operator login successful")))
-                .andExpect(jsonPath("$.data.accessToken", is("mocked.jwt.token")))
-                .andExpect(jsonPath("$.data.tokenType", is("Bearer")))
-                .andExpect(jsonPath("$.data.operator.fullName", is("Rajesh Shinde")))
-                .andExpect(jsonPath("$.data.operator.role", is("OPERATOR")));
-    }
-
-    @Test
-    @DisplayName("POST /api/operators/login - Wrong Password (401 Unauthorized)")
-    void testLoginInvalidCredentials() throws Exception {
-        OperatorLoginRequest request = OperatorLoginRequest.builder()
-                .mobileNumber("9876543210")
-                .password("WrongPassword")
-                .build();
-
-        when(operatorAuthService.login(any(OperatorLoginRequest.class)))
-                .thenThrow(new UnauthorizedException("Invalid mobile number or password"));
-
-        mockMvc.perform(post("/api/operators/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized())
+                        .content("{\"mobileNumber\":\"9876543210\",\"password\":\"Password@123\"}"))
+                .andExpect(status().isGone())
                 .andExpect(jsonPath("$.success", is(false)))
-                .andExpect(jsonPath("$.message", is("Invalid mobile number or password")));
+                .andExpect(jsonPath("$.message", is(OperatorAuthController.LOGIN_RETIRED_MESSAGE)))
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        verifyNoInteractions(operatorAuthService);
     }
 
     @Test
-    @DisplayName("POST /api/operators/login - Pending Approval (403 Forbidden)")
-    void testLoginPendingApproval() throws Exception {
-        OperatorLoginRequest request = OperatorLoginRequest.builder()
-                .mobileNumber("9876543210")
-                .password("Password@123")
-                .build();
-
-        when(operatorAuthService.login(any(OperatorLoginRequest.class)))
-                .thenThrow(new ForbiddenException("Operator account is pending admin approval"));
-
-        mockMvc.perform(post("/api/operators/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.success", is(false)))
-                .andExpect(jsonPath("$.message", is("Operator account is pending admin approval")));
-    }
-
-    @Test
-    @DisplayName("POST /api/operators/login - Validation Error on Invalid Mobile (400 Bad Request)")
-    void testLoginValidationFailure() throws Exception {
-        OperatorLoginRequest request = OperatorLoginRequest.builder()
-                .mobileNumber("123") // Invalid format
-                .password("")
-                .build();
-
-        mockMvc.perform(post("/api/operators/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success", is(false)));
+    @DisplayName("POST /api/operators/login - Retired: the answer does not depend on the request (no validation, no lookup)")
+    void testRetiredLoginIsRequestIndependent() throws Exception {
+        for (String body : new String[]{"{}", "{\"mobileNumber\":\"123\",\"password\":\"\"}",
+                "{\"mobileNumber\":\"9000000000\",\"password\":\"WrongPassword1\"}"}) {
+            mockMvc.perform(post("/api/operators/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isGone())
+                    .andExpect(jsonPath("$.message", is(OperatorAuthController.LOGIN_RETIRED_MESSAGE)));
+        }
+        verifyNoInteractions(operatorAuthService);
     }
 
     @Test

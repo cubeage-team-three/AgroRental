@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Data Transfer Object for User Registration requests.
@@ -27,8 +28,9 @@ public class UserRegistrationRequest {
     @Size(max = 120, message = "Email cannot exceed 120 characters")
     private String email;
 
+    /** Must satisfy {@link com.agrorental.auth.service.PasswordPolicy} (checked by the service). */
     @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
+    @ToString.Exclude
     private String password;
 
     private Role role;

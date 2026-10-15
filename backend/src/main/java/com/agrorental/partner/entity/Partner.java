@@ -1,7 +1,5 @@
 package com.agrorental.partner.entity;
 
-import java.time.LocalDateTime;
-
 import com.agrorental.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -53,15 +51,13 @@ public class Partner extends BaseEntity {
     @Column(name = "profile_photo")
     private String profilePhoto;
 
+    /** Informational only: no longer required for approval or login (contract v1.1). */
     @Column(name = "otp_verified", nullable = false)
     @Builder.Default
     private boolean otpVerified = false;
 
-    @Column(name = "otp_code")
-private String otpCode;
-
-@Column(name = "otp_expiry")
-private LocalDateTime otpExpiry;
+    // The legacy otp_code / otp_expiry columns (plaintext partner OTP, formerly also reused as a password
+    // reset token) are intentionally no longer mapped: nothing reads or writes them any more.
 
     @Enumerated(EnumType.STRING)
     @Column(name = "verification_status", nullable = false)

@@ -1,17 +1,24 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Calendar, MapPin, CheckCircle, Clock, XCircle, ArrowLeft, CreditCard, FileText, UserCheck, ShieldCheck, Truck, AlertCircle } from 'lucide-react';
+import { useParams, Link } from 'react-router-dom';
+import { Calendar, MapPin, CheckCircle, XCircle, ArrowLeft, CreditCard, FileText, AlertCircle } from 'lucide-react';
 import { bookingService } from '../../services/bookingService';
+import { paymentService } from '../../services/paymentService';
+import { RefundNotice } from '../../components/payment/RefundStatus';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
+
+// Mirrors BookingService.cancelBooking: the backend refuses to cancel bookings in these states
+const NON_CANCELLABLE_STATUSES = ['CANCELLED', 'COMPLETED', 'REJECTED'];
+// Live tracking only means something while an operator is assigned / travelling / working
+const TRACKABLE_STATUSES = ['OPERATOR_ASSIGNED', 'ON_THE_WAY', 'WORK_STARTED'];
 
 function BookingDetails() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionMessage, setActionMessage] = useState(null);
+  const [refund, setRefund] = useState(null);
 
   const fetchBooking = async () => {
     try {
@@ -30,8 +37,33 @@ function BookingDetails() {
     if (id) fetchBooking();
   }, [id]);
 
+  // Refund state lives on the payment: load it only for a paid booking that was cancelled or rejected
+  const refundRelevant = Boolean(booking && booking.paymentStatus === 'SUCCESS'
+    && (booking.status === 'CANCELLED' || booking.status === 'REJECTED'));
+  useEffect(() => {
+    if (!refundRelevant) {
+      setRefund(null);
+      return undefined;
+    }
+    let cancelled = false;
+    paymentService.getPaymentByBookingId(booking.id)
+      .then((payment) => {
+        if (!cancelled) setRefund(payment ? { refundStatus: payment.refundStatus, refundAmount: payment.refundAmount } : null);
+      })
+      .catch(() => {
+        if (!cancelled) setRefund(null); // show no notice rather than a guessed refund state
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [refundRelevant, booking?.id, booking?.status]);
+
   const handleCancel = async () => {
-    if (!window.confirm('Are you sure you want to cancel this equipment reservation?')) return;
+    const paid = booking?.paymentStatus === 'SUCCESS';
+    const prompt = paid
+      ? 'Are you sure you want to cancel this equipment reservation?\n\nThis booking is paid. Cancelling starts a full refund of the amount you paid. Refunds are transferred to your bank/UPI by AgroRent and are not instant; this page shows the refund status.'
+      : 'Are you sure you want to cancel this equipment reservation?';
+    if (!window.confirm(prompt)) return;
 
     try {
       setError(null);
@@ -52,7 +84,8 @@ function BookingDetails() {
       case 'WORK_STARTED':
       case 'ON_THE_WAY': return 4;
       case 'COMPLETED': return 5;
-      case 'CANCELLED': return -1;
+      case 'CANCELLED':
+      case 'REJECTED': return -1;
       default: return 1;
     }
   };
@@ -86,7 +119,7 @@ function BookingDetails() {
           <h2 className="text-xl font-bold text-red-900 mb-2">Booking Not Found</h2>
           <p className="text-red-800 mb-4">{error || 'Reservation ID does not exist.'}</p>
           <Link
-            to="/farmer/my-bookings"
+            to="/farmer/bookings"
             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-700"
           >
             <ArrowLeft className="h-4 w-4" /> Back to My Bookings
@@ -105,7 +138,7 @@ function BookingDetails() {
             <img src={agroRentLogo} alt="AgroRent" className="h-full w-auto object-contain" />
           </div>
           <div>
-            <Link to="/farmer/my-bookings" className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-1">
+            <Link to="/farmer/bookings" className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800 mb-1">
               <ArrowLeft className="h-4 w-4" /> Back to Bookings List
             </Link>
             <div className="flex items-center gap-3">
@@ -113,7 +146,8 @@ function BookingDetails() {
               <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
                 booking.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
                 booking.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
-                booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+                booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                booking.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
               }`}>
                 {booking.status}
               </span>
@@ -123,7 +157,7 @@ function BookingDetails() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {booking.status !== 'CANCELLED' && (
+          {booking.status === 'CONFIRMED' && booking.paymentStatus !== 'SUCCESS' && (
             <Link
               to={`/farmer/bookings/${booking.id}/pay`}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
@@ -132,12 +166,14 @@ function BookingDetails() {
             </Link>
           )}
 
-          <Link
-            to={`/farmer/bookings/${booking.id}/invoice`}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
-            <FileText className="h-4 w-4 text-emerald-600" /> Tax Invoice
-          </Link>
+          {booking.paymentStatus === 'SUCCESS' && (
+            <Link
+              to={`/farmer/bookings/${booking.id}/invoice`}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              <FileText className="h-4 w-4 text-emerald-600" /> Tax Invoice
+            </Link>
+          )}
         </div>
       </div>
 
@@ -146,6 +182,10 @@ function BookingDetails() {
           <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
           <span>{actionMessage}</span>
         </div>
+      )}
+
+      {refundRelevant && refund && (
+        <RefundNotice refundStatus={refund.refundStatus} refundAmount={refund.refundAmount} bookingId={booking.id} className="mb-6" />
       )}
 
       {/* Visual Status Step Indicator */}
@@ -175,6 +215,17 @@ function BookingDetails() {
               );
             })}
           </div>
+        </div>
+      ) : booking.status === 'REJECTED' ? (
+        <div className="mb-8 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center shadow-sm">
+          <XCircle className="mx-auto h-10 w-10 text-rose-600 mb-2" />
+          <h3 className="text-lg font-bold text-rose-900">Reservation Rejected</h3>
+          <p className="text-xs text-rose-700">This booking request was rejected and will not be fulfilled.</p>
+          {booking.rejectionReason && (
+            <p className="mt-2 text-xs text-rose-800">
+              <span className="font-bold">Reason:</span> {booking.rejectionReason}
+            </p>
+          )}
         </div>
       ) : (
         <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-center shadow-sm">
@@ -250,12 +301,14 @@ function BookingDetails() {
                 <p className="text-3xl font-extrabold text-white">₹{booking.totalCost}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  to={`/farmer/bookings/${booking.id}/tracking`}
-                  className="rounded-xl border border-emerald-400/40 bg-emerald-700/60 px-4 py-2.5 text-xs font-bold text-emerald-100 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5"
-                >
-                  <MapPin className="h-4 w-4 text-emerald-300" /> Live Tracking
-                </Link>
+                {TRACKABLE_STATUSES.includes(booking.status) && (
+                  <Link
+                    to={`/farmer/bookings/${booking.id}/tracking`}
+                    className="rounded-xl border border-emerald-400/40 bg-emerald-700/60 px-4 py-2.5 text-xs font-bold text-emerald-100 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5"
+                  >
+                    <MapPin className="h-4 w-4 text-emerald-300" /> Live Tracking
+                  </Link>
+                )}
 
                 <Link
                   to={`/farmer/complaints?bookingId=${booking.id}`}
@@ -264,7 +317,7 @@ function BookingDetails() {
                   <AlertCircle className="h-4 w-4 text-amber-300" /> Log Complaint
                 </Link>
 
-                {booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
+                {!NON_CANCELLABLE_STATUSES.includes(booking.status) && (
                   <button
                     type="button"
                     onClick={handleCancel}

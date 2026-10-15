@@ -78,7 +78,7 @@ class FarmerRegistrationUserLinkingTest {
                 .email("shivaji@agrorental.com")
                 .password("encoded_pass_123")
                 .preferredLanguage("Marathi")
-                .accountStatus("PENDING_OTP")
+                .accountStatus("ACTIVE")
                 .build();
         mockSavedFarmer.setId(10L);
 
@@ -89,7 +89,7 @@ class FarmerRegistrationUserLinkingTest {
         assertNotNull(response);
         assertEquals(10L, response.getFarmerId());
         assertEquals("Shivaji Patil", response.getFullName());
-        assertEquals("PENDING_OTP", response.getAccountStatus());
+        assertEquals("ACTIVE", response.getAccountStatus());
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository, times(1)).save(userCaptor.capture());
@@ -103,5 +103,24 @@ class FarmerRegistrationUserLinkingTest {
         Farmer capturedFarmer = farmerCaptor.getValue();
         assertNotNull(capturedFarmer.getUser());
         assertEquals(50L, capturedFarmer.getUser().getId());
+        // No OTP step: the farmer is active immediately and owns the password hash (never the raw password)
+        assertEquals("ACTIVE", capturedFarmer.getAccountStatus());
+        assertEquals("encoded_pass_123", capturedFarmer.getPassword());
+        assertEquals("encoded_pass_123", capturedUser.getPassword());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest(name = "rejects password \"{0}\" before touching the database")
+    @org.junit.jupiter.params.provider.NullAndEmptySource
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"short1", "lettersonly", "1234567890", "          "})
+    @DisplayName("Farmer registration requires a password that satisfies the shared policy")
+    void testRegisterFarmerRequiresPolicyCompliantPassword(String password) {
+        sampleRequest.setPassword(password);
+
+        com.agrorental.common.exception.BadRequestException ex = org.junit.jupiter.api.Assertions.assertThrows(
+                com.agrorental.common.exception.BadRequestException.class,
+                () -> farmerService.registerFarmer(sampleRequest));
+
+        assertEquals(com.agrorental.auth.service.PasswordPolicy.REQUIREMENTS_MESSAGE, ex.getMessage());
+        org.mockito.Mockito.verifyNoInteractions(farmerRepository, userRepository, passwordEncoder);
     }
 }

@@ -1,6 +1,7 @@
 package com.agrorental.operator.service;
 
 import com.agrorental.common.exception.BadRequestException;
+import com.agrorental.common.exception.ForbiddenException;
 import com.agrorental.common.exception.ResourceNotFoundException;
 import com.agrorental.operator.dto.OperatorDocumentCreateRequest;
 import com.agrorental.operator.dto.OperatorDocumentResponse;
@@ -33,8 +34,16 @@ public class OperatorDocumentService {
     /**
      * Submits or updates a KYC document record for an Operator.
      */
+    /**
+     * Adds or replaces an operator's KYC document. Callers must already have verified that the acting
+     * principal is the owning operator or an administrator.
+     *
+     * @param actingAsAdministrator true only for an authenticated admin; an operator may add a missing
+     *                              document or replace a PENDING/REJECTED one, but never an APPROVED one
+     */
     @Transactional
-    public OperatorDocumentResponse addDocument(Long operatorId, OperatorDocumentCreateRequest request) {
+    public OperatorDocumentResponse addDocument(Long operatorId, OperatorDocumentCreateRequest request,
+                                                boolean actingAsAdministrator) {
         Operator operator = operatorRepository.findById(operatorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Operator not found with ID: " + operatorId));
 
@@ -45,6 +54,10 @@ public class OperatorDocumentService {
         OperatorDocument document;
         if (existingOpt.isPresent()) {
             document = existingOpt.get();
+            if (document.getVerificationStatus() == DocumentStatus.APPROVED && !actingAsAdministrator) {
+                log.warn("Rejected replacement of approved {} document for operator ID: {}", request.getDocumentType(), operatorId);
+                throw new ForbiddenException("Approved documents can only be replaced by an administrator.");
+            }
             document.setFileName(request.getFileName().trim());
             document.setFileUrl(request.getFileUrl().trim());
             document.setDocumentNumber(request.getDocumentNumber() != null ? request.getDocumentNumber().trim() : document.getDocumentNumber());

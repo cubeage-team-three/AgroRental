@@ -17,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/farmers/complaints")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class FarmerComplaintController {
 
     private final ComplaintService complaintService;
@@ -41,8 +40,10 @@ public class FarmerComplaintController {
     }
 
     @GetMapping("/{complaintId}")
-    public ResponseEntity<ApiResponse<ComplaintResponse>> getComplaintById(@PathVariable Long complaintId) {
-        ComplaintResponse response = complaintService.getComplaintById(complaintId);
+    public ResponseEntity<ApiResponse<ComplaintResponse>> getComplaintById(
+            @AuthenticationPrincipal FarmerPrincipal principal,
+            @PathVariable Long complaintId) {
+        ComplaintResponse response = complaintService.getComplaintForFarmer(complaintId, principal != null ? principal.getId() : null);
         return ResponseEntity.ok(ApiResponse.success("Complaint details retrieved successfully", response));
     }
 }

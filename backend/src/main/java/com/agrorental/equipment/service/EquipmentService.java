@@ -11,6 +11,7 @@ import com.agrorental.equipment.repository.EquipmentRepository;
 import com.agrorental.equipment.specification.EquipmentSpecification;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +34,14 @@ public class EquipmentService {
     private final EquipmentRepository equipmentRepository;
     private final EquipmentMapper equipmentMapper;
     private final PartnerRepository partnerRepository;
+    /** Booking-derived availability (see EquipmentAvailabilityService); absent only in plain unit tests. */
+    private EquipmentAvailabilityService equipmentAvailabilityService;
+
+    /**
+     * Statuses shown in farmer discovery. BOOKED only means "has reservations": the machine is still bookable for
+     * dates no reservation covers (BIZ-13 decides per date range), so it must not disappear from discovery.
+     */
+    static final List<AvailabilityStatus> DISCOVERABLE_STATUSES = List.of(AvailabilityStatus.AVAILABLE, AvailabilityStatus.BOOKED);
 
     public EquipmentService(
             EquipmentRepository equipmentRepository,
@@ -42,6 +51,11 @@ public class EquipmentService {
         this.equipmentRepository = equipmentRepository;
         this.equipmentMapper = equipmentMapper;
         this.partnerRepository = partnerRepository;
+    }
+
+    @Autowired(required = false)
+    public void setEquipmentAvailabilityService(EquipmentAvailabilityService equipmentAvailabilityService) {
+        this.equipmentAvailabilityService = equipmentAvailabilityService;
     }
 
     /**
@@ -126,12 +140,13 @@ public class EquipmentService {
     }
 
     /**
-     * Retrieves all equipment listings that are currently available and not administratively disabled.
+     * Retrieves all equipment listings that are in service (AVAILABLE, or BOOKED for some dates) and not
+     * administratively disabled. UNDER_MAINTENANCE and INACTIVE equipment is not discoverable.
      *
      * @return List of compact EquipmentSummaryResponse DTOs for discovery
      */
     public List<EquipmentSummaryResponse> getDiscoverableEquipment() {
-        List<Equipment> equipmentList = equipmentRepository.findByAvailabilityStatusAndIsDisabledFalse(AvailabilityStatus.AVAILABLE);
+        List<Equipment> equipmentList = equipmentRepository.findAll(discoverable());
 
         return equipmentList.stream()
                 .map(equipmentMapper::toSummaryResponse)
@@ -146,13 +161,16 @@ public class EquipmentService {
      */
     public Page<EquipmentSummaryResponse> getDiscoverableEquipment(Pageable pageable) {
         Pageable safePageable = sanitizePageable(pageable);
-        Specification<Equipment> spec = (root, query, cb) -> cb.and(
-                cb.equal(root.get("availabilityStatus"), AvailabilityStatus.AVAILABLE),
-                cb.isFalse(root.get("isDisabled"))
-        );
-
-        Page<Equipment> equipmentPage = equipmentRepository.findAll(spec, safePageable);
+        Page<Equipment> equipmentPage = equipmentRepository.findAll(discoverable(), safePageable);
         return equipmentPage.map(equipmentMapper::toSummaryResponse);
+    }
+
+    /** In service (AVAILABLE or BOOKED), not disabled, and owned by a partner who can still rent it out. */
+    private static Specification<Equipment> discoverable() {
+        Specification<Equipment> inService = (root, query, cb) -> cb.and(
+                root.get("availabilityStatus").in(DISCOVERABLE_STATUSES),
+                cb.isFalse(root.get("isDisabled")));
+        return inService.and(EquipmentSpecification.ownerCanRent());
     }
 
     /**
@@ -167,6 +185,7 @@ public class EquipmentService {
                 throw new BadRequestException("Minimum price cannot be greater than maximum price");
             }
         }
+        validateSearchDates(request);
 
         Specification<Equipment> spec = EquipmentSpecification.buildSpecification(request);
         List<Equipment> equipmentList = equipmentRepository.findAll(spec);
@@ -189,12 +208,21 @@ public class EquipmentService {
                 throw new BadRequestException("Minimum price cannot be greater than maximum price");
             }
         }
+        validateSearchDates(request);
 
         Pageable safePageable = sanitizePageable(pageable);
         Specification<Equipment> spec = EquipmentSpecification.buildSpecification(request);
         Page<Equipment> equipmentPage = equipmentRepository.findAll(spec, safePageable);
 
         return equipmentPage.map(equipmentMapper::toSummaryResponse);
+    }
+
+    /** An inverted date range would silently skip the availability filters; reject it like booking creation does. */
+    private static void validateSearchDates(EquipmentSearchRequest request) {
+        if (request != null && request.getStartDate() != null && request.getEndDate() != null
+                && request.getEndDate().isBefore(request.getStartDate())) {
+            throw new BadRequestException("End date cannot be before start date");
+        }
     }
 
     /**
@@ -230,10 +258,20 @@ public class EquipmentService {
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with ID: " + equipmentId));
 
+        AvailabilityStatus previousStatus = equipment.getAvailabilityStatus();
+        AvailabilityStatus requestedStatus = request.getAvailabilityStatus();
+        // BOOKED is derived from bookings: it cannot be chosen manually, but the edit form may echo the current BOOKED
+        if (requestedStatus == AvailabilityStatus.BOOKED && previousStatus != AvailabilityStatus.BOOKED) {
+            throw new BadRequestException("Equipment availability status cannot be manually set to BOOKED via direct update. Equipment status transitions to BOOKED automatically through the Booking module.");
+        }
+
         equipmentMapper.updateEntity(request, equipment);
 
-        if (request.getAvailabilityStatus() != null && request.getAvailabilityStatus() == AvailabilityStatus.BOOKED) {
-            throw new BadRequestException("Equipment availability status cannot be manually set to BOOKED via direct update. Equipment status transitions to BOOKED automatically through the Booking module.");
+        // AVAILABLE (or an echoed BOOKED) means "in service": the flag follows the reservations that still exist
+        if ((requestedStatus == AvailabilityStatus.AVAILABLE || requestedStatus == AvailabilityStatus.BOOKED)
+                && equipmentAvailabilityService != null) {
+            equipment.setAvailabilityStatus(EquipmentAvailabilityService.derive(AvailabilityStatus.AVAILABLE,
+                    equipmentAvailabilityService.hasReservingBookings(equipment.getId())));
         }
 
         if (request.getImages() != null) {
@@ -351,9 +389,7 @@ public class EquipmentService {
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with ID: " + equipmentId));
 
-        if (equipment.getAvailabilityStatus() == AvailabilityStatus.BOOKED) {
-            throw new BadRequestException("Cannot delete equipment while it is currently booked");
-        }
+        validateDeletable(equipment);
 
         equipmentRepository.delete(equipment);
     }
@@ -371,11 +407,24 @@ public class EquipmentService {
 
         validateOwnership(equipment, requestingPartnerId);
 
-        if (equipment.getAvailabilityStatus() == AvailabilityStatus.BOOKED) {
-            throw new BadRequestException("Cannot delete equipment while it is currently booked");
-        }
+        validateDeletable(equipment);
 
         equipmentRepository.delete(equipment);
+    }
+
+    /**
+     * Equipment that holds reservations, or that has any booking history (its bookings, and through them payments,
+     * refunds and reviews, refer to it), cannot be deleted; disabling hides it from farmers instead. Refused with a
+     * clear 400 rather than a foreign-key failure (409 "Database constraint conflict occurred").
+     */
+    private void validateDeletable(Equipment equipment) {
+        if (equipment.getAvailabilityStatus() == AvailabilityStatus.BOOKED
+                || (equipmentAvailabilityService != null && equipmentAvailabilityService.hasReservingBookings(equipment.getId()))) {
+            throw new BadRequestException("Cannot delete equipment while it is currently booked or has active bookings");
+        }
+        if (equipmentAvailabilityService != null && equipmentAvailabilityService.hasAnyBookings(equipment.getId())) {
+            throw new BadRequestException("Equipment with booking history cannot be deleted. Disable it instead to hide it from farmers.");
+        }
     }
 
     /**

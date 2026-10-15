@@ -5,9 +5,12 @@ import com.agrorental.review.dto.RatingSummaryResponse;
 import com.agrorental.review.dto.ReviewCreateRequest;
 import com.agrorental.review.dto.ReviewResponse;
 import com.agrorental.review.service.ReviewService;
+import com.agrorental.security.principal.FarmerPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,12 +20,6 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/reviews")
-@CrossOrigin(origins = {
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:5176"
-})
 public class ReviewController {
 
     private final ReviewService reviewService;
@@ -32,7 +29,17 @@ public class ReviewController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<ReviewResponse>> createReview(@Valid @RequestBody ReviewCreateRequest request) {
+    public ResponseEntity<ApiResponse<ReviewResponse>> createReview(
+            @AuthenticationPrincipal FarmerPrincipal principal,
+            @Valid @RequestBody ReviewCreateRequest request) {
+        // The reviewing farmer is always the authenticated farmer; a body farmerId naming anyone else is rejected
+        if (principal == null) {
+            throw new AccessDeniedException("Only farmers can submit reviews.");
+        }
+        if (request.getFarmerId() != null && !request.getFarmerId().equals(principal.getId())) {
+            throw new AccessDeniedException("Access is denied. You cannot submit a review as another farmer.");
+        }
+        request.setFarmerId(principal.getId());
         ReviewResponse res = reviewService.createReview(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Review submitted successfully", res));
     }

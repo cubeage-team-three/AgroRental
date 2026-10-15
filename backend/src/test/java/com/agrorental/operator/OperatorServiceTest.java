@@ -9,6 +9,7 @@ import com.agrorental.operator.mapper.OperatorDocumentMapper;
 import com.agrorental.operator.mapper.OperatorMapper;
 import com.agrorental.operator.repository.OperatorRepository;
 import com.agrorental.operator.service.OperatorService;
+import com.agrorental.security.jwt.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,9 @@ class OperatorServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private JwtService jwtService;
 
     @Spy
     private OperatorMapper operatorMapper = new OperatorMapper(new OperatorDocumentMapper());
@@ -64,6 +68,7 @@ class OperatorServiceTest {
         when(operatorRepository.existsByMobileNumber("9876543210")).thenReturn(false);
         when(operatorRepository.existsByEmail("suresh@example.com")).thenReturn(false);
         when(passwordEncoder.encode("SecurePass@123")).thenReturn("bcrypt_hashed_pass");
+        when(jwtService.generateOperatorOnboardingToken(1L)).thenReturn("onboarding.jwt.token");
 
         when(operatorRepository.save(any(Operator.class))).thenAnswer(invocation -> {
             Operator saved = invocation.getArgument(0);
@@ -84,6 +89,10 @@ class OperatorServiceTest {
         assertEquals(OperatorStatus.PENDING, response.getStatus());
         assertFalse(response.isMobileVerified());
         assertTrue(response.isActive());
+        // Registration hands back a KYC-upload-only onboarding token, never a session token
+        assertEquals("onboarding.jwt.token", response.getOnboardingToken());
+        verify(jwtService).generateOperatorOnboardingToken(1L);
+        verify(jwtService, never()).generateOperatorToken(any(), any());
 
         verify(operatorRepository).existsByMobileNumber("9876543210");
         verify(operatorRepository).existsByEmail("suresh@example.com");
@@ -121,5 +130,17 @@ class OperatorServiceTest {
         verify(operatorRepository).existsByMobileNumber("9876543210");
         verify(operatorRepository).existsByEmail("suresh@example.com");
         verify(operatorRepository, never()).save(any(Operator.class));
+    }
+
+    @Test
+    @DisplayName("registerOperator() - Rejects passwords that violate the shared policy before touching the database")
+    void shouldRejectWeakPassword() {
+        for (String weak : new String[]{"short1A", "lettersonly", "12345678", "         "}) {
+            testRequest.setPassword(weak);
+            BadRequestException ex = assertThrows(BadRequestException.class,
+                    () -> operatorService.registerOperator(testRequest));
+            assertEquals(com.agrorental.auth.service.PasswordPolicy.REQUIREMENTS_MESSAGE, ex.getMessage());
+        }
+        verifyNoInteractions(operatorRepository, passwordEncoder, jwtService);
     }
 }

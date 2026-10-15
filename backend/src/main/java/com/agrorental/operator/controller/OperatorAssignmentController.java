@@ -10,7 +10,9 @@ import com.agrorental.operator.dto.OperatorJobHistoryResponse;
 import com.agrorental.operator.dto.OperatorJobHistorySummaryResponse;
 import com.agrorental.operator.enums.OperatorAssignmentStatus;
 import com.agrorental.operator.service.OperatorAssignmentService;
+import com.agrorental.security.principal.CurrentCaller;
 import com.agrorental.security.principal.OperatorPrincipal;
+import com.agrorental.security.principal.PartnerPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,9 +23,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,12 +41,6 @@ import java.time.LocalDate;
  */
 @Slf4j
 @RestController
-@CrossOrigin(origins = {
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:5176"
-})
 @RequiredArgsConstructor
 public class OperatorAssignmentController {
 
@@ -68,10 +64,24 @@ public class OperatorAssignmentController {
             @Valid @RequestBody OperatorAssignmentRequest request,
             Authentication authentication) {
 
-        String assignedBy = authentication != null ? authentication.getName() : "ADMIN/PARTNER";
-        log.info("REST request to assign operator {} to booking {} by {}", request.getOperatorId(), bookingId, assignedBy);
-
-        OperatorAssignmentResponse response = assignmentService.assignOperator(bookingId, request, assignedBy);
+        // Only an authenticated partner (for its own bookings) or an admin may assign; the acting
+        // identity comes solely from the JWT principal, never from the request.
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("Authentication required.");
+        }
+        String assignedBy = authentication.getName();
+        OperatorAssignmentResponse response;
+        if (authentication.getPrincipal() instanceof PartnerPrincipal partner) {
+            log.info("REST request to assign operator {} to booking {} by partner {}",
+                    request.getOperatorId(), bookingId, partner.getId());
+            response = assignmentService.assignOperator(bookingId, request, assignedBy, partner.getId());
+        } else if (authentication.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+            log.info("REST request to assign operator {} to booking {} by admin {}",
+                    request.getOperatorId(), bookingId, assignedBy);
+            response = assignmentService.assignOperator(bookingId, request, assignedBy);
+        } else {
+            throw new AccessDeniedException("Only partners and administrators can assign operators.");
+        }
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -86,10 +96,13 @@ public class OperatorAssignmentController {
      */
     @GetMapping("/api/bookings/{bookingId}/operator")
     public ResponseEntity<ApiResponse<OperatorAssignmentResponse>> getBookingAssignment(
-            @PathVariable Long bookingId) {
+            @PathVariable Long bookingId,
+            Authentication authentication) {
 
         log.info("REST request to fetch operator assignment for booking ID: {}", bookingId);
-        OperatorAssignmentResponse response = assignmentService.getBookingAssignment(bookingId);
+        // Owning partner or admin only (enforced in the service)
+        OperatorAssignmentResponse response = assignmentService.getBookingAssignmentForCaller(bookingId,
+                CurrentCaller.from(authentication));
 
         return ResponseEntity.ok(
                 ApiResponse.success("Booking operator assignment retrieved successfully", response)
@@ -106,10 +119,13 @@ public class OperatorAssignmentController {
     @GetMapping("/api/operators/eligible")
     public ResponseEntity<ApiResponse<Page<EligibleOperatorResponse>>> getEligibleOperators(
             @RequestParam(required = false) String search,
-            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable,
+            Authentication authentication) {
 
         log.info("REST request to search eligible operators with query: '{}'", search);
-        Page<EligibleOperatorResponse> response = assignmentService.findEligibleOperators(search, pageable);
+        // Partners get a minimized view (masked mobile, no address); admins the full view; others are refused
+        Page<EligibleOperatorResponse> response = assignmentService.findEligibleOperatorsForCaller(search, pageable,
+                CurrentCaller.from(authentication));
 
         return ResponseEntity.ok(
                 ApiResponse.success("Eligible operators retrieved successfully", response)

@@ -39,21 +39,27 @@ import com.agrorental.user.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Initializes rich mock seed data on application boot if in-memory database is empty.
- * Guarantees Partner ID 1, Farmer ID 1, Equipment, Operators, Bookings, Earnings, and Reviews exist.
+ * Gated by agrorental.seed.mock-data.enabled property; strictly disabled in production.
+ * Guarantees Partner ID 1, Farmer ID 1, Equipment, Operators, Bookings, Earnings, and Reviews exist for local dev.
  */
 @Slf4j
 @Component
 public class DataInitializer implements CommandLineRunner {
+
+    @Value("${agrorental.seed.mock-data.enabled:false}")
+    private boolean seedMockDataEnabled;
 
     @Value("${agrorental.operator.seed.enabled:${OPERATOR_SEED_ENABLED:true}}")
     private boolean operatorSeedEnabled;
@@ -75,6 +81,7 @@ public class DataInitializer implements CommandLineRunner {
     private final ReviewRepository reviewRepository;
     private final OperatorReviewRepository operatorReviewRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Environment environment;
 
     public DataInitializer(
             PartnerRepository partnerRepository,
@@ -90,7 +97,8 @@ public class DataInitializer implements CommandLineRunner {
             NotificationRepository notificationRepository,
             ReviewRepository reviewRepository,
             OperatorReviewRepository operatorReviewRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            Environment environment) {
         this.partnerRepository = partnerRepository;
         this.farmerRepository = farmerRepository;
         this.userRepository = userRepository;
@@ -105,12 +113,58 @@ public class DataInitializer implements CommandLineRunner {
         this.reviewRepository = reviewRepository;
         this.operatorReviewRepository = operatorReviewRepository;
         this.passwordEncoder = passwordEncoder;
+        this.environment = environment;
+    }
+
+    public boolean isSeedMockDataEnabled() {
+        return seedMockDataEnabled;
+    }
+
+    public void setSeedMockDataEnabled(boolean seedMockDataEnabled) {
+        this.seedMockDataEnabled = seedMockDataEnabled;
+    }
+
+    /**
+     * Determines whether mock data seeding should proceed.
+     * Evaluates explicit opt-in property and environment safety constraints.
+     */
+    public boolean shouldSeed() {
+        if (!seedMockDataEnabled) {
+            log.info("Mock-data seeding is disabled (agrorental.seed.mock-data.enabled is false or not configured). Skipping DataInitializer.");
+            return false;
+        }
+
+        List<String> activeProfiles = environment != null && environment.getActiveProfiles() != null 
+                ? Arrays.asList(environment.getActiveProfiles()) 
+                : List.of();
+        List<String> defaultProfiles = environment != null && environment.getDefaultProfiles() != null 
+                ? Arrays.asList(environment.getDefaultProfiles()) 
+                : List.of();
+
+        if (activeProfiles.contains("prod") || activeProfiles.contains("staging")
+                || defaultProfiles.contains("prod") || defaultProfiles.contains("staging")) {
+            log.warn("Mock-data seeding is strictly prohibited in production and staging profiles ('prod', 'staging'). Skipping DataInitializer.");
+            return false;
+        }
+
+        // Mock accounts use well-known passwords, so require an explicitly activated 'dev' profile;
+        // the implicit spring.profiles.default=dev of an unprofiled deployment is not enough.
+        if (!DeploymentProfiles.isExplicitDevelopment(environment)) {
+            log.warn("Mock-data seeding requires the 'dev' profile to be explicitly active (e.g. SPRING_PROFILES_ACTIVE=dev). Skipping DataInitializer.");
+            return false;
+        }
+
+        if (partnerRepository.count() > 0) {
+            log.info("Database already seeded. Skipping DataInitializer.");
+            return false;
+        }
+
+        return true;
     }
 
     @Override
     public void run(String... args) {
-        if (partnerRepository.count() > 0) {
-            log.info("Database already seeded. Skipping DataInitializer.");
+        if (!shouldSeed()) {
             return;
         }
 
@@ -270,15 +324,21 @@ public class DataInitializer implements CommandLineRunner {
         rotavator = equipmentRepository.save(rotavator);
 
         // 4. Seed Operators (Configurable / Dynamic)
+        // Skipped entirely when disabled or when no seed password is configured, so no
+        // operator account is ever created with an empty or unknown password.
         Operator op1 = null;
         Operator op2 = null;
         Operator op3 = null;
+        Operator op4 = null;
 
-        if (operatorSeedEnabled) {
-            String resolvedSeedPassword = (operatorSeedPassword != null && !operatorSeedPassword.isBlank())
-                    ? operatorSeedPassword
-                    : java.util.UUID.randomUUID().toString();
-            String encodedOperatorPassword = passwordEncoder.encode(resolvedSeedPassword);
+        boolean hasOperatorSeedPassword = operatorSeedPassword != null && !operatorSeedPassword.isBlank();
+        if (operatorSeedEnabled && !hasOperatorSeedPassword) {
+            log.warn("Operator seeding is enabled but no seed password is configured "
+                    + "(agrorental.operator.seed.default-password / OPERATOR_SEED_PASSWORD). Skipping operator seed data.");
+        }
+
+        if (operatorSeedEnabled && hasOperatorSeedPassword) {
+            String encodedOperatorPassword = passwordEncoder.encode(operatorSeedPassword);
 
             op1 = new Operator();
             op1.setFullName("Santosh Gaikwad");
@@ -324,7 +384,23 @@ public class DataInitializer implements CommandLineRunner {
             op3.setMobileVerified(true);
             op3.setPartner(partner);
             op3 = operatorRepository.save(op3);
+
+            op4 = new Operator();
+            op4.setFullName("Sahil Karale");
+            op4.setMobileNumber("7385627789");
+            op4.setEmail("sahilkarale22@gmail.com");
+            op4.setAddress("Manchar, Pune, Maharashtra");
+            op4.setAadhaarNumber("123456789123");
+            op4.setDrivingLicenseNumber("MH-14-2021-001234");
+            op4.setExperience(3);
+            op4.setSkills("Tractor Operation, Combine Harvester, Rotavator & Cultivator");
+            op4.setPassword(encodedOperatorPassword);
+            op4.setStatus(OperatorStatus.APPROVED);
+            op4.setMobileVerified(true);
+            op4.setPartner(partner);
+            op4 = operatorRepository.save(op4);
         }
+        boolean operatorsSeeded = op1 != null && op2 != null && op3 != null;
 
         // 5. Seed Bookings
         LocalDate today = LocalDate.now();
@@ -369,7 +445,7 @@ public class DataInitializer implements CommandLineRunner {
                 .startDate(today.plusDays(2))
                 .endDate(today.plusDays(4))
                 .totalCost(new BigDecimal("10500.00"))
-                .status(BookingStatus.OPERATOR_ASSIGNED)
+                .status(operatorsSeeded ? BookingStatus.OPERATOR_ASSIGNED : BookingStatus.CONFIRMED)
                 .deliveryAddress("Green Valley Farm, Shirur, Pune")
                 .notes("Paddy harvesting on 4 acres")
                 .build();
@@ -407,59 +483,62 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         b5 = bookingRepository.save(b5);
 
-        // 5b. Seed Operator Job Assignments
-        OperatorJobAssignment assign1 = OperatorJobAssignment.builder()
-                .operator(op1)
-                .booking(b3)
-                .assignmentStatus(OperatorAssignmentStatus.ASSIGNED)
-                .assignedAt(LocalDateTime.now().minusHours(2))
-                .assignedBy(String.valueOf(partner.getId()))
-                .notes("Paddy harvesting field operations")
-                .build();
-        operatorJobAssignmentRepository.save(assign1);
+        // 5b. Seed Operator Job Assignments (only when operator seed data exists)
+        OperatorJobAssignment assign3 = null;
+        if (operatorsSeeded) {
+            OperatorJobAssignment assign1 = OperatorJobAssignment.builder()
+                    .operator(op1)
+                    .booking(b3)
+                    .assignmentStatus(OperatorAssignmentStatus.ASSIGNED)
+                    .assignedAt(LocalDateTime.now().minusHours(2))
+                    .assignedBy(String.valueOf(partner.getId()))
+                    .notes("Paddy harvesting field operations")
+                    .build();
+            operatorJobAssignmentRepository.save(assign1);
 
-        OperatorJobAssignment assign2 = OperatorJobAssignment.builder()
-                .operator(op2)
-                .booking(b4)
-                .assignmentStatus(OperatorAssignmentStatus.COMPLETED)
-                .assignedAt(LocalDateTime.now().minusDays(12))
-                .acceptedAt(LocalDateTime.now().minusDays(12).plusMinutes(30))
-                .travelingAt(LocalDateTime.now().minusDays(12).plusHours(1))
-                .reachedAt(LocalDateTime.now().minusDays(12).plusHours(2))
-                .workStartedAt(LocalDateTime.now().minusDays(12).plusHours(3))
-                .completedAt(LocalDateTime.now().minusDays(10))
-                .assignedBy(String.valueOf(partner.getId()))
-                .completionNotes("Rotavator operation completed smoothly.")
-                .build();
-        operatorJobAssignmentRepository.save(assign2);
+            OperatorJobAssignment assign2 = OperatorJobAssignment.builder()
+                    .operator(op2)
+                    .booking(b4)
+                    .assignmentStatus(OperatorAssignmentStatus.COMPLETED)
+                    .assignedAt(LocalDateTime.now().minusDays(12))
+                    .acceptedAt(LocalDateTime.now().minusDays(12).plusMinutes(30))
+                    .travelingAt(LocalDateTime.now().minusDays(12).plusHours(1))
+                    .reachedAt(LocalDateTime.now().minusDays(12).plusHours(2))
+                    .workStartedAt(LocalDateTime.now().minusDays(12).plusHours(3))
+                    .completedAt(LocalDateTime.now().minusDays(10))
+                    .assignedBy(String.valueOf(partner.getId()))
+                    .completionNotes("Rotavator operation completed smoothly.")
+                    .build();
+            operatorJobAssignmentRepository.save(assign2);
 
-        OperatorJobAssignment assign3 = OperatorJobAssignment.builder()
-                .operator(op1)
-                .booking(b5)
-                .assignmentStatus(OperatorAssignmentStatus.COMPLETED)
-                .assignedAt(LocalDateTime.now().minusDays(5))
-                .acceptedAt(LocalDateTime.now().minusDays(5).plusMinutes(20))
-                .travelingAt(LocalDateTime.now().minusDays(5).plusHours(1))
-                .reachedAt(LocalDateTime.now().minusDays(5).plusHours(2))
-                .workStartedAt(LocalDateTime.now().minusDays(5).plusHours(3)) // 10:00
-                .completedAt(LocalDateTime.now().minusDays(5).plusHours(9))   // 16:00 (6 hours total = 360 mins)
-                .pausedAt(LocalDateTime.now().minusDays(5).plusHours(5))      // 12:00
-                .resumedAt(LocalDateTime.now().minusDays(5).plusHours(6))     // 13:00 (60 mins pause -> 300 mins net = 5.0 hrs)
-                .pauseReason("Machine cool-down and lunch interval")
-                .assignedBy(String.valueOf(partner.getId()))
-                .completionNotes("Plowing job executed with high precision.")
-                .build();
-        assign3 = operatorJobAssignmentRepository.save(assign3);
+            assign3 = OperatorJobAssignment.builder()
+                    .operator(op1)
+                    .booking(b5)
+                    .assignmentStatus(OperatorAssignmentStatus.COMPLETED)
+                    .assignedAt(LocalDateTime.now().minusDays(5))
+                    .acceptedAt(LocalDateTime.now().minusDays(5).plusMinutes(20))
+                    .travelingAt(LocalDateTime.now().minusDays(5).plusHours(1))
+                    .reachedAt(LocalDateTime.now().minusDays(5).plusHours(2))
+                    .workStartedAt(LocalDateTime.now().minusDays(5).plusHours(3)) // 10:00
+                    .completedAt(LocalDateTime.now().minusDays(5).plusHours(9))   // 16:00 (6 hours total = 360 mins)
+                    .pausedAt(LocalDateTime.now().minusDays(5).plusHours(5))      // 12:00
+                    .resumedAt(LocalDateTime.now().minusDays(5).plusHours(6))     // 13:00 (60 mins pause -> 300 mins net = 5.0 hrs)
+                    .pauseReason("Machine cool-down and lunch interval")
+                    .assignedBy(String.valueOf(partner.getId()))
+                    .completionNotes("Plowing job executed with high precision.")
+                    .build();
+            assign3 = operatorJobAssignmentRepository.save(assign3);
 
-        OperatorJobPauseInterval pi1 = OperatorJobPauseInterval.builder()
-                .assignment(assign3)
-                .operator(op1)
-                .pausedAt(LocalDateTime.now().minusDays(5).plusHours(5))
-                .resumedAt(LocalDateTime.now().minusDays(5).plusHours(6))
-                .pauseReason("Machine cool-down and lunch interval")
-                .durationMinutes(60L)
-                .build();
-        pauseIntervalRepository.save(pi1);
+            OperatorJobPauseInterval pi1 = OperatorJobPauseInterval.builder()
+                    .assignment(assign3)
+                    .operator(op1)
+                    .pausedAt(LocalDateTime.now().minusDays(5).plusHours(5))
+                    .resumedAt(LocalDateTime.now().minusDays(5).plusHours(6))
+                    .pauseReason("Machine cool-down and lunch interval")
+                    .durationMinutes(60L)
+                    .build();
+            pauseIntervalRepository.save(pi1);
+        }
 
         // 6. Seed Payments (FR-19)
         Payment p1 = Payment.builder()
@@ -526,15 +605,17 @@ public class DataInitializer implements CommandLineRunner {
         reviewRepository.save(r2);
 
         // 7b. Seed Operator Review for Completed Assignment #3 (Operator 1)
-        OperatorReview opReview1 = OperatorReview.builder()
-                .assignment(assign3)
-                .operator(op1)
-                .booking(b5)
-                .farmerId(farmer.getId())
-                .rating(5)
-                .comment("Santosh operated the tractor with exceptional skill and leveled the entire 6-acre field smoothly. Very punctual and respectful.")
-                .build();
-        operatorReviewRepository.save(opReview1);
+        if (assign3 != null) {
+            OperatorReview opReview1 = OperatorReview.builder()
+                    .assignment(assign3)
+                    .operator(op1)
+                    .booking(b5)
+                    .farmerId(farmer.getId())
+                    .rating(5)
+                    .comment("Santosh operated the tractor with exceptional skill and leveled the entire 6-acre field smoothly. Very punctual and respectful.")
+                    .build();
+            operatorReviewRepository.save(opReview1);
+        }
 
         // 8. Seed Notifications for Partner #1 (FR-20)
         Notification n1 = Notification.builder()
@@ -548,16 +629,18 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         notificationRepository.save(n1);
 
-        Notification n2 = Notification.builder()
-                .recipientRole("PARTNER")
-                .recipientId(partner.getId())
-                .title("Operator Assigned")
-                .message("Operator " + op1.getFullName() + " has been assigned to booking #" + b3.getId() + ".")
-                .notificationType("OPERATOR_ASSIGNED")
-                .bookingId(b3.getId())
-                .isRead(false)
-                .build();
-        notificationRepository.save(n2);
+        if (operatorsSeeded) {
+            Notification n2 = Notification.builder()
+                    .recipientRole("PARTNER")
+                    .recipientId(partner.getId())
+                    .title("Operator Assigned")
+                    .message("Operator " + op1.getFullName() + " has been assigned to booking #" + b3.getId() + ".")
+                    .notificationType("OPERATOR_ASSIGNED")
+                    .bookingId(b3.getId())
+                    .isRead(false)
+                    .build();
+            notificationRepository.save(n2);
+        }
 
         Notification n3 = Notification.builder()
                 .recipientRole("PARTNER")

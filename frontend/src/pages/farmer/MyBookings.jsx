@@ -5,6 +5,11 @@ import { bookingService } from '../../services/bookingService';
 import { getFarmerId } from '../../services/authService';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
+// Mirrors BookingService.cancelBooking: the backend refuses to cancel bookings in these states
+const NON_CANCELLABLE_STATUSES = ['CANCELLED', 'COMPLETED', 'REJECTED'];
+// Live tracking only means something while an operator is assigned / travelling / working
+const TRACKABLE_STATUSES = ['OPERATOR_ASSIGNED', 'ON_THE_WAY', 'WORK_STARTED'];
+
 function MyBookings() {
   const [bookings, setBookings] = useState([]);
   const [filteredBookings, setFilteredBookings] = useState([]);
@@ -55,12 +60,18 @@ function MyBookings() {
   }, [activeTab, searchQuery, bookings]);
 
   const handleCancel = async (id) => {
-    if (!window.confirm('Are you sure you want to cancel this equipment reservation?')) return;
+    const paid = bookings.find((b) => b.id === id)?.paymentStatus === 'SUCCESS';
+    const prompt = paid
+      ? 'Are you sure you want to cancel this equipment reservation?\n\nThis booking is paid. Cancelling starts a full refund of the amount you paid. Refunds are transferred to your bank/UPI by AgroRent and are not instant; track the refund on the booking details or Payments page.'
+      : 'Are you sure you want to cancel this equipment reservation?';
+    if (!window.confirm(prompt)) return;
 
     try {
       setError(null);
       await bookingService.cancelBooking(id);
-      setActionMessage(`Booking #${id} has been cancelled successfully.`);
+      setActionMessage(paid
+        ? `Booking #${id} has been cancelled. Track your refund on the booking details or Payments page.`
+        : `Booking #${id} has been cancelled successfully.`);
       fetchBookings();
     } catch (err) {
       setError(err.data?.message || err.message || 'Failed to cancel booking.');
@@ -242,13 +253,15 @@ function MyBookings() {
                       <Eye className="h-3.5 w-3.5 text-emerald-600" /> Details
                     </Link>
 
-                    <Link
-                      to={`/farmer/bookings/${booking.id}/tracking`}
-                      className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
-                    >
-                      <MapPin className="h-3.5 w-3.5 text-emerald-400" /> Track
-                    </Link>
-                    {booking.status !== 'CANCELLED' && (
+                    {TRACKABLE_STATUSES.includes(booking.status) && (
+                      <Link
+                        to={`/farmer/bookings/${booking.id}/tracking`}
+                        className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+                      >
+                        <MapPin className="h-3.5 w-3.5 text-emerald-400" /> Track
+                      </Link>
+                    )}
+                    {booking.status === 'CONFIRMED' && booking.paymentStatus !== 'SUCCESS' && (
                       <Link
                         to={`/farmer/bookings/${booking.id}/pay`}
                         className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
@@ -257,12 +270,14 @@ function MyBookings() {
                       </Link>
                     )}
 
-                    <Link
-                      to={`/farmer/bookings/${booking.id}/invoice`}
-                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
-                    >
-                      <FileText className="h-3.5 w-3.5 text-emerald-600" /> Invoice
-                    </Link>
+                    {booking.paymentStatus === 'SUCCESS' && (
+                      <Link
+                        to={`/farmer/bookings/${booking.id}/invoice`}
+                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                      >
+                        <FileText className="h-3.5 w-3.5 text-emerald-600" /> Invoice
+                      </Link>
+                    )}
 
                     {booking.status === 'COMPLETED' && (
                       <Link
@@ -273,7 +288,7 @@ function MyBookings() {
                       </Link>
                     )}
 
-                    {booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
+                    {!NON_CANCELLABLE_STATUSES.includes(booking.status) && (
                       <button
                         type="button"
                         onClick={() => handleCancel(booking.id)}

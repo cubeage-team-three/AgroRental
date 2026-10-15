@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import ProtectedRoute from '../components/common/ProtectedRoute';
 
@@ -14,15 +14,10 @@ import Home from '../pages/Home';
 import NotFound from '../pages/NotFound';
 
 import Login from '../pages/auth/Login';
-import OperatorLogin from '../pages/auth/OperatorLogin';
-import OperatorAuthChoice from '../pages/auth/OperatorAuthChoice';
 import OperatorOtpVerification from '../pages/auth/OperatorOtpVerification';
 import OperatorKyc from '../pages/auth/OperatorKyc';
 import OperatorVerificationPending from '../pages/auth/OperatorVerificationPending';
 import Register from '../pages/auth/Register';
-import RegisterFarmer from '../pages/auth/RegisterFarmer';
-import RegisterPartner from '../pages/auth/RegisterPartner';
-import RegisterOperator from '../pages/auth/RegisterOperator';
 import VerifyOtp from '../pages/auth/VerifyOtp';
 import VerifyEmail from '../pages/auth/VerifyEmail';
 import ForgotPassword from '../pages/auth/ForgotPassword';
@@ -64,7 +59,6 @@ import JobHistory from '../pages/operator/JobHistory';
 import OperatorRatings from '../pages/operator/Ratings';
 import OperatorNotifications from '../pages/operator/Notifications';
 
-import AdminDashboard from '../pages/admin/AdminDashboard';
 import ManageFarmers from '../pages/admin/ManageFarmers';
 import ManagePartners from '../pages/admin/ManagePartners';
 import ManageOperators from '../pages/admin/ManageOperators';
@@ -77,27 +71,34 @@ import AdminNotifications from '../pages/admin/Notifications';
 import SystemSettings from '../pages/admin/SystemSettings';
 import AuditLogs from '../pages/admin/AuditLogs';
 
+// Duplicate/legacy URLs keep working but land on the one canonical URL (query string kept), so the
+// sidebar highlights the right entry and each page has a single address.
+function RedirectTo({ to }) {
+  const { search, hash } = useLocation();
+  return <Navigate to={{ pathname: to, search, hash }} replace />;
+}
+
 function AppRoutes() {
   return (
     <Routes>
       {/* Public / Auth routes */}
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
-        <Route path="register/farmer" element={<RegisterFarmer />} />
         <Route path="verify-otp" element={<VerifyOtp />} />
       </Route>
 
       {/* Cinematic split-screen auth pages */}
       <Route element={<AuthLayout />}>
         <Route path="login" element={<Login />} />
-        <Route path="login/operator" element={<OperatorLogin />} />
-        <Route path="operator/login" element={<OperatorLogin />} />
-        <Route path="auth/operator" element={<OperatorAuthChoice />} />
-        <Route path="operator/auth" element={<OperatorAuthChoice />} />
+        <Route path="login/operator" element={<Login initialRole="OPERATOR" />} />
+        <Route path="operator/login" element={<Login initialRole="OPERATOR" />} />
+        <Route path="auth/operator" element={<Navigate to="/register?role=operator" replace />} />
+        <Route path="operator/auth" element={<Navigate to="/register?role=operator" replace />} />
         <Route path="verify-otp/operator" element={<OperatorOtpVerification />} />
         <Route path="register" element={<Register />} />
-        <Route path="register/partner" element={<RegisterPartner />} />
-        <Route path="register/operator" element={<RegisterOperator />} />
+        <Route path="register/farmer" element={<Register initialRole="farmer" />} />
+        <Route path="register/partner" element={<Register initialRole="partner" />} />
+        <Route path="register/operator" element={<Register initialRole="operator" />} />
         <Route path="register/operator/kyc" element={<OperatorKyc />} />
         <Route path="register/operator/pending" element={<OperatorVerificationPending />} />
         <Route path="verify-email" element={<VerifyEmail />} />
@@ -106,24 +107,26 @@ function AppRoutes() {
       </Route>
 
       {/* Protected Farmer routes */}
-      <Route element={<ProtectedRoute allowedRoles={['FARMER', 'ADMIN']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['FARMER']} />}>
         <Route path="/farmer" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="/farmer/dashboard" replace />} />
           <Route path="dashboard" element={<FarmerDashboard />} />
           <Route path="profile" element={<FarmerProfile />} />
           <Route path="farms" element={<MyFarms />} />
           <Route path="equipment" element={<SearchEquipment />} />
-          <Route path="search-equipment" element={<SearchEquipment />} />
+          <Route path="search-equipment" element={<RedirectTo to="/farmer/equipment" />} />
           <Route path="equipment/:id" element={<EquipmentDetails />} />
           <Route path="book/:equipmentId" element={<BookEquipment />} />
           <Route path="book-equipment" element={<BookEquipment />} />
           <Route path="bookings" element={<MyBookings />} />
-          <Route path="my-bookings" element={<MyBookings />} />
+          <Route path="my-bookings" element={<RedirectTo to="/farmer/bookings" />} />
           <Route path="bookings/:id" element={<BookingDetails />} />
           <Route path="bookings/:id/pay" element={<CheckoutPayment />} />
           <Route path="bookings/:id/invoice" element={<Invoice />} />
           <Route path="bookings/:id/review" element={<WriteReview />} />
           <Route path="bookings/:id/tracking" element={<LiveTracking />} />
-          <Route path="live-tracking" element={<LiveTracking />} />
+          {/* Tracking needs a booking; without one LiveTracking showed placeholder data. Pick a booking instead. */}
+          <Route path="live-tracking" element={<Navigate to="/farmer/bookings" replace />} />
           <Route path="payments" element={<FarmerPayments />} />
           <Route path="complaints" element={<FarmerComplaints />} />
           <Route path="notifications" element={<FarmerNotifications />} />
@@ -131,14 +134,15 @@ function AppRoutes() {
       </Route>
 
       {/* Protected Partner routes */}
-      <Route element={<ProtectedRoute allowedRoles={['PARTNER', 'ADMIN']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['PARTNER']} />}>
         <Route path="/partner" element={<PartnerLayout />}>
+          <Route index element={<Navigate to="/partner/dashboard" replace />} />
           <Route path="dashboard" element={<PartnerDashboard />} />
           <Route path="profile" element={<PartnerProfile />} />
           <Route path="equipment" element={<MyEquipment />} />
-          <Route path="my-equipment" element={<MyEquipment />} />
+          <Route path="my-equipment" element={<RedirectTo to="/partner/equipment" />} />
           <Route path="equipment/add" element={<AddEquipment />} />
-          <Route path="add-equipment" element={<AddEquipment />} />
+          <Route path="add-equipment" element={<RedirectTo to="/partner/equipment/add" />} />
           <Route path="equipment/availability" element={<EquipmentAvailability />} />
           <Route path="bookings" element={<BookingRequests />} />
           <Route path="bookings/:id/assign-operator" element={<AssignOperator />} />
@@ -149,8 +153,9 @@ function AppRoutes() {
       </Route>
 
       {/* Protected Operator routes */}
-      <Route element={<ProtectedRoute allowedRoles={['OPERATOR', 'ADMIN']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['OPERATOR']} />}>
         <Route path="/operator" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="/operator/dashboard" replace />} />
           <Route path="dashboard" element={<OperatorDashboard />} />
           <Route path="profile" element={<OperatorProfile />} />
           <Route path="jobs" element={<AssignedJobs />} />
@@ -168,8 +173,10 @@ function AppRoutes() {
       {/* Protected Admin routes */}
       <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
         <Route path="/admin" element={<AdminDashboardLayout />}>
+          <Route index element={<Navigate to="/admin/overview" replace />} />
           <Route path="overview" element={<AdminOverview />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
+          {/* The old dashboard was an empty placeholder; the console home is the overview */}
+          <Route path="dashboard" element={<Navigate to="/admin/overview" replace />} />
           <Route path="farmers" element={<ManageFarmers />} />
           <Route path="partners" element={<ManagePartners />} />
           <Route path="operators" element={<ManageOperators />} />

@@ -60,40 +60,23 @@ public class OperatorLocationService {
         // Deactivate previous stale records if any
         locationRepository.deactivateTrackingForAssignment(assignmentId);
 
-        // Record initial start location record (or activate latest if exists)
+        // Never fabricate a position: farmers see the latest location row as the operator's live position.
+        // Resume on the latest real fix (keeping its real timestamp, so a stale point is not shown as fresh);
+        // without any fix yet, report tracking as started with no coordinates until the first GPS update.
         Optional<OperatorLocation> latestOpt = locationRepository
                 .findTopByAssignmentIdOrderByRecordedAtDesc(assignmentId);
 
-        OperatorLocation location;
         if (latestOpt.isPresent()) {
-            OperatorLocation prev = latestOpt.get();
-            location = OperatorLocation.builder()
-                    .assignment(assignment)
-                    .operator(operator)
-                    .latitude(prev.getLatitude())
-                    .longitude(prev.getLongitude())
-                    .accuracy(prev.getAccuracy())
-                    .speed(prev.getSpeed())
-                    .heading(prev.getHeading())
-                    .recordedAt(LocalDateTime.now())
-                    .trackingActive(true)
-                    .build();
-        } else {
-            location = OperatorLocation.builder()
-                    .assignment(assignment)
-                    .operator(operator)
-                    .latitude(0.0)
-                    .longitude(0.0)
-                    .accuracy(0.0)
-                    .speed(0.0)
-                    .heading(0.0)
-                    .recordedAt(LocalDateTime.now())
-                    .trackingActive(true)
-                    .build();
+            OperatorLocation latest = latestOpt.get();
+            latest.setTrackingActive(true);
+            return mapToResponse(locationRepository.save(latest));
         }
 
-        OperatorLocation saved = locationRepository.save(location);
-        return mapToResponse(saved);
+        return OperatorLocationResponse.builder()
+                .assignmentId(assignment.getId())
+                .operatorId(operator.getId())
+                .trackingActive(true)
+                .build();
     }
 
     /**
@@ -196,9 +179,7 @@ public class OperatorLocationService {
         if (operator.getStatus() != OperatorStatus.APPROVED) {
             throw new ForbiddenException("Operator account is not approved. Current status: " + operator.getStatus());
         }
-        if (!operator.isMobileVerified()) {
-            throw new ForbiddenException("Operator mobile number is not verified");
-        }
+        // Contract v1.1: mobileVerified is informational only, not a tracking gate
         return operator;
     }
 

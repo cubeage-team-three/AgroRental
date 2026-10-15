@@ -146,6 +146,21 @@ function JobDetails() {
       watchIdRef.current = navigator.geolocation.watchPosition(
         async (position) => {
           const { latitude, longitude, accuracy, speed, heading } = position.coords;
+          
+          if (
+            latitude == null ||
+            longitude == null ||
+            !Number.isFinite(latitude) ||
+            !Number.isFinite(longitude) ||
+            latitude < -90 ||
+            latitude > 90 ||
+            longitude < -180 ||
+            longitude > 180
+          ) {
+            console.warn('Invalid GPS coordinates received from browser, discarding.', { latitude, longitude });
+            return;
+          }
+
           const now = Date.now();
 
           // Throttle network dispatch: at most once every 6 seconds
@@ -164,6 +179,7 @@ function JobDetails() {
               setGpsError(null);
             } catch (err) {
               console.warn('Background GPS coordinate update failed:', err);
+              setGpsError('Failed to sync location to server. Will retry automatically.');
             }
           } else {
             setGpsLocation((prev) => ({
@@ -379,18 +395,18 @@ function JobDetails() {
     <div className="max-w-5xl mx-auto space-y-6 font-sans">
 
       {/* Navigation Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <Link
               to="/operator/jobs"
-              className="p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors shadow-2xs"
+              className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black text-[#142E1C] tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                   Task #{job.assignmentId} Control Panel
                 </h1>
                 <span
@@ -401,7 +417,7 @@ function JobDetails() {
                   {job.assignmentStatus}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Booking Reference: #{job.bookingId} • Assigned by {job.assignedBy || 'Partner'}
               </p>
             </div>
@@ -411,7 +427,7 @@ function JobDetails() {
         <button
           type="button"
           onClick={fetchJobDetails}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors shadow-2xs self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition-colors shadow-2xs self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
@@ -454,9 +470,9 @@ function JobDetails() {
 
       {/* Lifecycle Progress Bar / Timeline */}
       {job.assignmentStatus !== 'REJECTED' && job.assignmentStatus !== 'CANCELLED' && (
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-4">
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Work Lifecycle Timeline
             </h3>
             {job.assignmentStatus === 'PAUSED' && (
@@ -477,14 +493,14 @@ function JobDetails() {
                   className={`p-3 rounded-2xl border text-center transition-all ${isCurrent
                       ? 'bg-emerald-50 border-emerald-400 text-emerald-950 ring-2 ring-emerald-500/20'
                       : isPastOrCurrent
-                        ? 'bg-gray-50 border-gray-200 text-gray-700'
-                        : 'bg-white border-dashed border-gray-200 text-gray-400'
+                        ? 'bg-slate-50 border-slate-200 text-slate-700'
+                        : 'bg-white border-dashed border-slate-200 text-slate-400'
                     }`}
                 >
-                  <div className="text-[10px] font-black uppercase tracking-wider">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider">
                     {step.label}
                   </div>
-                  <div className="text-[10px] text-gray-500 mt-1 font-medium truncate">
+                  <div className="text-[10px] text-slate-500 mt-1 font-medium truncate">
                     {step.time ? new Date(step.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                   </div>
                 </div>
@@ -513,8 +529,8 @@ function JobDetails() {
 
         {/* Machinery Info */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4">
-            <div className="relative h-56 w-full rounded-2xl overflow-hidden bg-gray-100">
+          <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
+            <div className="relative h-56 w-full rounded-2xl overflow-hidden bg-slate-100">
               <img
                 src={imageSrc}
                 alt={job.equipmentName || 'Equipment'}
@@ -524,16 +540,16 @@ function JobDetails() {
                   e.target.src = DEFAULT_EQUIPMENT_IMAGE;
                 }}
               />
-              <span className="absolute bottom-3 left-3 bg-[#142E1C]/90 text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider backdrop-blur-xs">
+              <span className="absolute bottom-3 left-3 bg-[#0F382C]/90 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-lg uppercase tracking-wider backdrop-blur-xs">
                 {formatCategoryLabel(job.equipmentCategory)}
               </span>
             </div>
 
             <div>
-              <h2 className="text-lg font-black text-gray-900">
+              <h2 className="text-lg font-extrabold text-slate-900">
                 {job.equipmentName || `Machinery #${job.equipmentId}`}
               </h2>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Equipment ID: #{job.equipmentId || 'N/A'}
               </p>
             </div>
@@ -554,13 +570,13 @@ function JobDetails() {
         <div className="lg:col-span-2 space-y-6">
 
           {/* Action Control Panel Card */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-5">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="text-base font-black text-[#142E1C] flex items-center gap-2">
-                <Tractor className="w-5 h-5 text-[#3E7B27]" />
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <Tractor className="w-5 h-5 text-emerald-700" />
                 <span>Field Operation Controls</span>
               </h3>
-              <span className="text-xs text-gray-400 font-semibold">Active State: {job.assignmentStatus}</span>
+              <span className="text-xs text-slate-400 font-semibold">Active State: {job.assignmentStatus}</span>
             </div>
 
             {/* Dynamic Buttons based on current state */}
@@ -570,7 +586,7 @@ function JobDetails() {
                   <button
                     type="button"
                     onClick={() => setModalType('ACCEPT')}
-                    className="w-full py-3.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Accept Job Assignment</span>
@@ -578,7 +594,7 @@ function JobDetails() {
                   <button
                     type="button"
                     onClick={() => setModalType('REJECT')}
-                    className="w-full py-3.5 bg-white border border-red-300 hover:bg-red-50 text-red-700 text-xs font-black rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-white border border-red-300 hover:bg-red-50 text-red-700 text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2"
                   >
                     <XCircle className="w-4 h-4" />
                     <span>Decline Assignment</span>
@@ -590,7 +606,7 @@ function JobDetails() {
                 <button
                   type="button"
                   onClick={() => setModalType('TRAVEL')}
-                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2"
                 >
                   <Navigation className="w-4 h-4" />
                   <span>Start Traveling to Location</span>
@@ -601,7 +617,7 @@ function JobDetails() {
                 <button
                   type="button"
                   onClick={() => setModalType('REACHED')}
-                  className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2"
                 >
                   <MapPin className="w-4 h-4" />
                   <span>Confirm Arrival at Destination</span>
@@ -612,7 +628,7 @@ function JobDetails() {
                 <button
                   type="button"
                   onClick={() => setModalType('START_WORK')}
-                  className="w-full py-3.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2"
                 >
                   <Play className="w-4 h-4" />
                   <span>Start Field Operations</span>
@@ -624,7 +640,7 @@ function JobDetails() {
                   <button
                     type="button"
                     onClick={() => setModalType('PAUSE')}
-                    className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2"
                   >
                     <Pause className="w-4 h-4" />
                     <span>Pause Field Work</span>
@@ -632,7 +648,7 @@ function JobDetails() {
                   <button
                     type="button"
                     onClick={() => setModalType('COMPLETE')}
-                    className="w-full py-3.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Complete Fieldwork</span>
@@ -644,7 +660,7 @@ function JobDetails() {
                 <button
                   type="button"
                   onClick={() => setModalType('RESUME')}
-                  className="w-full py-3.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2"
                 >
                   <Play className="w-4 h-4" />
                   <span>Resume Field Operations</span>
@@ -672,22 +688,22 @@ function JobDetails() {
 
           {/* Phase 7: Live GPS Location Tracking Card */}
           {isTrackableState && (
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-5">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
                 <div className="flex items-center gap-2">
                   <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
-                    <Radio className={`w-4 h-4 text-[#3E7B27] ${isTracking ? 'animate-pulse' : ''}`} />
+                    <Radio className={`w-4 h-4 text-emerald-700 ${isTracking ? 'animate-pulse' : ''}`} />
                   </span>
-                  <h3 className="text-base font-black text-[#142E1C]">Real-Time GPS Location Tracking</h3>
+                  <h3 className="text-base font-black text-slate-900">Real-Time GPS Location Tracking</h3>
                 </div>
                 <span
                   className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
                     isTracking
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                      : 'bg-gray-100 text-gray-500 border-gray-200'
+                      : 'bg-slate-100 text-slate-500 border-slate-200'
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${isTracking ? 'bg-emerald-500 animate-ping' : 'bg-gray-400'}`} />
+                  <span className={`w-2 h-2 rounded-full ${isTracking ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`} />
                   <span>{isTracking ? 'GPS Broadcasting Active' : 'GPS Idle'}</span>
                 </span>
               </div>
@@ -710,7 +726,7 @@ function JobDetails() {
 
               {/* GPS Controls */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                <p className="text-xs text-gray-500 font-medium">
+                <p className="text-xs text-slate-500 font-medium">
                   {isTracking
                     ? 'Transmitting live coordinates to farmer dispatch and machinery logs every 6s.'
                     : 'Start broadcasting your GPS coordinates for active fieldwork navigation and audit logging.'}
@@ -721,7 +737,7 @@ function JobDetails() {
                     type="button"
                     disabled={gpsLoading}
                     onClick={handleStopTracking}
-                    className="w-full sm:w-auto px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0"
+                    className="w-full sm:w-auto px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                   >
                     <LocateFixed className="w-4 h-4" />
                     <span>{gpsLoading ? 'Stopping...' : 'Stop GPS Broadcast'}</span>
@@ -731,7 +747,7 @@ function JobDetails() {
                     type="button"
                     disabled={gpsLoading}
                     onClick={handleStartTracking}
-                    className="w-full sm:w-auto px-5 py-2.5 bg-[#3E7B27] hover:bg-[#2E6F22] text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0"
+                    className="w-full sm:w-auto px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                   >
                     <Radio className="w-4 h-4" />
                     <span>{gpsLoading ? 'Acquiring GPS...' : 'Start Live GPS Broadcast'}</span>
@@ -741,28 +757,28 @@ function JobDetails() {
 
               {/* Coordinates Grid */}
               {gpsLocation && (gpsLocation.latitude !== 0 || gpsLocation.longitude !== 0) && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-gray-100">
-                  <div className="p-3 bg-[#F0EFE9] rounded-2xl space-y-0.5">
-                    <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Latitude</span>
-                    <p className="text-xs font-black text-gray-900 truncate">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-200/80">
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-0.5">
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Latitude</span>
+                    <p className="text-xs font-black text-slate-900 truncate">
                       {gpsLocation.latitude ? `${Number(gpsLocation.latitude).toFixed(5)}° N` : 'Acquiring...'}
                     </p>
                   </div>
-                  <div className="p-3 bg-[#F0EFE9] rounded-2xl space-y-0.5">
-                    <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Longitude</span>
-                    <p className="text-xs font-black text-gray-900 truncate">
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-0.5">
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Longitude</span>
+                    <p className="text-xs font-black text-slate-900 truncate">
                       {gpsLocation.longitude ? `${Number(gpsLocation.longitude).toFixed(5)}° E` : 'Acquiring...'}
                     </p>
                   </div>
-                  <div className="p-3 bg-[#F0EFE9] rounded-2xl space-y-0.5">
-                    <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Accuracy / Speed</span>
-                    <p className="text-xs font-black text-gray-900 truncate">
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-0.5">
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Accuracy / Speed</span>
+                    <p className="text-xs font-black text-slate-900 truncate">
                       ±{gpsLocation.accuracy ? `${Number(gpsLocation.accuracy).toFixed(1)}m` : '0m'} • {gpsLocation.speed ? `${Number(gpsLocation.speed).toFixed(1)} km/h` : '0 km/h'}
                     </p>
                   </div>
-                  <div className="p-3 bg-[#F0EFE9] rounded-2xl space-y-0.5">
-                    <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Last Sync</span>
-                    <p className="text-xs font-black text-emerald-800 truncate">
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-0.5">
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Last Sync</span>
+                    <p className="text-xs font-black text-emerald-700 truncate">
                       {lastGpsSync ? lastGpsSync.toLocaleTimeString() : 'Just now'}
                     </p>
                   </div>
@@ -773,23 +789,23 @@ function JobDetails() {
 
           {/* Phase 8: Operator Work Hours & Gross Compensation Card (FR-EARNINGS-JOB) */}
           {jobEarnings && (
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-emerald-100 space-y-5">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
                 <div className="flex items-center gap-2">
                   <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
                     <IndianRupee className="w-5 h-5" />
                   </span>
                   <div>
-                    <h3 className="text-base font-black text-gray-900">
+                    <h3 className="text-base font-black text-slate-900">
                       {jobEarnings.isFinalized ? 'Finalized Job Compensation' : 'Estimated Work Compensation'}
                     </h3>
-                    <p className="text-[11px] text-gray-500">
+                    <p className="text-[11px] text-slate-500">
                       Calculated from verified server-side lifecycle timestamps
                     </p>
                   </div>
                 </div>
                 <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                  jobEarnings.isFinalized ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                  jobEarnings.isFinalized ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                 }`}>
                   {jobEarnings.isFinalized ? 'Finalized' : 'In-Progress Estimate'}
                 </span>
@@ -797,59 +813,59 @@ function JobDetails() {
 
               {/* 4-Stat Metric Box */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3.5 bg-[#F0EFE9] rounded-2xl">
-                  <span className="text-[10px] uppercase font-bold text-gray-500 block">Gross Earnings</span>
-                  <span className="text-lg sm:text-xl font-black text-emerald-800 mt-1 block">
+                <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Gross Earnings</span>
+                  <span className="text-lg sm:text-xl font-black text-emerald-700 mt-1 block">
                     ₹{Number(jobEarnings.grossEarnings || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
-                  <span className="text-[10px] text-gray-400">Net billable pay</span>
+                  <span className="text-[10px] text-slate-400">Net billable pay</span>
                 </div>
 
-                <div className="p-3.5 bg-[#F0EFE9] rounded-2xl">
-                  <span className="text-[10px] uppercase font-bold text-gray-500 block">Net Work Hours</span>
-                  <span className="text-lg sm:text-xl font-black text-gray-900 mt-1 block">
+                <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Net Work Hours</span>
+                  <span className="text-lg sm:text-xl font-black text-slate-900 mt-1 block">
                     {jobEarnings.netWorkHours} hrs
                   </span>
-                  <span className="text-[10px] text-gray-400">{jobEarnings.netWorkMinutes} minutes</span>
+                  <span className="text-[10px] text-slate-400">{jobEarnings.netWorkMinutes} minutes</span>
                 </div>
 
-                <div className="p-3.5 bg-[#F0EFE9] rounded-2xl">
-                  <span className="text-[10px] uppercase font-bold text-gray-500 block">Paused Duration</span>
-                  <span className="text-lg sm:text-xl font-black text-amber-800 mt-1 block">
+                <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Paused Duration</span>
+                  <span className="text-lg sm:text-xl font-black text-amber-700 mt-1 block">
                     {jobEarnings.pausedMinutes} min
                   </span>
-                  <span className="text-[10px] text-gray-400">Excluded from pay</span>
+                  <span className="text-[10px] text-slate-400">Excluded from pay</span>
                 </div>
 
-                <div className="p-3.5 bg-[#F0EFE9] rounded-2xl">
-                  <span className="text-[10px] uppercase font-bold text-gray-500 block">Hourly Rate</span>
-                  <span className="text-lg sm:text-xl font-black text-gray-900 mt-1 block">
+                <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Hourly Rate</span>
+                  <span className="text-lg sm:text-xl font-black text-slate-900 mt-1 block">
                     ₹{Number(jobEarnings.hourlyRate || 500).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/hr
                   </span>
-                  <span className="text-[10px] text-gray-400">Standard rate</span>
+                  <span className="text-[10px] text-slate-400">Standard rate</span>
                 </div>
               </div>
 
               {/* Timestamp Audit Trail */}
-              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-2 text-xs">
-                <div className="font-bold text-gray-700 text-[11px] uppercase tracking-wider">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-xs">
+                <div className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">
                   Audit Trail & Work Intervals:
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-600">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-600">
                   <div>
-                    <span className="font-semibold text-gray-500">Work Started: </span>
+                    <span className="font-semibold text-slate-500">Work Started: </span>
                     <span>{jobEarnings.workStartedAt ? new Date(jobEarnings.workStartedAt).toLocaleString('en-IN') : 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-gray-500">Work Completed: </span>
+                    <span className="font-semibold text-slate-500">Work Completed: </span>
                     <span>{jobEarnings.completedAt ? new Date(jobEarnings.completedAt).toLocaleString('en-IN') : (jobEarnings.isFinalized ? 'Completed' : 'Active')}</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-gray-500">Total Elapsed Duration: </span>
+                    <span className="font-semibold text-slate-500">Total Elapsed Duration: </span>
                     <span>{jobEarnings.totalElapsedMinutes} minutes</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-gray-500">Currency: </span>
+                    <span className="font-semibold text-slate-500">Currency: </span>
                     <span>{jobEarnings.currency} (Indian Rupee)</span>
                   </div>
                 </div>
@@ -858,58 +874,58 @@ function JobDetails() {
           )}
 
           {/* Service & Booking Information */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-5">
-            <h3 className="text-base font-black text-[#142E1C] flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#3E7B27]" />
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-emerald-700" />
               <span>Service & Farm Location</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 bg-[#F0EFE9] rounded-2xl space-y-1">
-                <span className="text-[10px] uppercase font-black tracking-wider text-gray-500">
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
+                <span className="text-[10px] uppercase font-black tracking-wider text-slate-500">
                   Scheduled Start Date
                 </span>
-                <p className="text-sm font-extrabold text-gray-900 flex items-center gap-1.5">
+                <p className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
                   <Calendar className="w-4 h-4 text-emerald-600" />
                   <span>{job.startDate || 'N/A'}</span>
                 </p>
               </div>
 
-              <div className="p-4 bg-[#F0EFE9] rounded-2xl space-y-1">
-                <span className="text-[10px] uppercase font-black tracking-wider text-gray-500">
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
+                <span className="text-[10px] uppercase font-black tracking-wider text-slate-500">
                   Scheduled End Date
                 </span>
-                <p className="text-sm font-extrabold text-gray-900 flex items-center gap-1.5">
+                <p className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
                   <Calendar className="w-4 h-4 text-emerald-600" />
                   <span>{job.endDate || 'N/A'}</span>
                 </p>
               </div>
             </div>
 
-            <div className="p-4 bg-[#F0EFE9] rounded-2xl space-y-1">
-              <span className="text-[10px] uppercase font-black tracking-wider text-gray-500">
+            <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
+              <span className="text-[10px] uppercase font-black tracking-wider text-slate-500">
                 Service Delivery Address
               </span>
-              <p className="text-xs sm:text-sm font-semibold text-gray-800 flex items-start gap-1.5">
+              <p className="text-xs sm:text-sm font-semibold text-slate-800 flex items-start gap-1.5">
                 <MapPin className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span>{job.deliveryAddress || 'Address will be provided upon dispatch'}</span>
               </p>
             </div>
 
             {job.notes && (
-              <div className="p-4 bg-[#F0EFE9] rounded-2xl space-y-1">
-                <span className="text-[10px] uppercase font-black tracking-wider text-gray-500">
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
+                <span className="text-[10px] uppercase font-black tracking-wider text-slate-500">
                   Partner Assignment Notes
                 </span>
-                <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                <p className="text-xs text-slate-800 leading-relaxed font-medium">
                   {job.notes}
                 </p>
               </div>
             )}
 
-            <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-              <span>Customer: <strong className="text-gray-800">Farmer #{job.farmerId || 'N/A'}</strong></span>
-              <span>Total Booking Amount: <strong className="text-[#142E1C] font-black">₹{Number(job.totalCost || 0).toLocaleString('en-IN')}</strong></span>
+            <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+              <span>Customer: <strong className="text-slate-800">Farmer #{job.farmerId || 'N/A'}</strong></span>
+              <span>Total Booking Amount: <strong className="text-slate-900 font-black">₹{Number(job.totalCost || 0).toLocaleString('en-IN')}</strong></span>
             </div>
           </div>
         </div>
@@ -917,14 +933,14 @@ function JobDetails() {
 
       {/* Confirmation & Input Modals */}
       {modalType && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3">
               <span className="p-3 bg-emerald-50 text-emerald-700 rounded-2xl">
-                <HardHat className="w-6 h-6 text-[#3E7B27]" />
+                <HardHat className="w-6 h-6 text-emerald-700" />
               </span>
               <div>
-                <h3 className="text-lg font-black text-gray-900">
+                <h3 className="text-lg font-black text-slate-900">
                   {modalType === 'ACCEPT' && 'Accept Job Assignment'}
                   {modalType === 'REJECT' && 'Decline Job Assignment'}
                   {modalType === 'TRAVEL' && 'Start Traveling'}
@@ -934,20 +950,20 @@ function JobDetails() {
                   {modalType === 'RESUME' && 'Resume Field Operations'}
                   {modalType === 'COMPLETE' && 'Complete Fieldwork'}
                 </h3>
-                <p className="text-xs text-gray-500">Task #{job.assignmentId} • Booking #{job.bookingId}</p>
+                <p className="text-xs text-slate-500">Task #{job.assignmentId} • Booking #{job.bookingId}</p>
               </div>
             </div>
 
             {/* Modal Body per Type */}
             {modalType === 'ACCEPT' && (
-              <p className="text-xs text-gray-700 leading-relaxed">
+              <p className="text-xs text-slate-700 leading-relaxed">
                 Are you sure you want to accept this assignment for <strong>{job.equipmentName}</strong>? You will be scheduled for the service dates.
               </p>
             )}
 
             {modalType === 'REJECT' && (
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-700">
+                <label className="text-xs font-bold text-slate-700">
                   State Reason for Declining <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -955,32 +971,32 @@ function JobDetails() {
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   placeholder="Explain why you cannot take this job (e.g. equipment clash, health, location distance)..."
-                  className="w-full p-3 bg-[#F0EFE9] rounded-xl text-xs focus:ring-2 focus:ring-red-500 focus:bg-white focus:outline-none"
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white focus:outline-none"
                 />
               </div>
             )}
 
             {modalType === 'TRAVEL' && (
-              <p className="text-xs text-gray-700 leading-relaxed">
+              <p className="text-xs text-slate-700 leading-relaxed">
                 Confirm that you are departing and traveling to the fieldwork destination at <strong>{job.deliveryAddress}</strong>.
               </p>
             )}
 
             {modalType === 'REACHED' && (
-              <p className="text-xs text-gray-700 leading-relaxed">
+              <p className="text-xs text-slate-700 leading-relaxed">
                 Confirm that you have safely arrived at the field location and are ready to prepare the machinery.
               </p>
             )}
 
             {modalType === 'START_WORK' && (
-              <p className="text-xs text-gray-700 leading-relaxed">
+              <p className="text-xs text-slate-700 leading-relaxed">
                 Start tractor/machinery operations now. Work status will change to <strong>IN PROGRESS</strong>.
               </p>
             )}
 
             {modalType === 'PAUSE' && (
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-700">
+                <label className="text-xs font-bold text-slate-700">
                   Reason for Pause <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -988,23 +1004,23 @@ function JobDetails() {
                   value={pauseReason}
                   onChange={(e) => setPauseReason(e.target.value)}
                   placeholder="Specify pause reason (e.g. Rain/Monsoon, Refueling, Maintenance, Break)..."
-                  className="w-full p-3 bg-[#F0EFE9] rounded-xl text-xs focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none"
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:bg-white focus:outline-none"
                 />
               </div>
             )}
 
             {modalType === 'RESUME' && (
-              <p className="text-xs text-gray-700 leading-relaxed">
+              <p className="text-xs text-slate-700 leading-relaxed">
                 Ready to resume field operations? Status will return to <strong>IN PROGRESS</strong>.
               </p>
             )}
 
             {modalType === 'COMPLETE' && (
               <div className="space-y-2">
-                <p className="text-xs text-gray-700 leading-relaxed">
+                <p className="text-xs text-slate-700 leading-relaxed">
                   Confirm that all requested machinery operations and acres have been finished.
                 </p>
-                <label className="text-xs font-bold text-gray-700">
+                <label className="text-xs font-bold text-slate-700">
                   Completion Notes (Optional)
                 </label>
                 <textarea
@@ -1012,7 +1028,7 @@ function JobDetails() {
                   value={completionNotes}
                   onChange={(e) => setCompletionNotes(e.target.value)}
                   placeholder="Add notes (e.g. 5 acres ploughed smoothly, diesel level normal)..."
-                  className="w-full p-3 bg-[#F0EFE9] rounded-xl text-xs focus:ring-2 focus:ring-[#3E7B27] focus:bg-white focus:outline-none"
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white focus:outline-none"
                 />
               </div>
             )}
@@ -1023,7 +1039,7 @@ function JobDetails() {
                 type="button"
                 disabled={actionLoading}
                 onClick={() => setModalType(null)}
-                className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition-colors"
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -1031,11 +1047,11 @@ function JobDetails() {
                 type="button"
                 disabled={actionLoading}
                 onClick={handleAction}
-                className={`px-5 py-2.5 text-white text-xs font-black rounded-xl shadow-xs disabled:opacity-50 transition-all ${modalType === 'REJECT'
+                className={`px-5 py-2.5 text-white text-xs font-black rounded-xl shadow-xs disabled:opacity-50 transition-all cursor-pointer ${modalType === 'REJECT'
                     ? 'bg-red-600 hover:bg-red-700'
                     : modalType === 'PAUSE'
                       ? 'bg-amber-600 hover:bg-amber-700'
-                      : 'bg-[#3E7B27] hover:bg-[#2E6F22]'
+                      : 'bg-emerald-700 hover:bg-emerald-800'
                   }`}
               >
                 {actionLoading ? 'Updating...' : 'Confirm'}

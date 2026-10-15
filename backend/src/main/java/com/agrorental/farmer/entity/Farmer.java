@@ -2,6 +2,8 @@ package com.agrorental.farmer.entity;
 
 import com.agrorental.common.entity.BaseEntity;
 import com.agrorental.user.entity.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,6 +41,7 @@ public class Farmer extends BaseEntity {
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
     @ToString.Exclude
+    @JsonIgnore
     private User user;
 
     @NotBlank(message = "Full name is mandatory")

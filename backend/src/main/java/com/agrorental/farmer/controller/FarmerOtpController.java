@@ -1,5 +1,6 @@
 package com.agrorental.farmer.controller;
 
+import com.agrorental.auth.service.AccountIdentifiers;
 import com.agrorental.common.dto.ApiResponse;
 import com.agrorental.farmer.dto.OtpResponse;
 import com.agrorental.farmer.dto.SendOtpRequest;
@@ -21,21 +22,21 @@ public class FarmerOtpController {
 
     @PostMapping("/send-otp")
     public ResponseEntity<ApiResponse<OtpResponse>> sendOtp(@Valid @RequestBody SendOtpRequest request) {
-        log.info("REST request to send OTP to mobile: {}", request.getMobileNumber());
+        log.info("REST request to send OTP to mobile: {}", AccountIdentifiers.mask(request.getMobileNumber()));
         OtpResponse otpResponse = farmerOtpService.sendOtp(request);
         return ResponseEntity.ok(ApiResponse.success(otpResponse.getMessage(), otpResponse));
     }
 
     @PostMapping("/verify-otp")
     public ResponseEntity<ApiResponse<OtpResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
-        log.info("REST request to verify OTP for mobile: {}", request.getMobileNumber());
+        log.info("REST request to verify OTP for mobile: {}", AccountIdentifiers.mask(request.getMobileNumber()));
         OtpResponse otpResponse = farmerOtpService.verifyOtp(request);
         return ResponseEntity.ok(ApiResponse.success(otpResponse.getMessage(), otpResponse));
     }
 
     @PostMapping("/resend-otp")
     public ResponseEntity<ApiResponse<OtpResponse>> resendOtp(@Valid @RequestBody SendOtpRequest request) {
-        log.info("REST request to resend OTP for mobile: {}", request.getMobileNumber());
+        log.info("REST request to resend OTP for mobile: {}", AccountIdentifiers.mask(request.getMobileNumber()));
         OtpResponse otpResponse = farmerOtpService.resendOtp(request);
         return ResponseEntity.ok(ApiResponse.success(otpResponse.getMessage(), otpResponse));
     }

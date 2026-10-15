@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Printer, ArrowLeft, CheckCircle, ShieldCheck, Download, AlertCircle, FileText } from 'lucide-react';
+import { Printer, ArrowLeft, ShieldCheck, AlertCircle } from 'lucide-react';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 import { paymentService } from '../../services/paymentService';
-import { getFarmerId } from '../../services/authService';
+import { RefundNotice } from '../../components/payment/RefundStatus';
 
 function Invoice() {
   const { id } = useParams(); // bookingId
@@ -21,28 +21,9 @@ function Invoice() {
           setInvoice(data);
         }
       } catch (err) {
-        console.warn('API fetch for invoice failed, using fallback itemized invoice data:', err);
-        setInvoice({
-          invoiceReference: `INV-2026-${String(id).padStart(5, '0')}`,
-          transactionId: `TXN-${Date.now()}`,
-          bookingId: Number(id),
-          farmerId: getFarmerId() || null,
-          farmerName: 'Ramesh Kumar',
-          farmerMobile: '+91 9876543210',
-          equipmentName: 'Mahindra 575 DI Tractor',
-          equipmentCategory: 'TRACTOR',
-          partnerName: 'GreenFields Machinery Partner',
-          bookingStartDate: new Date().toISOString().split('T')[0],
-          bookingEndDate: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
-          rentalRatePerDay: 1228.81,
-          rentalDays: 3,
-          subtotal: 3686.44,
-          gstAmount: 813.56,
-          totalAmount: 4500.0,
-          paymentMethod: 'UPI',
-          paymentDate: new Date().toISOString(),
-          status: 'SUCCESS',
-        });
+        console.error('API fetch for invoice failed:', err);
+        setError(err.response?.data?.message || err.message || 'No payment or invoice record found for this booking reservation.');
+        setInvoice(null);
       } finally {
         setLoading(false);
       }
@@ -72,13 +53,21 @@ function Invoice() {
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center shadow-sm">
           <AlertCircle className="mx-auto h-12 w-12 text-red-600 mb-3" />
           <h2 className="text-xl font-bold text-red-900 mb-2">Invoice Not Available</h2>
-          <p className="text-red-800 mb-4">{error || 'Could not load invoice record.'}</p>
-          <Link
-            to="/farmer/my-bookings"
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-emerald-700"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back to My Bookings
-          </Link>
+          <p className="text-red-800 mb-6">{error || 'Could not load invoice record.'}</p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to={`/farmer/bookings/${id}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-emerald-700"
+            >
+              <ArrowLeft className="h-4 w-4" /> Return to Booking Details
+            </Link>
+            <Link
+              to="/farmer/my-bookings"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            >
+              Back to My Bookings
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -116,9 +105,20 @@ function Invoice() {
           </div>
 
           <div className="text-right">
-            <span className="inline-block rounded-lg bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 uppercase tracking-wider mb-2">
-              TAX INVOICE
-            </span>
+            <div className="flex flex-col items-end gap-1 mb-2">
+              <span className="inline-block rounded-lg bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 uppercase tracking-wider">
+                TAX INVOICE
+              </span>
+              {invoice.bookingStatus && invoice.bookingStatus !== 'CONFIRMED' && invoice.bookingStatus !== 'COMPLETED' && (
+                <span className={`inline-block rounded-md px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                  invoice.bookingStatus === 'CANCELLED' || invoice.bookingStatus === 'REJECTED'
+                    ? 'bg-red-100 text-red-800 border border-red-200'
+                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                }`}>
+                  Booking {invoice.bookingStatus}
+                </span>
+              )}
+            </div>
             <p className="text-sm font-bold text-slate-900">{invoice.invoiceReference}</p>
             <p className="text-xs text-slate-500">Date: {new Date(invoice.paymentDate || Date.now()).toLocaleDateString()}</p>
           </div>
@@ -137,7 +137,7 @@ function Invoice() {
             <span className="font-bold text-slate-400 uppercase tracking-wider block mb-2">Service Provider / Owner Partner:</span>
             <p className="text-sm font-bold text-slate-900">{invoice.partnerName}</p>
             <p className="text-slate-600">Transaction Ref: <span className="font-mono">{invoice.transactionId}</span></p>
-            <p className="text-slate-600">Payment Channel: {invoice.paymentMethod} (Verified)</p>
+            <p className="text-slate-600">Payment Method: {invoice.paymentMethod}</p>
           </div>
         </div>
 
@@ -174,10 +174,10 @@ function Invoice() {
         <div className="flex flex-col sm:flex-row justify-between items-start pt-4 border-t border-slate-200 text-xs">
           <div className="mb-4 sm:mb-0 max-w-xs space-y-1">
             <div className="flex items-center gap-1.5 font-bold text-emerald-800">
-              <ShieldCheck className="h-4 w-4 text-emerald-600" /> Authorized Electronic Receipt
+              <ShieldCheck className="h-4 w-4 text-emerald-600" /> Electronic Payment Receipt
             </div>
             <p className="text-[11px] text-slate-500">
-              This invoice is computer-generated upon successful online payment processing. No physical signature required.
+              This invoice is computer-generated from the recorded platform payment transaction.
             </p>
           </div>
 
@@ -196,6 +196,16 @@ function Invoice() {
             </div>
           </div>
         </div>
+
+        {/* Refund (tracked separately; the payment above remains the original, successful payment) */}
+        {invoice.refundStatus && invoice.refundStatus !== 'NONE' && (
+          <div className="mt-6 pt-4 border-t border-slate-200">
+            <span className="block mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+              Refund status (separate from the payment above)
+            </span>
+            <RefundNotice refundStatus={invoice.refundStatus} refundAmount={invoice.refundAmount} bookingId={invoice.bookingId} />
+          </div>
+        )}
 
         {/* Footer info */}
         <div className="mt-8 pt-4 border-t border-slate-100 text-center text-[11px] text-slate-400">

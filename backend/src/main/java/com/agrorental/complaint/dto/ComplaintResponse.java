@@ -15,6 +15,8 @@ public class ComplaintResponse {
 
     private Long id;
     private Long farmerId;
+    private String farmerName;
+    private String farmerMobile;
     private Long bookingId;
     private ComplaintCategory category;
     private String description;

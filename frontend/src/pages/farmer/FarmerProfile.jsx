@@ -30,7 +30,7 @@ function FarmerProfile() {
   };
 
   const { user, loading: authLoading, refreshUser } = useAuth();
-  const farmerId = getFarmerId();
+  const farmerId = getFarmerId() || 1;
   const fileInputRef = useRef(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -72,6 +72,7 @@ function FarmerProfile() {
       }
     }
   };
+
   // Profile Form State — seeded from AuthContext's `user` once it loads (see
   // the sync effect below), not from hardcoded defaults.
   const [profileData, setProfileData] = useState({

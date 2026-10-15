@@ -1,38 +1,31 @@
-import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
   CheckCircle2,
   Clock,
   FileCheck,
-  HardHat,
   Home,
+  KeyRound,
   LogIn,
   ShieldAlert,
-  ShieldCheck,
-  Smartphone,
-  UserCheck,
 } from 'lucide-react';
 import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
 import MagneticButton from '../../components/ui/MagneticButton';
+import { clearOnboardingToken, getPendingRegistration } from './operatorOnboardingSession';
 
 function OperatorVerificationPending() {
-  const location = useLocation();
+  const [regData] = useState(() => getPendingRegistration());
 
-  const regData = location.state || (() => {
-    const saved = sessionStorage.getItem('agro_pending_operator_reg');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  })();
+  // Registration is complete: end the KYC upload window on this device
+  useEffect(() => {
+    clearOnboardingToken();
+  }, []);
 
   const fullName = regData?.fullName || 'Operator';
   const mobileNumber = regData?.mobileNumber || '';
+  const documentsSubmitted = Boolean(regData?.documentsSubmitted);
 
   return (
     <RevealGroup stagger={0.06} delayChildren={0.05}>
@@ -66,28 +59,42 @@ function OperatorVerificationPending() {
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white">
-              <Smartphone className="h-5 w-5" />
+              <KeyRound className="h-5 w-5" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-emerald-950">Mobile Number Verified</h4>
+              <h4 className="text-sm font-bold text-emerald-950">Password Set</h4>
               <p className="text-xs text-emerald-800/80">
-                Authenticated via OTP confirmation ({mobileNumber || 'Registered Mobile'})
+                Once approved, sign in with {mobileNumber || 'your mobile number'} (or your email) and your password
               </p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white">
-              <FileCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-emerald-950">KYC & License Documents Submitted</h4>
-              <p className="text-xs text-emerald-800/80">Aadhaar card and commercial driving license queued for verification</p>
+        {documentsSubmitted ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white">
+                <FileCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-emerald-950">KYC & License Documents Submitted</h4>
+                <p className="text-xs text-emerald-800/80">Aadhaar card and commercial driving license queued for verification</p>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-600 text-white">
+                <FileCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-amber-950">KYC Documents Not Recorded on This Device</h4>
+                <p className="text-xs text-amber-900/80">An administrator will contact you if documents are missing.</p>
+              </div>
+            </div>
+          </div>
+        )}
       </RevealItem>
 
       {/* Review Explanation Banner */}
@@ -104,7 +111,7 @@ function OperatorVerificationPending() {
 
       {/* Action Buttons */}
       <RevealItem className="mt-8 space-y-3">
-        <Link to="/login/operator" className="block w-full">
+        <Link to="/login?role=OPERATOR" className="block w-full">
           <MagneticButton className="w-full">
             <motion.div
               animate={{

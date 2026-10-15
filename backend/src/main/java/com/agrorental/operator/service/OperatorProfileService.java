@@ -1,5 +1,6 @@
 package com.agrorental.operator.service;
 
+import com.agrorental.auth.service.PasswordPolicy;
 import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.common.exception.ForbiddenException;
 import com.agrorental.common.exception.ResourceNotFoundException;
@@ -103,6 +104,7 @@ public class OperatorProfileService {
             log.warn("Password change failed for operator ID {}: Password too short", operatorId);
             throw new BadRequestException("New password must be at least 8 characters long");
         }
+        PasswordPolicy.validate(request.getNewPassword());
 
         Operator operator = getActiveApprovedOperator(operatorId);
 

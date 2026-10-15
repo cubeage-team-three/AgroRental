@@ -110,6 +110,18 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
+    /**
+     * Row-lock timeouts and deadlocks (e.g. CannotAcquireLockException, DeadlockLoserDataAccessException) are a
+     * concurrent-update conflict, not a server error. The more specific optimistic-lock handler below still applies.
+     */
+    @ExceptionHandler({org.springframework.dao.PessimisticLockingFailureException.class,
+            org.springframework.dao.ConcurrencyFailureException.class})
+    public ResponseEntity<ApiResponse<Object>> handleLockConflict(org.springframework.dao.DataAccessException ex) {
+        log.warn("Lock conflict: {}", ex.getClass().getSimpleName());
+        ApiResponse<Object> response = ApiResponse.error("Concurrent update conflict detected. Please refresh and try again.");
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<ApiResponse<Object>> handleOptimisticLockingFailure(org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
         log.warn("Optimistic locking failure: {}", ex.getMessage());

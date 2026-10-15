@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   CalendarRange,
   Handshake,
+  IndianRupee,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -15,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { adminAuthService } from '../services/adminAuthService';
+import { useAuth } from '../../context/AuthContext';
 import { getCurrentUser } from '../../services/authService';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
@@ -25,6 +27,7 @@ const NAV_ITEMS = [
   { label: 'Operators', to: '/admin/operators', icon: UserCheck },
   { label: 'Equipment Approvals', to: '/admin/equipment', icon: Tractor },
   { label: 'Bookings', to: '/admin/bookings', icon: CalendarRange },
+  { label: 'Refunds', to: '/admin/payments', icon: IndianRupee },
   { label: 'Disputes', to: '/admin/complaints', icon: AlertTriangle },
 ];
 
@@ -45,86 +48,111 @@ function AdminDashboardLayout() {
     setChecked(true);
   }, [navigate]);
 
+  const { logout } = useAuth();
+
   const handleLogout = () => {
-    adminAuthService.logout();
+    logout(); // clears storage and the in-memory session, so no page keeps showing a signed-in admin
     navigate('/admin/login', { replace: true });
   };
 
   if (!checked) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#03050a] text-white/40">
-        Verifying session…
+      <div className="flex min-h-screen items-center justify-center bg-[#F8FAF8] text-slate-500 font-medium">
+        <div className="text-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent mx-auto mb-3"></div>
+          <p className="text-slate-600 font-medium">Verifying admin session…</p>
+        </div>
       </div>
     );
   }
 
   const sidebarContent = (
     <>
-      <div className="flex items-center justify-between px-1">
-        <Link to="/admin/overview" className="flex items-center gap-2.5">
-          <span className="flex items-center overflow-hidden rounded-xl bg-white px-2 py-1 shadow-sm ring-1 ring-slate-900/5 h-9 shrink-0">
-            <img
-              src={agroRentLogo}
-              alt="AgroRent Admin"
-              className="h-full w-auto object-contain"
-            />
+      <div className="space-y-5">
+        {/* Brand Header */}
+        <div className="flex items-center justify-between px-2 py-2 border-b border-emerald-800/60">
+          <Link to="/admin/overview" className="flex items-center gap-3 group">
+            <div className="flex items-center overflow-hidden rounded-xl bg-white px-2.5 py-1.5 shadow-md ring-1 ring-slate-900/10 h-12 shrink-0">
+              <img
+                src={agroRentLogo}
+                alt="AgroRent Admin"
+                className="h-full w-auto object-contain"
+              />
+            </div>
+            <div>
+              <h1 className="text-base font-extrabold tracking-tight text-white drop-shadow-sm">AgroRent</h1>
+              <span className="text-[10px] font-extrabold text-lime-400 uppercase tracking-wider block -mt-0.5">
+                Admin Console
+              </span>
+            </div>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-300 hover:text-white lg:hidden hover:bg-emerald-800/50"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Admin Profile Mini Card */}
+        <div className="bg-[#194D3E] p-3 rounded-2xl border border-emerald-700/50 flex items-center gap-3 shadow-inner">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-lime-400 to-emerald-600 text-emerald-950 font-extrabold flex items-center justify-center text-lg shadow-md shrink-0">
+            {(admin?.fullName || 'Admin').charAt(0).toUpperCase()}
+          </div>
+          <div className="overflow-hidden flex-1">
+            <h3 className="text-sm font-extrabold text-white truncate">{admin?.fullName || 'Administrator'}</h3>
+            <p className="text-[11px] text-emerald-200 font-medium truncate">{admin?.email || 'admin@agrorent.com'}</p>
+            <span className="inline-block mt-0.5 px-2 py-0.5 bg-lime-400/20 text-lime-300 rounded text-[9px] font-extrabold border border-lime-400/30">
+              ✓ Super Admin
+            </span>
+          </div>
+        </div>
+
+        {/* Navigation Menu */}
+        <nav className="space-y-1">
+          <span className="px-3 text-[10px] font-extrabold uppercase tracking-widest text-emerald-300/70 block mb-2">
+            Management Console
           </span>
-          <span className="font-display text-base font-bold text-white">AgroRent Admin</span>
-        </Link>
-        <button
-          type="button"
-          onClick={() => setMobileOpen(false)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:text-white lg:hidden"
-        >
-          <X className="h-4 w-4" />
-        </button>
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              onClick={() => setMobileOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all duration-150 ${
+                  isActive
+                    ? 'bg-lime-400 text-emerald-950 shadow-md border border-lime-300/40 translate-x-1 font-extrabold'
+                    : 'text-emerald-100/90 hover:bg-emerald-800/50 hover:text-white'
+                }`
+              }
+            >
+              <item.icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
       </div>
 
-      <nav className="mt-8 flex-1 space-y-1">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            onClick={() => setMobileOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-200 ease-out ${
-                isActive
-                  ? 'bg-emerald-400/10 text-emerald-300 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.25)]'
-                  : 'text-white/50 hover:bg-white/5 hover:text-white/80'
-              }`
-            }
-          >
-            <item.icon className="h-[18px] w-[18px]" />
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-
-      <div className="mt-6 space-y-3 border-t border-white/10 pt-5">
-        <div className="rounded-xl border border-white/10 bg-white/5 px-3.5 py-3">
-          <p className="truncate text-sm font-semibold text-white">{admin?.fullName || 'Administrator'}</p>
-          <p className="truncate text-xs text-white/40">{admin?.email}</p>
-        </div>
+      {/* Logout Footer Button */}
+      <div className="pt-4 border-t border-emerald-800/60 mt-auto">
         <button
           type="button"
           onClick={handleLogout}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white/70 transition-all duration-200 ease-out hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/20 hover:bg-red-600 text-red-100 hover:text-white rounded-xl text-xs font-bold transition-all duration-150 border border-red-500/30 shadow-sm"
         >
           <LogOut className="h-4 w-4" />
-          Log Out
+          <span>Log Out Console</span>
         </button>
       </div>
     </>
   );
 
   return (
-    <div className="relative min-h-screen bg-[#03050a]">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(16,185,129,0.12),transparent_55%)]" />
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_90%_100%,rgba(132,204,22,0.08),transparent_50%)]" />
-
-      <div className="relative flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/10 bg-white/[0.02] p-5 backdrop-blur-2xl lg:flex">
+    <div className="min-h-screen bg-[#F8FAF8] text-slate-800 font-sans">
+      <div className="flex min-h-screen">
+        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between border-r border-emerald-950/40 bg-[#0F382C] p-4 text-white shadow-xl lg:flex">
           {sidebarContent}
         </aside>
 
@@ -136,14 +164,14 @@ function AdminDashboardLayout() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setMobileOpen(false)}
-                className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+                className="fixed inset-0 z-40 bg-black/60 lg:hidden backdrop-blur-xs"
               />
               <motion.aside
                 initial={{ x: -280 }}
                 animate={{ x: 0 }}
                 exit={{ x: -280 }}
                 transition={{ duration: 0.3, ease: EASE }}
-                className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-white/10 bg-[#03050a] p-5 backdrop-blur-2xl lg:hidden"
+                className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col justify-between border-r border-emerald-950/40 bg-[#0F382C] p-4 text-white shadow-2xl lg:hidden"
               >
                 {sidebarContent}
               </motion.aside>
@@ -151,35 +179,36 @@ function AdminDashboardLayout() {
           )}
         </AnimatePresence>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-3 border-b border-white/10 bg-white/[0.02] px-4 py-3.5 backdrop-blur-xl lg:hidden">
+        <div className="min-w-0 flex-1 flex flex-col">
+          <div className="flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-md lg:hidden shadow-2xs">
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-white/70"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100"
             >
               <Menu className="h-4.5 w-4.5" />
             </button>
-            <span className="flex items-center gap-2">
-              <span className="flex items-center overflow-hidden rounded-lg bg-white px-1.5 py-0.5 shadow-xs h-7 shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center overflow-hidden rounded-xl bg-white px-2 py-1 shadow-sm ring-1 ring-slate-900/10 h-9 shrink-0">
                 <img
                   src={agroRentLogo}
                   alt="AgroRent Admin"
                   className="h-full w-auto object-contain"
                 />
-              </span>
-              <span className="font-display text-sm font-bold text-white">AgroRent Admin</span>
-            </span>
+              </div>
+              <span className="text-sm font-extrabold text-slate-900">AgroRent Admin</span>
+            </div>
+            <div className="w-9" />
           </div>
 
-          <main className="p-5 sm:p-8">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.3, ease: EASE }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2, ease: EASE }}
               >
                 <Outlet />
               </motion.div>

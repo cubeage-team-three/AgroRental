@@ -13,6 +13,7 @@ import com.agrorental.operator.service.OperatorDashboardService;
 import com.agrorental.security.jwt.JwtAuthenticationFilter;
 import com.agrorental.security.jwt.JwtService;
 import com.agrorental.security.principal.OperatorPrincipal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,12 @@ class OperatorDashboardSecurityIntegrationTest {
     private OperatorDashboardController dashboardController;
 
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    /** The JWT filter authenticates on this thread; never leak that principal into later test classes. */
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     @BeforeEach
     void setUp() {
@@ -122,6 +129,7 @@ class OperatorDashboardSecurityIntegrationTest {
         when(jwtService.validateToken("valid.jwt.token")).thenReturn(true);
         when(jwtService.extractUserId("valid.jwt.token")).thenReturn(1L);
         when(jwtService.extractRole("valid.jwt.token")).thenReturn("OPERATOR");
+        when(jwtService.extractAccountType("valid.jwt.token")).thenReturn("OPERATOR");
         when(jwtService.extractMobileNumber("valid.jwt.token")).thenReturn("9876543210");
         when(operatorRepository.findById(1L)).thenReturn(Optional.of(operator));
 
@@ -167,6 +175,7 @@ class OperatorDashboardSecurityIntegrationTest {
         when(jwtService.validateToken("token.inactive")).thenReturn(true);
         when(jwtService.extractUserId("token.inactive")).thenReturn(1L);
         when(jwtService.extractRole("token.inactive")).thenReturn("OPERATOR");
+        when(jwtService.extractAccountType("token.inactive")).thenReturn("OPERATOR");
         when(jwtService.extractMobileNumber("token.inactive")).thenReturn("9876543210");
         when(operatorRepository.findById(1L)).thenReturn(Optional.of(inactiveOperator));
 

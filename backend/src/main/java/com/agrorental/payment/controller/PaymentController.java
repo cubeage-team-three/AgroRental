@@ -14,7 +14,6 @@ import java.util.List;
  * REST controller exposing endpoints for rental payment processing, financial reports, and tax invoices.
  */
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
 public class PaymentController {
 
     private final PaymentService paymentService;
@@ -61,27 +60,45 @@ public class PaymentController {
 
     @GetMapping("/api/farmers/bookings/{bookingId}/invoice")
     public ResponseEntity<ApiResponse<InvoiceResponse>> getInvoice(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
             @PathVariable Long bookingId) {
         InvoiceResponse response = paymentService.generateInvoice(bookingId);
+        validateFarmerOwnershipOrAdmin(response.getFarmerId(), principal);
         return ResponseEntity.ok(ApiResponse.success("Invoice generated successfully", response));
     }
 
     // --- Partner & General Payment Endpoints ---
 
     @PostMapping("/api/payments")
-    public ResponseEntity<ApiResponse<PaymentResponse>> createPayment(@Valid @RequestBody PaymentCreateRequest request) {
+    public ResponseEntity<ApiResponse<PaymentResponse>> createPayment(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
+            @Valid @RequestBody PaymentCreateRequest request) {
+        if (principal != null) {
+            request.setFarmerId(principal.getId());
+        } else if (!isAdmin()) {
+            // Partners and operators can never create payments; the service also enforces booking ownership
+            throw new org.springframework.security.access.AccessDeniedException("Access is denied. Only the booking's farmer can make a payment.");
+        }
         PaymentResponse response = paymentService.createPayment(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Payment created successfully", response));
     }
 
     @GetMapping("/api/payments/{id}")
-    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentById(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success("Payment retrieved successfully", paymentService.getPaymentById(id)));
+    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentById(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
+            @PathVariable Long id) {
+        PaymentResponse response = paymentService.getPaymentById(id);
+        validatePaymentAccess(response, principal);
+        return ResponseEntity.ok(ApiResponse.success("Payment retrieved successfully", response));
     }
 
     @GetMapping("/api/payments/booking/{bookingId}")
-    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentByBookingId(@PathVariable Long bookingId) {
-        return ResponseEntity.ok(ApiResponse.success("Payment retrieved successfully", paymentService.getPaymentByBookingId(bookingId)));
+    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentByBookingId(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
+            @PathVariable Long bookingId) {
+        PaymentResponse response = paymentService.getPaymentByBookingId(bookingId);
+        validatePaymentAccess(response, principal);
+        return ResponseEntity.ok(ApiResponse.success("Payment retrieved successfully", response));
     }
 
     @GetMapping("/api/payments/farmer/{farmerId}")
@@ -101,38 +118,99 @@ public class PaymentController {
                 return;
             }
         }
-        if (principal != null && !principal.getId().equals(targetFarmerId)) {
+        if (principal == null || !principal.getId().equals(targetFarmerId)) {
             throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view another farmer's payment history.");
         }
     }
 
+    private boolean isAdmin() {
+        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    /**
+     * A single payment is visible to the booking's farmer, the booking's partner, or an admin.
+     * Operators and every other caller are refused (no cross-role bypass).
+     */
+    private void validatePaymentAccess(PaymentResponse payment, com.agrorental.security.principal.FarmerPrincipal farmerPrincipal) {
+        if (payment == null || isAdmin()) {
+            return;
+        }
+        if (farmerPrincipal != null) {
+            if (farmerPrincipal.getId().equals(payment.getFarmerId())) {
+                return;
+            }
+        } else {
+            org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null
+                    && authentication.getPrincipal() instanceof com.agrorental.security.principal.PartnerPrincipal partner
+                    && partner.getId().equals(payment.getPartnerId())) {
+                return;
+            }
+        }
+        throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view this payment.");
+    }
+
+    private void validatePartnerOwnershipOrAdmin(Long targetPartnerId, com.agrorental.security.principal.PartnerPrincipal principal) {
+        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (isAdmin) {
+                return;
+            }
+        }
+        if (principal == null || !principal.getId().equals(targetPartnerId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view another partner's details.");
+        }
+    }
+
     @GetMapping("/api/payments/partner/{partnerId}")
-    public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsByPartner(@PathVariable Long partnerId) {
+    public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsByPartner(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.PartnerPrincipal principal,
+            @PathVariable Long partnerId) {
+        validatePartnerOwnershipOrAdmin(partnerId, principal);
         return ResponseEntity.ok(ApiResponse.success("Partner payments retrieved successfully", paymentService.getPaymentsByPartner(partnerId)));
     }
 
     @GetMapping("/api/payments/partner/{partnerId}/earnings")
-    public ResponseEntity<ApiResponse<PartnerEarningsSummary>> getPartnerEarningsSummary(@PathVariable Long partnerId) {
+    public ResponseEntity<ApiResponse<PartnerEarningsSummary>> getPartnerEarningsSummary(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.PartnerPrincipal principal,
+            @PathVariable Long partnerId) {
+        validatePartnerOwnershipOrAdmin(partnerId, principal);
         return ResponseEntity.ok(ApiResponse.success("Partner earnings summary retrieved successfully", paymentService.getPartnerEarningsSummary(partnerId)));
     }
 
     @GetMapping("/api/payments/partner/{partnerId}/earnings-detail")
-    public ResponseEntity<ApiResponse<PartnerEarningsDetailResponse>> getPartnerEarningsDetail(@PathVariable Long partnerId) {
+    public ResponseEntity<ApiResponse<PartnerEarningsDetailResponse>> getPartnerEarningsDetail(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.PartnerPrincipal principal,
+            @PathVariable Long partnerId) {
+        validatePartnerOwnershipOrAdmin(partnerId, principal);
         return ResponseEntity.ok(ApiResponse.success("Partner earnings detail retrieved successfully", paymentService.getPartnerEarningsDetail(partnerId)));
     }
 
     @GetMapping("/api/payments/partner/{partnerId}/reports/booking-revenue")
-    public ResponseEntity<ApiResponse<List<PartnerBookingRevenueReportDto>>> getPartnerBookingRevenueReport(@PathVariable Long partnerId) {
+    public ResponseEntity<ApiResponse<List<PartnerBookingRevenueReportDto>>> getPartnerBookingRevenueReport(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.PartnerPrincipal principal,
+            @PathVariable Long partnerId) {
+        validatePartnerOwnershipOrAdmin(partnerId, principal);
         return ResponseEntity.ok(ApiResponse.success("Booking revenue report generated successfully", paymentService.getPartnerBookingRevenueReport(partnerId)));
     }
 
     @GetMapping("/api/payments/partner/{partnerId}/reports/equipment-revenue")
-    public ResponseEntity<ApiResponse<List<PartnerEquipmentRevenueReportDto>>> getPartnerEquipmentRevenueReport(@PathVariable Long partnerId) {
+    public ResponseEntity<ApiResponse<List<PartnerEquipmentRevenueReportDto>>> getPartnerEquipmentRevenueReport(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.PartnerPrincipal principal,
+            @PathVariable Long partnerId) {
+        validatePartnerOwnershipOrAdmin(partnerId, principal);
         return ResponseEntity.ok(ApiResponse.success("Equipment revenue report generated successfully", paymentService.getPartnerEquipmentRevenueReport(partnerId)));
     }
 
     @GetMapping("/api/payments/partner/{partnerId}/reports/customer-revenue")
-    public ResponseEntity<ApiResponse<List<PartnerCustomerRevenueReportDto>>> getPartnerCustomerRevenueReport(@PathVariable Long partnerId) {
+    public ResponseEntity<ApiResponse<List<PartnerCustomerRevenueReportDto>>> getPartnerCustomerRevenueReport(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.PartnerPrincipal principal,
+            @PathVariable Long partnerId) {
+        validatePartnerOwnershipOrAdmin(partnerId, principal);
         return ResponseEntity.ok(ApiResponse.success("Customer revenue report generated successfully", paymentService.getPartnerCustomerRevenueReport(partnerId)));
     }
 }

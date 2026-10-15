@@ -17,6 +17,7 @@ import com.agrorental.user.repository.UserRepository;
 import com.agrorental.security.jwt.JwtAuthenticationFilter;
 import com.agrorental.security.jwt.JwtService;
 import com.agrorental.security.principal.PartnerPrincipal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Partner Security & JWT Authentication Filter Integration Tests")
 class PartnerSecurityIntegrationTest {
+
+    /** Standalone MockMvc tests set principals on this thread; never leak them into later test classes. */
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     private MockMvc partnerMockMvc;
     private MockMvc bookingMockMvc;
@@ -142,6 +149,7 @@ class PartnerSecurityIntegrationTest {
         when(jwtService.validateToken("valid.jwt")).thenReturn(true);
         when(jwtService.extractUserId("valid.jwt")).thenReturn(1L);
         when(jwtService.extractRole("valid.jwt")).thenReturn("PARTNER");
+        when(jwtService.extractAccountType("valid.jwt")).thenReturn("PARTNER");
         when(jwtService.extractMobileNumber("valid.jwt")).thenReturn("9876543210");
         when(partnerRepository.findById(1L)).thenReturn(Optional.of(partner));
 
@@ -177,6 +185,7 @@ class PartnerSecurityIntegrationTest {
         when(jwtService.validateToken("valid.jwt")).thenReturn(true);
         when(jwtService.extractUserId("valid.jwt")).thenReturn(1L);
         when(jwtService.extractRole("valid.jwt")).thenReturn("PARTNER");
+        when(jwtService.extractAccountType("valid.jwt")).thenReturn("PARTNER");
         when(jwtService.extractMobileNumber("valid.jwt")).thenReturn("9876543210");
         when(partnerRepository.findById(1L)).thenReturn(Optional.of(partner));
 
@@ -203,6 +212,7 @@ class PartnerSecurityIntegrationTest {
         when(jwtService.validateToken("valid.jwt")).thenReturn(true);
         when(jwtService.extractUserId("valid.jwt")).thenReturn(1L);
         when(jwtService.extractRole("valid.jwt")).thenReturn("PARTNER");
+        when(jwtService.extractAccountType("valid.jwt")).thenReturn("PARTNER");
         when(jwtService.extractMobileNumber("valid.jwt")).thenReturn("9876543210");
         when(partnerRepository.findById(1L)).thenReturn(Optional.of(partner));
 
@@ -239,6 +249,7 @@ class PartnerSecurityIntegrationTest {
         when(jwtService.validateToken("valid.jwt")).thenReturn(true);
         when(jwtService.extractUserId("valid.jwt")).thenReturn(1L);
         when(jwtService.extractRole("valid.jwt")).thenReturn("PARTNER");
+        when(jwtService.extractAccountType("valid.jwt")).thenReturn("PARTNER");
         when(jwtService.extractMobileNumber("valid.jwt")).thenReturn("9876543210");
         when(partnerRepository.findById(1L)).thenReturn(Optional.of(partner));
 
@@ -249,5 +260,55 @@ class PartnerSecurityIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success", is(false)))
                 .andExpect(jsonPath("$.message", is("Access is denied. You do not have the required permissions.")));
+    }
+
+    @Test
+    @DisplayName("Partner JWT for PENDING account is rejected by JwtAuthenticationFilter with 401")
+    void testPendingPartnerTokenRejectedByFilter() throws Exception {
+        Partner pendingPartner = Partner.builder()
+                .fullName("Pending Partner")
+                .mobileNumber("9876543299")
+                .verificationStatus(Partner.VerificationStatus.PENDING)
+                .build();
+        pendingPartner.setId(2L);
+        pendingPartner.setActive(true);
+
+        when(jwtService.validateToken("pending.jwt")).thenReturn(true);
+        when(jwtService.extractUserId("pending.jwt")).thenReturn(2L);
+        when(jwtService.extractRole("pending.jwt")).thenReturn("PARTNER");
+        when(jwtService.extractAccountType("pending.jwt")).thenReturn("PARTNER");
+        when(partnerRepository.findById(2L)).thenReturn(Optional.of(pendingPartner));
+
+        partnerMockMvc.perform(get("/api/partners/2/dashboard")
+                        .header("Authorization", "Bearer pending.jwt")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Full authentication is required to access this resource")));
+    }
+
+    @Test
+    @DisplayName("Partner JWT for REJECTED account is rejected by JwtAuthenticationFilter with 401")
+    void testRejectedPartnerTokenRejectedByFilter() throws Exception {
+        Partner rejectedPartner = Partner.builder()
+                .fullName("Rejected Partner")
+                .mobileNumber("9876543288")
+                .verificationStatus(Partner.VerificationStatus.REJECTED)
+                .build();
+        rejectedPartner.setId(3L);
+        rejectedPartner.setActive(false);
+
+        when(jwtService.validateToken("rejected.jwt")).thenReturn(true);
+        when(jwtService.extractUserId("rejected.jwt")).thenReturn(3L);
+        when(jwtService.extractRole("rejected.jwt")).thenReturn("PARTNER");
+        when(jwtService.extractAccountType("rejected.jwt")).thenReturn("PARTNER");
+        when(partnerRepository.findById(3L)).thenReturn(Optional.of(rejectedPartner));
+
+        partnerMockMvc.perform(get("/api/partners/3/dashboard")
+                        .header("Authorization", "Bearer rejected.jwt")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Full authentication is required to access this resource")));
     }
 }

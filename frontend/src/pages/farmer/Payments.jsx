@@ -4,6 +4,7 @@ import { CreditCard, FileText, CheckCircle, AlertCircle, Search, RefreshCw } fro
 import { getFarmerId } from '../../services/authService';
 import { paymentService } from '../../services/paymentService';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
+import { RefundBadge } from '../../components/payment/RefundStatus';
 
 function FarmerPayments() {
   const farmerId = getFarmerId();
@@ -42,6 +43,14 @@ function FarmerPayments() {
   const calculateTotalSpent = () => {
     return payments.reduce((acc, p) => acc + (p.amount || 0), 0);
   };
+
+  // Refunds are reported separately from payments (summed in paise); only REFUNDED has been transferred back
+  const refundTotal = (status) => payments
+    .filter((p) => p.refundStatus === status)
+    .reduce((acc, p) => acc + Math.round(Number(p.refundAmount || 0) * 100), 0) / 100;
+  const formatRupees = (value) => `₹${value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const refundedTotal = refundTotal('REFUNDED');
+  const refundOwedTotal = refundTotal('REFUND_PENDING') + refundTotal('REFUND_FAILED');
 
   if (loading) {
     return (
@@ -97,6 +106,13 @@ function FarmerPayments() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase">Total Amount Paid</p>
           <p className="text-2xl font-extrabold text-emerald-700 mt-1">₹{calculateTotalSpent()}</p>
+          {(refundedTotal > 0 || refundOwedTotal > 0) && (
+            <p className="text-[11px] text-slate-500 mt-1 font-semibold">
+              {refundedTotal > 0 && <span className="text-sky-700">{formatRupees(refundedTotal)} refunded to you</span>}
+              {refundedTotal > 0 && refundOwedTotal > 0 && ' · '}
+              {refundOwedTotal > 0 && <span className="text-amber-700">{formatRupees(refundOwedTotal)} refund not yet transferred</span>}
+            </p>
+          )}
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase">Verification Status</p>
@@ -139,6 +155,7 @@ function FarmerPayments() {
                   <th className="px-5 py-3.5">Method</th>
                   <th className="px-5 py-3.5">Date</th>
                   <th className="px-5 py-3.5">Status</th>
+                  <th className="px-5 py-3.5">Refund</th>
                   <th className="px-5 py-3.5 text-right">Amount</th>
                   <th className="px-5 py-3.5 text-right">Action</th>
                 </tr>
@@ -165,6 +182,11 @@ function FarmerPayments() {
                       >
                         <CheckCircle className="h-3 w-3 text-emerald-600" /> {p.paymentStatus || p.status || 'SUCCESS'}
                       </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      {p.refundStatus && p.refundStatus !== 'NONE'
+                        ? <RefundBadge refundStatus={p.refundStatus} refundAmount={p.refundAmount} />
+                        : <span className="text-slate-400">—</span>}
                     </td>
                     <td className="px-5 py-4 text-right font-extrabold text-slate-900">₹{p.amount}</td>
                     <td className="px-5 py-4 text-right">

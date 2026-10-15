@@ -1,5 +1,6 @@
 package com.agrorental.farmer.service;
 
+import com.agrorental.auth.service.PasswordPolicy;
 import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.common.exception.ResourceNotFoundException;
 import com.agrorental.farmer.dto.ChangePasswordRequest;
@@ -150,7 +151,9 @@ public class FarmerProfileService {
             }
         }
 
-        farmer.setPassword(passwordEncoder.encode(request.getNewPassword().trim()));
+        String newPassword = request.getNewPassword().trim();
+        PasswordPolicy.validate(newPassword);
+        farmer.setPassword(passwordEncoder.encode(newPassword));
         farmerRepository.save(farmer);
         log.info("Password changed successfully for farmer ID: {}", farmerId);
     }

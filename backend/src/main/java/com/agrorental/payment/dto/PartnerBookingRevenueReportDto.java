@@ -25,4 +25,8 @@ public class PartnerBookingRevenueReportDto {
     private BigDecimal amount;
     private String paymentMethod;
     private String paymentStatus;
+
+    // BIZ-20: the row amount stays the original collection; refund state is reported alongside
+    private String refundStatus;
+    private BigDecimal refundedAmount;
 }

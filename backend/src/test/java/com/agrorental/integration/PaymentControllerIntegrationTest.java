@@ -1,6 +1,7 @@
 package com.agrorental.integration;
 
 import com.agrorental.common.exception.GlobalExceptionHandler;
+import com.agrorental.common.exception.ResourceNotFoundException;
 import com.agrorental.payment.controller.PaymentController;
 import com.agrorental.payment.dto.InvoiceResponse;
 import com.agrorental.payment.dto.PaymentResponse;
@@ -8,6 +9,7 @@ import com.agrorental.payment.entity.PaymentMethod;
 import com.agrorental.payment.entity.PaymentStatus;
 import com.agrorental.payment.service.PaymentService;
 import com.agrorental.security.principal.FarmerPrincipal;
+import org.springframework.security.access.AccessDeniedException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -149,5 +151,27 @@ class PaymentControllerIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.farmerName").value("Ramesh Kumar"))
                 .andExpect(jsonPath("$.data.totalAmount").value(4500.00));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenNoPaymentForInvoice() throws Exception {
+        when(paymentService.generateInvoice(10L))
+                .thenThrow(new ResourceNotFoundException("No payment transaction found for booking ID: 10"));
+
+        mockMvc.perform(get("/api/farmers/bookings/10/invoice"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("No payment transaction found for booking ID: 10"));
+    }
+
+    @Test
+    void shouldDenyAccessWhenFarmerRequestsAnotherFarmerInvoice() throws Exception {
+        when(paymentService.generateInvoice(10L))
+                .thenThrow(new AccessDeniedException("Access is denied. You are not authorized to view another farmer's invoice."));
+
+        mockMvc.perform(get("/api/farmers/bookings/10/invoice"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Access is denied. You do not have the required permissions."));
     }
 }

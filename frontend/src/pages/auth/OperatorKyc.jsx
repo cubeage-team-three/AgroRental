@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   AlertCircle,
@@ -8,8 +8,6 @@ import {
   CheckCircle2,
   FileCheck,
   FileText,
-  HardHat,
-  Image,
   Loader2,
   ShieldCheck,
   Upload,
@@ -17,6 +15,13 @@ import {
   X,
 } from 'lucide-react';
 import { operatorService } from '../../services/operatorService';
+import {
+  getOnboardingToken,
+  getPendingRegistration,
+  getUploadedDocuments,
+  saveUploadedDocuments,
+  updatePendingRegistration,
+} from './operatorOnboardingSession';
 import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
 import MagneticButton from '../../components/ui/MagneticButton';
 
@@ -51,72 +56,35 @@ const REQUIRED_DOCS = [
   },
 ];
 
+const SESSION_EXPIRED_MESSAGE =
+  'Your document upload session has ended (it lasts up to 2 hours after registration). Your account still exists: ' +
+  'log in after an administrator approves it and upload any missing documents from there, or contact support.';
+
 function OperatorKyc() {
-  const location = useLocation();
   const navigate = useNavigate();
 
-  // Retrieve registration context
-  const [regData, setRegData] = useState(() => {
-    if (location.state?.operatorId) {
-      return location.state;
-    }
-    const saved = sessionStorage.getItem('agro_pending_operator_reg');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  });
+  // Registration context and the KYC-only onboarding token live in sessionStorage for this tab only
+  const [regData] = useState(() => getPendingRegistration());
+  const [onboardingToken] = useState(() => getOnboardingToken());
 
   const operatorId = regData?.operatorId || null;
-  const fullName = regData?.fullName || 'Operator';
   const aadhaarNumber = regData?.aadhaarNumber || '';
   const dlNumber = regData?.drivingLicenseNumber || '';
 
-  const [documentsState, setDocumentsState] = useState({});
+  const [documentsState, setDocumentsState] = useState(() => getUploadedDocuments());
   const [uploadingType, setUploadingType] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState(
+    operatorId && onboardingToken ? '' : SESSION_EXPIRED_MESSAGE
+  );
   const [successMessage, setSuccessMessage] = useState('');
-
-  // Load existing uploaded documents on mount
-  useEffect(() => {
-    if (operatorId) {
-      loadExistingDocuments(operatorId);
-    }
-  }, [operatorId]);
-
-  const loadExistingDocuments = async (id) => {
-    try {
-      const res = await operatorService.getOperatorDocuments(id);
-      const docs = res?.data || res || [];
-      if (Array.isArray(docs) && docs.length > 0) {
-        const mapped = {};
-        docs.forEach((doc) => {
-          mapped[doc.documentType] = {
-            id: doc.id,
-            fileName: doc.fileName,
-            fileSize: doc.fileSize,
-            fileUrl: doc.fileUrl,
-            status: doc.verificationStatus || 'PENDING',
-          };
-        });
-        setDocumentsState((prev) => ({ ...prev, ...mapped }));
-      }
-    } catch (err) {
-      console.warn('Could not fetch existing documents:', err.message);
-    }
-  };
 
   const handleFileSelect = async (docType, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!operatorId) {
-      setErrorMessage('Operator identity session expired. Please restart registration.');
+    if (!operatorId || !onboardingToken) {
+      setErrorMessage(SESSION_EXPIRED_MESSAGE);
       return;
     }
 
@@ -141,24 +109,31 @@ function OperatorKyc() {
         mimeType: file.type || 'application/octet-stream',
       };
 
-      const res = await operatorService.uploadOperatorDocument(operatorId, payload);
-      const savedDoc = res?.data || res;
+      const savedDoc = await operatorService.uploadOnboardingDocument(operatorId, payload, onboardingToken);
 
-      setDocumentsState((prev) => ({
-        ...prev,
-        [docType]: {
-          id: savedDoc.id,
-          fileName: file.name,
-          fileSize: file.size,
-          fileUrl: mockStorageUrl,
-          status: savedDoc.verificationStatus || 'PENDING',
-        },
-      }));
+      setDocumentsState((prev) => {
+        const next = {
+          ...prev,
+          [docType]: {
+            id: savedDoc?.id,
+            fileName: file.name,
+            fileSize: file.size,
+            fileUrl: mockStorageUrl,
+            status: savedDoc?.verificationStatus || 'PENDING',
+          },
+        };
+        saveUploadedDocuments(next);
+        return next;
+      });
 
       setSuccessMessage(`✓ Uploaded ${docType.replace('_', ' ')} successfully.`);
     } catch (err) {
       console.error('Document Upload Error:', err);
-      setErrorMessage(err.message || `Failed to upload ${docType}. Please try again.`);
+      if (err.status === 401 || err.status === 403) {
+        setErrorMessage(SESSION_EXPIRED_MESSAGE);
+      } else {
+        setErrorMessage(err.message || `Failed to upload ${docType}. Please try again.`);
+      }
     } finally {
       setUploadingType(null);
     }
@@ -168,6 +143,7 @@ function OperatorKyc() {
     setDocumentsState((prev) => {
       const copy = { ...prev };
       delete copy[docType];
+      saveUploadedDocuments(copy);
       return copy;
     });
   };
@@ -187,17 +163,10 @@ function OperatorKyc() {
     setSubmitting(true);
 
     try {
-      // Update session storage
-      const finalRegSession = {
-        ...regData,
-        documentsSubmitted: true,
-      };
-      sessionStorage.setItem('agro_pending_operator_reg', JSON.stringify(finalRegSession));
+      updatePendingRegistration({ documentsSubmitted: true });
 
       setTimeout(() => {
-        navigate('/register/operator/pending', {
-          state: finalRegSession,
-        });
+        navigate('/register/operator/pending');
       }, 800);
     } catch (err) {
       setErrorMessage(err.message || 'Error finalizing document submission.');
@@ -211,7 +180,7 @@ function OperatorKyc() {
       <RevealItem>
         <div className="flex items-center gap-2 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-2">
           <FileCheck className="h-4 w-4 text-emerald-600" />
-          Step 3 of 4 • KYC & License Verification
+          Step 2 of 3 • KYC & License Verification
         </div>
         <h1 className="font-display text-[28px] font-bold tracking-tight text-slate-900 sm:text-[32px]">
           Submit Verification Documents
@@ -375,6 +344,17 @@ function OperatorKyc() {
       <RevealItem className="mt-6 text-center text-xs text-slate-400">
         All documents are transmitted securely via encrypted storage and used strictly for identity & license authorization.
       </RevealItem>
+
+      {errorMessage === SESSION_EXPIRED_MESSAGE && (
+        <RevealItem className="mt-4 text-center text-sm">
+          <Link
+            to="/login?role=OPERATOR"
+            className="font-bold text-emerald-700 underline-offset-2 hover:underline"
+          >
+            Go to Operator Login
+          </Link>
+        </RevealItem>
+      )}
     </RevealGroup>
   );
 }

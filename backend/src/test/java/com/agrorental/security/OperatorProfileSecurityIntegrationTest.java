@@ -13,6 +13,7 @@ import com.agrorental.operator.service.OperatorProfileService;
 import com.agrorental.security.jwt.JwtAuthenticationFilter;
 import com.agrorental.security.jwt.JwtService;
 import com.agrorental.security.principal.OperatorPrincipal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Operator Profile Security & JWT Filter Integration Tests")
 class OperatorProfileSecurityIntegrationTest {
+
+    /** Standalone MockMvc tests set principals on this thread; never leak them into later test classes. */
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     private MockMvc mockMvc;
 
@@ -123,6 +130,7 @@ class OperatorProfileSecurityIntegrationTest {
         when(jwtService.validateToken("valid.jwt.token")).thenReturn(true);
         when(jwtService.extractUserId("valid.jwt.token")).thenReturn(1L);
         when(jwtService.extractRole("valid.jwt.token")).thenReturn("OPERATOR");
+        when(jwtService.extractAccountType("valid.jwt.token")).thenReturn("OPERATOR");
         when(jwtService.extractMobileNumber("valid.jwt.token")).thenReturn("9876543210");
         when(operatorRepository.findById(1L)).thenReturn(Optional.of(operator));
 
@@ -174,6 +182,7 @@ class OperatorProfileSecurityIntegrationTest {
         when(jwtService.validateToken("token.inactive")).thenReturn(true);
         when(jwtService.extractUserId("token.inactive")).thenReturn(1L);
         when(jwtService.extractRole("token.inactive")).thenReturn("OPERATOR");
+        when(jwtService.extractAccountType("token.inactive")).thenReturn("OPERATOR");
         when(jwtService.extractMobileNumber("token.inactive")).thenReturn("9876543210");
         when(operatorRepository.findById(1L)).thenReturn(Optional.of(inactiveOperator));
 

@@ -19,6 +19,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     Optional<Payment> findByBookingId(Long bookingId);
 
+    /**
+     * Locks the booking's payment row (SELECT ... FOR UPDATE). Used after the booking row is locked, matching
+     * the booking -> payment lock order of payment processing, so refund initiation sees committed payments.
+     */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Payment p WHERE p.bookingId = :bookingId")
+    Optional<Payment> findByBookingIdForUpdate(@Param("bookingId") Long bookingId);
+
     List<Payment> findByFarmerIdOrderByPaymentDateDesc(Long farmerId);
 
     List<Payment> findByFarmerIdOrderByCreatedAtDesc(Long farmerId);

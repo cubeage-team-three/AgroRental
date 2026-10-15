@@ -8,11 +8,7 @@ export const paymentService = {
    * Processes a payment transaction for a booking.
    */
   async processPayment(paymentData) {
-    try {
-      return await apiClient.post('/farmers/payments', paymentData);
-    } catch {
-      return await apiClient.post('/payments', paymentData);
-    }
+    return await apiClient.post('/farmers/payments', paymentData);
   },
 
   async createPayment(payload) {
@@ -23,11 +19,7 @@ export const paymentService = {
    * Fetches payment details by primary key.
    */
   async getPaymentById(id) {
-    try {
-      return await apiClient.get(`/farmers/payments/${id}`);
-    } catch {
-      return await apiClient.get(`/payments/${id}`);
-    }
+    return await apiClient.get(`/farmers/payments/${id}`);
   },
 
   /**
@@ -41,13 +33,8 @@ export const paymentService = {
    * Retrieves transaction ledger for a farmer.
    */
   async getFarmerPayments(farmerId) {
-    try {
-      const res = await apiClient.get(`/farmers/payments/farmer/${farmerId}`);
-      return res?.data || res || [];
-    } catch {
-      const data = await apiClient.get(`/payments/farmer/${farmerId}`);
-      return data || [];
-    }
+    const res = await apiClient.get(`/farmers/payments/farmer/${farmerId}`);
+    return res?.data || res || [];
   },
 
   /**

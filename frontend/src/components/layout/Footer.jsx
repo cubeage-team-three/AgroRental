@@ -19,17 +19,16 @@ const footerLinks = {
     { label: "Soil Testing", to: "/" },
   ],
   Platform: [
-    { label: "Farmer Portal", to: "/register/farmer" },
-    { label: "Operator Portal", to: "/register/operator" },
-    { label: "Equipment Owner", to: "/register/partner" },
-    { label: "Admin Panel", to: "/login" },
+    { label: "Farmer Portal", to: "/register?role=farmer" },
+    { label: "Operator Portal", to: "/register?role=operator" },
+    { label: "Equipment Owner", to: "/register?role=partner" },
     { label: "WhatsApp Booking", to: "/" },
   ],
   Company: [
     { label: "About Us", to: "/" },
     { label: "Contact", to: "/" },
     { label: "Careers", to: "/" },
-    { label: "Partner with Us", to: "/register/partner" },
+    { label: "Partner with Us", to: "/register?role=partner" },
     { label: "Privacy Policy", to: "/" },
   ],
 };
@@ -161,7 +160,16 @@ function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col items-center justify-between gap-5 border-t border-white/10 pt-7 text-sm text-white/45 sm:flex-row">
-          <p>&copy; {new Date().getFullYear()} AgroRent. All rights reserved.</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:justify-start">
+            <p>&copy; {new Date().getFullYear()} AgroRent. All rights reserved.</p>
+            <span aria-hidden="true" className="text-white/20">•</span>
+            <Link
+              to="/admin/login"
+              className="text-xs text-white/40 transition-colors hover:text-white/75 focus:text-white/90 focus:outline-none focus:ring-2 focus:ring-lime-300/50 focus:ring-offset-2 focus:ring-offset-emerald-950 rounded px-1.5 py-0.5"
+            >
+              Admin Access
+            </Link>
+          </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a
               href="tel:1800XXXXXXX"

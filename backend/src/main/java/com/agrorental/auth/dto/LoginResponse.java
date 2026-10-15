@@ -18,6 +18,7 @@ public class LoginResponse {
     private Long userId;
     private Long farmerId;
     private Long partnerId;
+    private Long operatorId;
     private String businessName;
     private String fullName;
     private String mobileNumber;

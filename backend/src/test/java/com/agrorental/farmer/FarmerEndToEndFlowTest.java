@@ -37,6 +37,7 @@ import com.agrorental.payment.repository.PaymentRepository;
 import com.agrorental.payment.service.PaymentService;
 import com.agrorental.review.dto.ReviewResponse;
 import com.agrorental.review.service.ReviewService;
+import com.agrorental.security.principal.CurrentCaller;
 import com.agrorental.security.principal.FarmerPrincipal;
 import com.agrorental.tracking.dto.TrackingResponse;
 import com.agrorental.tracking.service.LiveTrackingService;
@@ -149,6 +150,18 @@ class FarmerEndToEndFlowTest {
                 .deliveryAddress("Manchar, Pune")
                 .build();
         booking.setId(400L);
+
+        FarmerPrincipal principal = FarmerPrincipal.builder().id(100L).role("FARMER").mobileNumber("9876543210").build();
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        principal, null, java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_FARMER"))
+                )
+        );
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -209,7 +222,7 @@ class FarmerEndToEndFlowTest {
         bookReq.setEndDate(LocalDate.now().plusDays(3));
         bookReq.setDeliveryAddress("Manchar, Pune");
 
-        when(equipmentRepository.findById(300L)).thenReturn(Optional.of(equipment));
+        when(equipmentRepository.findByIdForUpdate(300L)).thenReturn(Optional.of(equipment));
         when(bookingRepository.existsOverlappingBooking(eq(300L), any(), any(), any())).thenReturn(false);
         when(bookingMapper.toEntity(any(), any(), any(), any(), any())).thenReturn(booking);
         when(bookingRepository.save(any(Booking.class))).thenAnswer(i -> i.getArgument(0));
@@ -224,7 +237,7 @@ class FarmerEndToEndFlowTest {
         when(bookingRepository.findById(400L)).thenReturn(Optional.of(booking));
         when(assignmentRepository.findByBookingId(400L)).thenReturn(Optional.empty());
 
-        TrackingResponse trackingRes = liveTrackingService.getTrackingByBookingId(400L);
+        TrackingResponse trackingRes = liveTrackingService.getTrackingByBookingId(400L, new CurrentCaller(CurrentCaller.Kind.FARMER, 100L));
         assertNotNull(trackingRes);
         assertEquals("ON_THE_WAY", trackingRes.getStatus());
         assertNotNull(trackingRes.getLatitude());
@@ -233,7 +246,7 @@ class FarmerEndToEndFlowTest {
         booking.setStatus(BookingStatus.COMPLETED);
         equipment.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
 
-        TrackingResponse completedTrackingRes = liveTrackingService.getTrackingByBookingId(400L);
+        TrackingResponse completedTrackingRes = liveTrackingService.getTrackingByBookingId(400L, new CurrentCaller(CurrentCaller.Kind.FARMER, 100L));
         assertEquals("COMPLETED", completedTrackingRes.getStatus());
         assertEquals(100, completedTrackingRes.getWorkProgress());
     }

@@ -18,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 @RestController
 @RequestMapping("/api/upload")
-@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class FileUploadController {
 

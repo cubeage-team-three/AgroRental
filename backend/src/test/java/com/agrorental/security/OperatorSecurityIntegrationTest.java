@@ -13,6 +13,7 @@ import com.agrorental.operator.service.OperatorAuthService;
 import com.agrorental.security.jwt.JwtAuthenticationFilter;
 import com.agrorental.security.jwt.JwtService;
 import com.agrorental.security.principal.OperatorPrincipal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Operator Security & JWT Authentication Filter Tests")
 class OperatorSecurityIntegrationTest {
+
+    /** Standalone MockMvc tests set principals on this thread; never leak them into later test classes. */
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     private MockMvc mockMvc;
 
@@ -127,6 +134,7 @@ class OperatorSecurityIntegrationTest {
         when(jwtService.validateToken("valid.jwt.token")).thenReturn(true);
         when(jwtService.extractUserId("valid.jwt.token")).thenReturn(1L);
         when(jwtService.extractRole("valid.jwt.token")).thenReturn("OPERATOR");
+        when(jwtService.extractAccountType("valid.jwt.token")).thenReturn("OPERATOR");
         when(jwtService.extractMobileNumber("valid.jwt.token")).thenReturn("9876543210");
         when(operatorRepository.findById(1L)).thenReturn(Optional.of(operator));
 
@@ -179,6 +187,7 @@ class OperatorSecurityIntegrationTest {
         when(jwtService.validateToken("token.for.inactive")).thenReturn(true);
         when(jwtService.extractUserId("token.for.inactive")).thenReturn(1L);
         when(jwtService.extractRole("token.for.inactive")).thenReturn("OPERATOR");
+        when(jwtService.extractAccountType("token.for.inactive")).thenReturn("OPERATOR");
         when(jwtService.extractMobileNumber("token.for.inactive")).thenReturn("9876543210");
         when(operatorRepository.findById(1L)).thenReturn(Optional.of(inactiveOperator));
 

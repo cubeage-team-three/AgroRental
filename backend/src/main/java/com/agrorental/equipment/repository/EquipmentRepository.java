@@ -2,10 +2,15 @@ package com.agrorental.equipment.repository;
 
 import com.agrorental.equipment.entity.Equipment;
 import com.agrorental.equipment.enums.AvailabilityStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Spring Data JPA Repository interface for Equipment entity persistence and retrieval.
@@ -13,6 +18,14 @@ import java.util.List;
  */
 
 public interface EquipmentRepository extends JpaRepository<Equipment, Long>, JpaSpecificationExecutor<Equipment> {
+
+    /**
+     * Locks the equipment row (SELECT ... FOR UPDATE) so that overlap validation and reservation for the
+     * same equipment are serialized across concurrent booking creation/acceptance transactions.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT e FROM Equipment e WHERE e.id = :id")
+    Optional<Equipment> findByIdForUpdate(@Param("id") Long id);
 
     /**
      * Retrieves all equipment owned by a specific partner.

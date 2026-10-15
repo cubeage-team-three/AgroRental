@@ -1,12 +1,51 @@
 import { API_BASE_URL } from '../utils/constants';
 
 /**
+ * Window event fired after a 401 ended the stored session. `detail.role` is the role that was signed in;
+ * `detail.hadToken` is false when the request carried no token (the session was already gone).
+ */
+export const SESSION_EXPIRED_EVENT = 'agro:session-expired';
+
+const SESSION_KEYS = ['accessToken', 'agro_token', 'agro_user', 'partnerId', 'farmerId', 'operatorId'];
+
+// Credential checks answer 401 for a wrong password; that must not end an existing session
+const isCredentialEndpoint = (endpoint) => endpoint.includes('/login') || endpoint.includes('/register');
+
+function readStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem('agro_user') || 'null');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Ends the stored session after the backend answered 401 to a request that carried `rejectedToken`
+ * (null when it carried none). Skipped when the stored session uses a different token than the rejected
+ * one, e.g. the user signed in again while the request was in flight. Listeners (AuthContext) then send
+ * the user to the login page of the area they were in.
+ */
+export function expireSession(endpoint, rejectedToken) {
+  if (isCredentialEndpoint(endpoint)) return;
+  const storedUser = readStoredUser();
+  const storedTokens = [storedUser?.token, storedUser?.accessToken,
+    localStorage.getItem('agro_token'), localStorage.getItem('accessToken')].filter(Boolean);
+  if (rejectedToken ? !storedTokens.includes(rejectedToken) : storedTokens.length > 0) return;
+
+  SESSION_KEYS.forEach((key) => localStorage.removeItem(key));
+  window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT, {
+    detail: { role: storedUser?.role || null, hadToken: Boolean(rejectedToken) },
+  }));
+}
+
+/**
  * Core HTTP client for executing REST requests against the Spring Boot backend.
  * Automatically attaches Authorization Bearer JWT headers and handles errors cleanly.
  */
 export async function request(endpoint, options = {}) {
   const cleanEndpoint = endpoint.startsWith('/api') ? endpoint.substring(4) : endpoint;
-  const url = `${API_BASE_URL}${cleanEndpoint}`;
+  const formattedEndpoint = cleanEndpoint.startsWith('/') ? cleanEndpoint : `/${cleanEndpoint}`;
+  const url = `${API_BASE_URL}${formattedEndpoint}`;
 
   const defaultHeaders = {};
   if (!(options.body instanceof FormData)) {
@@ -59,11 +98,11 @@ export async function request(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      // If 401 Unauthorized, clear stored token on protected endpoint failures
-      if (response.status === 401 && !endpoint.includes('/login') && !endpoint.includes('/register')) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('agro_token');
-        localStorage.removeItem('agro_user');
+      // 401 on a protected endpoint: the session is no longer valid (expired, revoked or tampered).
+      // Judge the token actually sent: a caller may override Authorization (e.g. an onboarding token).
+      if (response.status === 401) {
+        const sentAuth = config.headers.Authorization || config.headers.authorization || '';
+        expireSession(endpoint, sentAuth.startsWith('Bearer ') ? sentAuth.slice(7) : null);
       }
 
       const errorMessage = (data && data.message) || `HTTP Error ${response.status}`;

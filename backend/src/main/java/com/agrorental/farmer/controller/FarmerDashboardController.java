@@ -7,6 +7,7 @@ import com.agrorental.security.principal.FarmerPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,9 +27,14 @@ public class FarmerDashboardController {
     }
 
     @GetMapping("/dashboard/{farmerId}")
-    public ResponseEntity<ApiResponse<FarmerDashboardResponse>> getDashboardById(@PathVariable Long farmerId) {
-        log.info("REST request to fetch dashboard data for farmer ID: {}", farmerId);
-        FarmerDashboardResponse dashboardData = farmerDashboardService.getDashboardData(farmerId);
+    public ResponseEntity<ApiResponse<FarmerDashboardResponse>> getDashboardById(@PathVariable Long farmerId,
+                                                                                 @AuthenticationPrincipal FarmerPrincipal principal) {
+        // The path ID is never trusted: a farmer may only load its own dashboard
+        if (principal == null || !principal.getId().equals(farmerId)) {
+            throw new AccessDeniedException("Access is denied. You can only view your own dashboard.");
+        }
+        log.info("REST request to fetch dashboard data for farmer ID: {}", principal.getId());
+        FarmerDashboardResponse dashboardData = farmerDashboardService.getDashboardData(principal.getId());
         return ResponseEntity.ok(ApiResponse.success("Farmer dashboard summary retrieved successfully.", dashboardData));
     }
 }

@@ -134,6 +134,7 @@ class OperatorReviewSecurityIntegrationTest {
         when(jwtService.validateToken(token)).thenReturn(true);
         when(jwtService.extractUserId(token)).thenReturn(10L);
         when(jwtService.extractRole(token)).thenReturn("FARMER");
+        when(jwtService.extractAccountType(token)).thenReturn("FARMER");
         when(jwtService.extractMobileNumber(token)).thenReturn("9876500001");
 
         com.agrorental.farmer.entity.Farmer farmer = new com.agrorental.farmer.entity.Farmer();
@@ -177,6 +178,7 @@ class OperatorReviewSecurityIntegrationTest {
         when(jwtService.validateToken(token)).thenReturn(true);
         when(jwtService.extractUserId(token)).thenReturn(1L);
         when(jwtService.extractRole(token)).thenReturn("OPERATOR");
+        when(jwtService.extractAccountType(token)).thenReturn("OPERATOR");
         when(jwtService.extractMobileNumber(token)).thenReturn("9876543220");
 
         Operator op = new Operator();

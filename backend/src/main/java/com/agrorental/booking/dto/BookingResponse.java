@@ -24,6 +24,9 @@ public class BookingResponse {
     private String equipmentCategory;
     private String primaryImageUrl;
     private Long partnerId;
+    private String partnerName;
+    private String partnerBusinessName;
+    private String partnerMobile;
     private Long operatorId;
     private String operatorName;
     private String operatorMobile;
@@ -34,6 +37,7 @@ public class BookingResponse {
     private String deliveryAddress;
     private String notes;
     private String rejectionReason;
+    private String paymentStatus;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -93,6 +97,9 @@ public class BookingResponse {
         private String equipmentCategory;
         private String primaryImageUrl;
         private Long partnerId;
+        private String partnerName;
+        private String partnerBusinessName;
+        private String partnerMobile;
         private Long operatorId;
         private String operatorName;
         private String operatorMobile;
@@ -103,6 +110,7 @@ public class BookingResponse {
         private String deliveryAddress;
         private String notes;
         private String rejectionReason;
+        private String paymentStatus;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
@@ -121,6 +129,9 @@ public class BookingResponse {
         public BookingResponseBuilder equipmentCategory(String equipmentCategory) { this.equipmentCategory = equipmentCategory; return this; }
         public BookingResponseBuilder primaryImageUrl(String primaryImageUrl) { this.primaryImageUrl = primaryImageUrl; return this; }
         public BookingResponseBuilder partnerId(Long partnerId) { this.partnerId = partnerId; return this; }
+        public BookingResponseBuilder partnerName(String partnerName) { this.partnerName = partnerName; return this; }
+        public BookingResponseBuilder partnerBusinessName(String partnerBusinessName) { this.partnerBusinessName = partnerBusinessName; return this; }
+        public BookingResponseBuilder partnerMobile(String partnerMobile) { this.partnerMobile = partnerMobile; return this; }
         public BookingResponseBuilder operatorId(Long operatorId) { this.operatorId = operatorId; return this; }
         public BookingResponseBuilder operatorName(String operatorName) { this.operatorName = operatorName; return this; }
         public BookingResponseBuilder operatorMobile(String operatorMobile) { this.operatorMobile = operatorMobile; return this; }
@@ -131,11 +142,17 @@ public class BookingResponse {
         public BookingResponseBuilder deliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; return this; }
         public BookingResponseBuilder notes(String notes) { this.notes = notes; return this; }
         public BookingResponseBuilder rejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; return this; }
+        public BookingResponseBuilder paymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; return this; }
         public BookingResponseBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
         public BookingResponseBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
 
         public BookingResponse build() {
-            return new BookingResponse(id, farmerId, farmerName, farmerMobile, farmerEmail, farmId, farmName, farmLocation, equipmentId, equipmentName, equipmentCategory, primaryImageUrl, partnerId, operatorId, operatorName, operatorMobile, startDate, endDate, totalCost, status, deliveryAddress, notes, rejectionReason, createdAt, updatedAt);
+            BookingResponse response = new BookingResponse(id, farmerId, farmerName, farmerMobile, farmerEmail, farmId, farmName, farmLocation, equipmentId, equipmentName, equipmentCategory, primaryImageUrl, partnerId, operatorId, operatorName, operatorMobile, startDate, endDate, totalCost, status, deliveryAddress, notes, rejectionReason, createdAt, updatedAt);
+            response.setPartnerName(partnerName);
+            response.setPartnerBusinessName(partnerBusinessName);
+            response.setPartnerMobile(partnerMobile);
+            response.setPaymentStatus(paymentStatus);
+            return response;
         }
     }
 
@@ -207,6 +224,18 @@ public class BookingResponse {
 
     public String getRejectionReason() { return rejectionReason; }
     public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+
+    public String getPartnerName() { return partnerName; }
+    public void setPartnerName(String partnerName) { this.partnerName = partnerName; }
+
+    public String getPartnerBusinessName() { return partnerBusinessName; }
+    public void setPartnerBusinessName(String partnerBusinessName) { this.partnerBusinessName = partnerBusinessName; }
+
+    public String getPartnerMobile() { return partnerMobile; }
+    public void setPartnerMobile(String partnerMobile) { this.partnerMobile = partnerMobile; }
+
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

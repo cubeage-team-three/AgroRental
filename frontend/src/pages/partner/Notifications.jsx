@@ -117,12 +117,12 @@ function PartnerNotifications() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 font-sans">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#142E1C] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Partner Notifications
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Real-time alerts for rental requests, payouts, and machinery schedules.
           </p>
         </div>
@@ -131,7 +131,7 @@ function PartnerNotifications() {
           <button
             type="button"
             onClick={fetchNotifications}
-            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+            className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition cursor-pointer"
             title="Refresh"
           >
             <RefreshCw className="w-4 h-4" />
@@ -141,7 +141,7 @@ function PartnerNotifications() {
             <button
               type="button"
               onClick={handleMarkAllAsRead}
-              className="text-xs font-bold text-[#3E7B27] hover:underline"
+              className="text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
             >
               Mark all as read
             </button>
@@ -151,7 +151,7 @@ function PartnerNotifications() {
             <button
               type="button"
               onClick={handleClearAll}
-              className="text-xs font-bold text-red-600 hover:underline border-l border-gray-300 pl-3 ml-1"
+              className="text-xs font-bold text-red-600 hover:underline border-l border-slate-200 pl-3 ml-1 cursor-pointer"
             >
               Clear All
             </button>
@@ -166,10 +166,10 @@ function PartnerNotifications() {
       )}
 
       {notifications.length === 0 ? (
-        <div className="bg-white border border-dashed border-gray-300 rounded-3xl p-12 text-center space-y-3">
-          <Bell className="w-12 h-12 text-gray-300 mx-auto" />
-          <h3 className="text-lg font-black text-gray-900">No Notifications</h3>
-          <p className="text-xs text-gray-500">Incoming equipment booking alerts will appear here.</p>
+        <div className="bg-white border border-dashed border-slate-300 rounded-3xl p-12 text-center space-y-3">
+          <Bell className="w-12 h-12 text-slate-300 mx-auto" />
+          <h3 className="text-lg font-black text-slate-900">No Notifications</h3>
+          <p className="text-xs text-slate-500">Incoming equipment booking alerts will appear here.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -181,8 +181,8 @@ function PartnerNotifications() {
                 onClick={() => !n.isRead && handleMarkAsRead(n.id)}
                 className={`p-5 rounded-3xl border transition-all flex flex-col sm:flex-row items-start sm:items-center gap-4 ${
                   !n.isRead
-                    ? 'cursor-pointer bg-white border-[#3E7B27]/40 shadow-sm'
-                    : 'bg-white/60 border-gray-100'
+                    ? 'cursor-pointer bg-white border-emerald-600/40 shadow-sm'
+                    : 'bg-white border-slate-200'
                 }`}
               >
                 <div className={`w-10 h-10 rounded-2xl ${bg} ${color} flex items-center justify-center shrink-0`}>
@@ -191,16 +191,16 @@ function PartnerNotifications() {
 
                 <div className="flex-1 space-y-1 w-full">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-extrabold text-gray-900">{n.title}</h4>
-                    <span className="text-[11px] text-gray-400 font-medium">
+                    <h4 className="text-sm font-extrabold text-slate-900">{n.title}</h4>
+                    <span className="text-[11px] text-slate-400 font-medium">
                       {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-600 font-medium leading-relaxed">{n.message}</p>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed">{n.message}</p>
                   
                   {n.bookingId && (
                     <div className="pt-1">
-                      <Link to="/partner/bookings" className="text-xs font-bold text-[#3E7B27] hover:underline flex items-center gap-1 w-fit">
+                      <Link to="/partner/bookings" className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 w-fit">
                         View Order Details <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
@@ -209,12 +209,12 @@ function PartnerNotifications() {
 
                 <div className="flex items-center gap-3 self-end sm:self-auto shrink-0 mt-2 sm:mt-0">
                   {!n.isRead && (
-                    <span className="w-2.5 h-2.5 bg-[#3E7B27] rounded-full shrink-0" title="Unread" />
+                    <span className="w-2.5 h-2.5 bg-emerald-600 rounded-full shrink-0" title="Unread" />
                   )}
                   <button
                     type="button"
                     onClick={(e) => handleDelete(e, n.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                     title="Delete Notification"
                   >
                     <Trash2 className="w-4 h-4" />

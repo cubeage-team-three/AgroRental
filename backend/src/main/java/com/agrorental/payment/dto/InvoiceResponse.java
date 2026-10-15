@@ -32,4 +32,9 @@ public class InvoiceResponse {
     private PaymentMethod paymentMethod;
     private LocalDateTime paymentDate;
     private String status;
+    private String bookingStatus;
+
+    // BIZ-20: refund state of this payment (NONE, REFUND_PENDING, REFUNDED or REFUND_FAILED)
+    private String refundStatus;
+    private BigDecimal refundAmount;
 }

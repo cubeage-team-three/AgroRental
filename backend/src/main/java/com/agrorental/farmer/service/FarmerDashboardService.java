@@ -48,9 +48,9 @@ public class FarmerDashboardService {
 
         List<Booking> allFarmerBookings = bookingRepository.findByFarmerId(farmerId);
 
+        // Active = still reserving the machine (PENDING through WORK_STARTED), the single BookingStatus definition
         int activeBookingsCount = (int) allFarmerBookings.stream()
-                .filter(b -> b.getStatus() == BookingStatus.PENDING || 
-                             b.getStatus() == BookingStatus.CONFIRMED)
+                .filter(b -> b.getStatus() != null && b.getStatus().isReserving())
                 .count();
 
         int completedBookingsCount = (int) allFarmerBookings.stream()
@@ -64,10 +64,10 @@ public class FarmerDashboardService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .doubleValue();
 
-        // Generate status message from active booking if present
+        // Generate status message from the most recent active booking, if any (never a rejected or closed one)
         String activeStatusMessage = allFarmerBookings.stream()
-                .filter(b -> b.getStatus() != BookingStatus.CANCELLED && b.getStatus() != BookingStatus.COMPLETED)
-                .findFirst()
+                .filter(b -> b.getStatus() != null && b.getStatus().isReserving())
+                .max(java.util.Comparator.comparing(Booking::getId, java.util.Comparator.nullsFirst(Long::compareTo)))
                 .map(b -> (b.getEquipment() != null ? b.getEquipment().getName() : "Equipment") + 
                           " Reservation #" + b.getId() + " is currently " + b.getStatus())
                 .orElse("No active bookings currently in progress.");

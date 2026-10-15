@@ -5,10 +5,12 @@ import com.agrorental.booking.dto.BookingResponse;
 import com.agrorental.booking.entity.BookingStatus;
 import com.agrorental.booking.service.BookingService;
 import com.agrorental.common.exception.GlobalExceptionHandler;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -30,6 +32,11 @@ class BookingControllerTest {
 
     @BeforeEach
     void setUp() {
+        // Guards against a leftover Authentication from another test class's
+        // SecurityContextHolder ThreadLocal state (JUnit reuses threads across
+        // test classes run sequentially), which would otherwise make this
+        // controller's per-ID ownership checks fire against a stale principal.
+        SecurityContextHolder.clearContext();
         bookingService = mock(BookingService.class);
         BookingController bookingController = new BookingController(bookingService);
         mockMvc = MockMvcBuilders
@@ -37,6 +44,17 @@ class BookingControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver())
                 .build();
+
+        com.agrorental.security.principal.FarmerPrincipal principal = com.agrorental.security.principal.FarmerPrincipal.builder()
+                .id(10L)
+                .role("FARMER")
+                .mobileNumber("9876543210")
+                .build();
+        SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        principal, null, java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_FARMER"))
+                )
+        );
 
         sampleResponse = BookingResponse.builder()
                 .id(100L)
@@ -49,6 +67,11 @@ class BookingControllerTest {
                 .totalCost(new BigDecimal("4500.00"))
                 .status(BookingStatus.CONFIRMED)
                 .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -78,9 +101,16 @@ class BookingControllerTest {
     @Test
     @DisplayName("GET /api/bookings/{id} - Returns HTTP 200 OK")
     void getBookingById_Returns200OK() throws Exception {
-        when(bookingService.getBookingById(100L)).thenReturn(sampleResponse);
+        // Booking detail is resolved for the authenticated caller; ownership itself is enforced in the service
+        com.agrorental.security.principal.FarmerPrincipal owner = com.agrorental.security.principal.FarmerPrincipal.builder()
+                .id(10L).role("FARMER").build();
+        when(bookingService.getBookingForCaller(org.mockito.ArgumentMatchers.eq(100L),
+                org.mockito.ArgumentMatchers.eq(new com.agrorental.security.principal.CurrentCaller(
+                        com.agrorental.security.principal.CurrentCaller.Kind.FARMER, 10L))))
+                .thenReturn(sampleResponse);
 
-        mockMvc.perform(get("/api/bookings/100"))
+        mockMvc.perform(get("/api/bookings/100").principal(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        owner, null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_FARMER")))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(100));
