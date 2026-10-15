@@ -125,6 +125,7 @@ class FarmerBookingCreationE2E002RegressionTest {
         lenient().when(jwtService.validateToken(TOKEN_FARMER_A)).thenReturn(true);
         lenient().when(jwtService.extractUserId(TOKEN_FARMER_A)).thenReturn(FARMER_A_ID);
         lenient().when(jwtService.extractRole(TOKEN_FARMER_A)).thenReturn("FARMER");
+        lenient().when(jwtService.extractAccountType(TOKEN_FARMER_A)).thenReturn("FARMER");
         lenient().when(jwtService.extractMobileNumber(TOKEN_FARMER_A)).thenReturn("9876543210");
         lenient().when(farmerRepository.findById(FARMER_A_ID)).thenReturn(Optional.of(farmerA));
 
@@ -140,6 +141,7 @@ class FarmerBookingCreationE2E002RegressionTest {
         lenient().when(jwtService.validateToken(TOKEN_PARTNER)).thenReturn(true);
         lenient().when(jwtService.extractUserId(TOKEN_PARTNER)).thenReturn(PARTNER_ID);
         lenient().when(jwtService.extractRole(TOKEN_PARTNER)).thenReturn("PARTNER");
+        lenient().when(jwtService.extractAccountType(TOKEN_PARTNER)).thenReturn("PARTNER");
         lenient().when(jwtService.extractMobileNumber(TOKEN_PARTNER)).thenReturn("9876543222");
         lenient().when(partnerRepository.findById(PARTNER_ID)).thenReturn(Optional.of(partner));
 
@@ -155,6 +157,7 @@ class FarmerBookingCreationE2E002RegressionTest {
         lenient().when(jwtService.validateToken(TOKEN_OPERATOR)).thenReturn(true);
         lenient().when(jwtService.extractUserId(TOKEN_OPERATOR)).thenReturn(OPERATOR_ID);
         lenient().when(jwtService.extractRole(TOKEN_OPERATOR)).thenReturn("OPERATOR");
+        lenient().when(jwtService.extractAccountType(TOKEN_OPERATOR)).thenReturn("OPERATOR");
         lenient().when(jwtService.extractMobileNumber(TOKEN_OPERATOR)).thenReturn("9876543233");
         lenient().when(operatorRepository.findById(OPERATOR_ID)).thenReturn(Optional.of(operator));
 
@@ -170,6 +173,7 @@ class FarmerBookingCreationE2E002RegressionTest {
         lenient().when(jwtService.validateToken(TOKEN_ADMIN)).thenReturn(true);
         lenient().when(jwtService.extractUserId(TOKEN_ADMIN)).thenReturn(ADMIN_ID);
         lenient().when(jwtService.extractRole(TOKEN_ADMIN)).thenReturn("ADMIN");
+        lenient().when(jwtService.extractAccountType(TOKEN_ADMIN)).thenReturn("USER");
         lenient().when(jwtService.extractMobileNumber(TOKEN_ADMIN)).thenReturn("9876543299");
         lenient().when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(adminUser));
 
@@ -726,7 +730,7 @@ class FarmerBookingCreationE2E002RegressionTest {
             com.agrorental.notification.service.NotificationService mockNotif = mock(com.agrorental.notification.service.NotificationService.class);
             com.agrorental.booking.mapper.BookingMapper mockMapper = mock(com.agrorental.booking.mapper.BookingMapper.class);
 
-            when(mockEquipRepo.findById(10L)).thenReturn(Optional.of(equipment));
+            when(mockEquipRepo.findByIdForUpdate(10L)).thenReturn(Optional.of(equipment));
             when(mockBookingRepo.existsOverlappingBooking(any(), any(), any(), any())).thenReturn(false);
             when(mockMapper.toEntity(any(), any(), any(), any(), any())).thenReturn(savedBooking);
             when(mockBookingRepo.save(any())).thenReturn(savedBooking);

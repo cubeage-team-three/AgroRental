@@ -75,6 +75,9 @@ public class PaymentController {
             @Valid @RequestBody PaymentCreateRequest request) {
         if (principal != null) {
             request.setFarmerId(principal.getId());
+        } else if (!isAdmin()) {
+            // Partners and operators can never create payments; the service also enforces booking ownership
+            throw new org.springframework.security.access.AccessDeniedException("Access is denied. Only the booking's farmer can make a payment.");
         }
         PaymentResponse response = paymentService.createPayment(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Payment created successfully", response));
@@ -85,9 +88,7 @@ public class PaymentController {
             @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
             @PathVariable Long id) {
         PaymentResponse response = paymentService.getPaymentById(id);
-        if (response != null) {
-            validateFarmerOwnershipOrAdmin(response.getFarmerId(), principal);
-        }
+        validatePaymentAccess(response, principal);
         return ResponseEntity.ok(ApiResponse.success("Payment retrieved successfully", response));
     }
 
@@ -96,9 +97,7 @@ public class PaymentController {
             @org.springframework.security.core.annotation.AuthenticationPrincipal com.agrorental.security.principal.FarmerPrincipal principal,
             @PathVariable Long bookingId) {
         PaymentResponse response = paymentService.getPaymentByBookingId(bookingId);
-        if (response != null) {
-            validateFarmerOwnershipOrAdmin(response.getFarmerId(), principal);
-        }
+        validatePaymentAccess(response, principal);
         return ResponseEntity.ok(ApiResponse.success("Payment retrieved successfully", response));
     }
 
@@ -119,9 +118,38 @@ public class PaymentController {
                 return;
             }
         }
-        if (principal != null && !principal.getId().equals(targetFarmerId)) {
+        if (principal == null || !principal.getId().equals(targetFarmerId)) {
             throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view another farmer's payment history.");
         }
+    }
+
+    private boolean isAdmin() {
+        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    /**
+     * A single payment is visible to the booking's farmer, the booking's partner, or an admin.
+     * Operators and every other caller are refused (no cross-role bypass).
+     */
+    private void validatePaymentAccess(PaymentResponse payment, com.agrorental.security.principal.FarmerPrincipal farmerPrincipal) {
+        if (payment == null || isAdmin()) {
+            return;
+        }
+        if (farmerPrincipal != null) {
+            if (farmerPrincipal.getId().equals(payment.getFarmerId())) {
+                return;
+            }
+        } else {
+            org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null
+                    && authentication.getPrincipal() instanceof com.agrorental.security.principal.PartnerPrincipal partner
+                    && partner.getId().equals(payment.getPartnerId())) {
+                return;
+            }
+        }
+        throw new org.springframework.security.access.AccessDeniedException("Access is denied. You are not authorized to view this payment.");
     }
 
     private void validatePartnerOwnershipOrAdmin(Long targetPartnerId, com.agrorental.security.principal.PartnerPrincipal principal) {

@@ -116,27 +116,31 @@ class StagingStartupSmokeTest {
     }
 
     @Test
-    @DisplayName("Verify Flyway migrations V1 and V1.1 applied successfully on disposable MySQL")
+    @DisplayName("Verify Flyway migrations V1, V1.1, V2 and V3 applied successfully on disposable MySQL")
     void verifyFlywayMigrationsApplied() {
         assertNotNull(flyway, "Flyway bean must be present");
 
         MigrationInfo current = flyway.info().current();
         assertNotNull(current, "Current migration must exist");
-        assertEquals("1.1", current.getVersion().getVersion(), "Current migration version must be 1.1");
-        assertTrue(current.getState().isApplied(), "Migration 1.1 must be applied");
+        assertEquals("3", current.getVersion().getVersion(), "Current migration version must be 3");
+        assertTrue(current.getState().isApplied(), "Migration 2 must be applied");
 
         MigrationInfo[] applied = flyway.info().applied();
-        assertEquals(2, applied.length, "Exactly 2 migrations (V1 and V1.1) must be applied");
+        assertEquals(4, applied.length, "Exactly 4 migrations (V1, V1.1, V2 and V3) must be applied");
         assertEquals("1", applied[0].getVersion().getVersion());
         assertEquals("1.1", applied[1].getVersion().getVersion());
+        assertEquals("2", applied[2].getVersion().getVersion());
+        assertEquals("3", applied[3].getVersion().getVersion());
 
-        // Verify exactly 23 entity tables plus flyway_schema_history exist
+        // Verify exactly 25 entity tables (incl. V2 payment_refunds, payment_refund_events) plus flyway_schema_history exist
         List<String> tables = jdbcTemplate.queryForList(
                 "SELECT table_name FROM information_schema.tables WHERE table_schema = 'agro_rental_staging_smoke'",
                 String.class
         );
         assertTrue(tables.contains("flyway_schema_history"));
-        assertEquals(24, tables.size(), "Database must contain 23 domain tables plus flyway_schema_history");
+        assertTrue(tables.containsAll(List.of("payment_refunds", "payment_refund_events", "account_password_reset_tokens")),
+                "V2 refund tables and the V3 reset-token table must exist");
+        assertEquals(27, tables.size(), "Database must contain 26 domain tables plus flyway_schema_history");
 
         // Verify uk_payments_booking_id unique constraint exists
         List<String> constraints = jdbcTemplate.queryForList(

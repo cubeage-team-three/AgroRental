@@ -4,6 +4,10 @@ export const loginUser = async (credentials) => {
   return await apiRequest('/auth/login', 'POST', credentials);
 };
 
+/**
+ * OTP login has been removed; the backend answers 400 "OTP login is no longer supported. Please use your
+ * password." Kept only because AuthContext still references it (see report: Requests to Lead).
+ */
 export const loginWithOtp = async (credentials) => {
   return await apiRequest('/auth/login-otp', 'POST', credentials);
 };

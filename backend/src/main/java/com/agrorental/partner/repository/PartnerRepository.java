@@ -22,6 +22,4 @@ public interface PartnerRepository extends JpaRepository<Partner, Long> {
     Optional<Partner> findByMobileNumberOrEmail(String mobileNumber, String email);
 
     Optional<Partner> findByMobileNumberOrEmailIgnoreCase(String mobileNumber, String email);
-
-    Optional<Partner> findByOtpCode(String otpCode);
 }

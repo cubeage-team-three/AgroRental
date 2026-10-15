@@ -1,5 +1,6 @@
 package com.agrorental.complaint.service;
 
+import com.agrorental.common.exception.ForbiddenException;
 import com.agrorental.common.exception.ResourceNotFoundException;
 import com.agrorental.complaint.dto.ComplaintCreateRequest;
 import com.agrorental.complaint.dto.ComplaintResponse;
@@ -64,6 +65,16 @@ public class ComplaintService {
     public ComplaintResponse getComplaintById(Long complaintId) {
         Complaint complaint = complaintRepository.findById(complaintId)
                 .orElseThrow(() -> new ResourceNotFoundException("Complaint not found with ID: " + complaintId));
+        return mapToResponse(complaint);
+    }
+
+    /** A farmer may view only its own complaints; checked before any complaint data is mapped. */
+    public ComplaintResponse getComplaintForFarmer(Long complaintId, Long farmerId) {
+        Complaint complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() -> new ResourceNotFoundException("Complaint not found with ID: " + complaintId));
+        if (farmerId == null || !farmerId.equals(complaint.getFarmerId())) {
+            throw new ForbiddenException("Access is denied. You are not authorized to view this complaint.");
+        }
         return mapToResponse(complaint);
     }
 

@@ -9,7 +9,6 @@ import {
   HardHat,
   Mail,
   MapPin,
-  MessageCircle,
   ShieldCheck,
   Upload,
   User,
@@ -24,6 +23,12 @@ import RoleSelector from '../../components/auth/RoleSelector';
 import AuthTextField from '../../components/auth/AuthTextField';
 import AuthPasswordField from '../../components/auth/AuthPasswordField';
 import AuthPrimaryButton from '../../components/auth/AuthPrimaryButton';
+import {
+  PASSWORD_POLICY_HINT,
+  getPasswordConfirmError,
+  getPasswordPolicyError,
+} from './passwordPolicy';
+import { saveOnboardingSession } from './operatorOnboardingSession';
 
 const SKILL_SUGGESTIONS = [
   'Tractor Operation',
@@ -75,6 +80,7 @@ function Register({ initialRole: propRole }) {
     mobileNumber: '',
     email: '',
     password: '',
+    confirmPassword: '',
     preferredLanguage: 'English',
   });
 
@@ -147,42 +153,44 @@ function Register({ initialRole: propRole }) {
       return;
     }
 
+    const passwordError =
+      getPasswordPolicyError(farmerForm.password) ||
+      getPasswordConfirmError(farmerForm.password, farmerForm.confirmPassword);
+    if (passwordError) {
+      setErrorMessage(passwordError);
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await registerFarmer({
+      await registerFarmer({
         fullName: farmerForm.fullName.trim(),
         mobileNumber: farmerForm.mobileNumber.trim(),
         email: farmerForm.email.trim() || null,
-        password: farmerForm.password || null,
+        password: farmerForm.password,
         preferredLanguage: farmerForm.preferredLanguage,
       });
 
-      setSuccessMessage('Registration successful! Redirecting to OTP verification...');
+      setSuccessMessage('Registration successful! Redirecting to log in...');
 
       setTimeout(() => {
-        navigate('/verify-otp', {
+        navigate('/login?role=FARMER', {
           state: {
-            mobileNumber: farmerForm.mobileNumber,
-            farmerData: response.data,
+            role: 'FARMER',
+            mobileOrEmail: farmerForm.mobileNumber.trim(),
+            message:
+              'Your farmer account is ready. Log in with your mobile number (or email) and the password you just created.',
           },
         });
       }, 1200);
     } catch (err) {
       console.error('Farmer registration error:', err);
-      if (err.message && err.message.includes('Network error')) {
-        setSuccessMessage('Demo Mode: Account draft created! Proceeding to OTP Verification...');
-        setTimeout(() => {
-          navigate('/verify-otp', {
-            state: {
-              mobileNumber: farmerForm.mobileNumber,
-              farmerData: { fullName: farmerForm.fullName, mobileNumber: farmerForm.mobileNumber },
-            },
-          });
-        }, 1200);
-      } else {
-        setErrorMessage(err.message || 'Failed to register farmer. Please try again.');
-      }
+      setErrorMessage(
+        err.status === 0 || (err.message && err.message.includes('Network error'))
+          ? 'Could not reach the server. Your account was not created; please try again.'
+          : err.message || 'Failed to register farmer. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -217,13 +225,11 @@ function Register({ initialRole: propRole }) {
       return;
     }
 
-    if (!partnerForm.password || partnerForm.password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.');
-      return;
-    }
-
-    if (partnerForm.password !== partnerForm.confirmPassword) {
-      setErrorMessage('Password and Confirm Password do not match.');
+    const partnerPasswordError =
+      getPasswordPolicyError(partnerForm.password) ||
+      getPasswordConfirmError(partnerForm.password, partnerForm.confirmPassword);
+    if (partnerPasswordError) {
+      setErrorMessage(partnerPasswordError);
       return;
     }
 
@@ -358,13 +364,11 @@ function Register({ initialRole: propRole }) {
       return;
     }
 
-    if (!operatorForm.password || operatorForm.password.length < 8) {
-      setErrorMessage('Password must contain at least 8 characters.');
-      return;
-    }
-
-    if (operatorForm.password !== operatorForm.confirmPassword) {
-      setErrorMessage('Password and Confirm Password do not match.');
+    const operatorPasswordError =
+      getPasswordPolicyError(operatorForm.password) ||
+      getPasswordConfirmError(operatorForm.password, operatorForm.confirmPassword);
+    if (operatorPasswordError) {
+      setErrorMessage(operatorPasswordError);
       return;
     }
 
@@ -384,37 +388,23 @@ function Register({ initialRole: propRole }) {
         profilePhoto: operatorForm.profilePhoto.trim() || null,
       };
 
-      const regResponse = await operatorService.registerOperator(payload);
-      const registeredOperator = regResponse?.data || regResponse;
-      const operatorId = registeredOperator?.id;
+      const registeredOperator = await operatorService.registerOperator(payload);
 
-      let devMockOtp = null;
-      try {
-        const otpRes = await operatorService.sendOperatorOtp(
-          operatorForm.mobileNumber.trim(),
-          'MOBILE_VERIFICATION'
-        );
-        devMockOtp = otpRes?.data?.devMockOtp || otpRes?.devMockOtp || null;
-      } catch (otpErr) {
-        console.warn('Initial OTP trigger:', otpErr.message);
-      }
-
-      const regSession = {
-        operatorId,
-        mobileNumber: operatorForm.mobileNumber.trim(),
+      // The onboarding token only allows uploading this operator's own KYC documents while the
+      // account is pending; it is kept in sessionStorage (never localStorage) and is not a login.
+      saveOnboardingSession({
+        operatorId: registeredOperator?.id,
+        onboardingToken: registeredOperator?.onboardingToken,
         fullName: operatorForm.fullName.trim(),
+        mobileNumber: operatorForm.mobileNumber.trim(),
         aadhaarNumber: operatorForm.aadhaarNumber.trim(),
         drivingLicenseNumber: operatorForm.drivingLicenseNumber.trim().toUpperCase(),
-        devMockOtp,
-      };
-      sessionStorage.setItem('agro_pending_operator_reg', JSON.stringify(regSession));
+      });
 
-      setSuccessMessage('✓ Account created! Redirecting to mobile verification...');
+      setSuccessMessage('✓ Account created! Next, upload your KYC documents...');
 
       setTimeout(() => {
-        navigate('/verify-otp/operator', {
-          state: regSession,
-        });
+        navigate('/register/operator/kyc');
       }, 1000);
     } catch (err) {
       console.error('Operator registration error:', err);
@@ -559,11 +549,26 @@ function Register({ initialRole: propRole }) {
               <AuthPasswordField
                 id="password"
                 name="password"
-                label="Password (Optional for OTP auth)"
+                label="Password"
                 value={farmerForm.password}
                 onChange={handleFarmerChange}
                 autoComplete="new-password"
+                aria-describedby="farmer-password-hint"
+                required
               />
+
+              <AuthPasswordField
+                id="confirmPassword"
+                name="confirmPassword"
+                label="Confirm Password"
+                value={farmerForm.confirmPassword}
+                onChange={handleFarmerChange}
+                autoComplete="new-password"
+                required
+              />
+              <p id="farmer-password-hint" className="-mt-2 pl-1 text-xs text-slate-500">
+                {PASSWORD_POLICY_HINT}
+              </p>
 
               <div>
                 <label
@@ -596,40 +601,10 @@ function Register({ initialRole: propRole }) {
                 </div>
               </div>
 
-              <AuthPrimaryButton loading={loading} loadingText="Sending OTP...">
-                {t('send_otp')}
+              <AuthPrimaryButton loading={loading} loadingText="Creating account...">
+                {t('register')}
               </AuthPrimaryButton>
             </form>
-          </RevealItem>
-
-          <RevealItem className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-white px-3 text-xs font-medium uppercase tracking-wide text-slate-400">
-                  or continue with
-                </span>
-              </div>
-            </div>
-          </RevealItem>
-
-          <RevealItem className="mt-4">
-            <button
-              type="button"
-              onClick={() => {
-                if (farmerForm.mobileNumber.length === 10) {
-                  handleFarmerSubmit({ preventDefault: () => {} });
-                } else {
-                  setErrorMessage('Please enter a 10-digit mobile number for WhatsApp OTP Login.');
-                }
-              }}
-              className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-all duration-200 ease-out hover:border-emerald-300 hover:bg-emerald-50 active:scale-[0.98]"
-            >
-              <MessageCircle className="h-[18px] w-[18px] text-[#25D366]" />
-              OTP Login (WhatsApp)
-            </button>
           </RevealItem>
 
           <RevealItem className="mt-8 text-center text-sm text-slate-500">
@@ -724,10 +699,11 @@ function Register({ initialRole: propRole }) {
               <AuthPasswordField
                 id="partnerPassword"
                 name="password"
-                label="Password (Min 6 Characters)"
+                label="Password"
                 value={partnerForm.password}
                 onChange={handlePartnerChange}
                 autoComplete="new-password"
+                aria-describedby="partner-password-hint"
                 required
               />
 
@@ -740,6 +716,9 @@ function Register({ initialRole: propRole }) {
                 autoComplete="new-password"
                 required
               />
+              <p id="partner-password-hint" className="-mt-2 pl-1 text-xs text-slate-500">
+                {PASSWORD_POLICY_HINT} Your account is activated after an administrator approves it.
+              </p>
 
               <AuthPrimaryButton loading={loading} loadingText="Submitting Partner Application...">
                 Register as Equipment Owner
@@ -883,11 +862,13 @@ function Register({ initialRole: propRole }) {
               <AuthPasswordField
                 id="opPassword"
                 name="password"
-                label="Account Password (Min 8 Characters)"
+                label="Account Password"
                 minLength={8}
+                maxLength={64}
                 value={operatorForm.password}
                 onChange={handleOperatorChange}
                 autoComplete="new-password"
+                aria-describedby="operator-password-hint"
                 required
               />
 
@@ -896,11 +877,16 @@ function Register({ initialRole: propRole }) {
                 name="confirmPassword"
                 label="Confirm Password"
                 minLength={8}
+                maxLength={64}
                 value={operatorForm.confirmPassword}
                 onChange={handleOperatorChange}
                 autoComplete="new-password"
                 required
               />
+              <p id="operator-password-hint" className="-mt-2 pl-1 text-xs text-slate-500">
+                {PASSWORD_POLICY_HINT} After registering you can upload your KYC documents; you can log in once an
+                administrator approves your account.
+              </p>
 
               <AuthTextField
                 id="opProfilePhoto"

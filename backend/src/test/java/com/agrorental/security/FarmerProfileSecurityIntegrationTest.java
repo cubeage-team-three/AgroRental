@@ -9,6 +9,7 @@ import com.agrorental.farmer.service.FarmerProfileService;
 import com.agrorental.security.jwt.JwtAuthenticationFilter;
 import com.agrorental.security.jwt.JwtService;
 import com.agrorental.security.principal.FarmerPrincipal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Farmer Profile Security & IDOR Authorization Tests")
 class FarmerProfileSecurityIntegrationTest {
+
+    /** Standalone MockMvc tests set principals on this thread; never leak them into later test classes. */
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     private MockMvc mockMvc;
 
@@ -115,6 +122,7 @@ class FarmerProfileSecurityIntegrationTest {
         when(jwtService.validateToken("token.farmerA")).thenReturn(true);
         when(jwtService.extractUserId("token.farmerA")).thenReturn(1L);
         when(jwtService.extractRole("token.farmerA")).thenReturn("FARMER");
+        when(jwtService.extractAccountType("token.farmerA")).thenReturn("FARMER");
         when(jwtService.extractMobileNumber("token.farmerA")).thenReturn("9876543210");
         when(farmerRepository.findById(1L)).thenReturn(Optional.of(farmerA));
 
@@ -150,6 +158,7 @@ class FarmerProfileSecurityIntegrationTest {
         when(jwtService.validateToken("token.farmerA")).thenReturn(true);
         when(jwtService.extractUserId("token.farmerA")).thenReturn(1L);
         when(jwtService.extractRole("token.farmerA")).thenReturn("FARMER");
+        when(jwtService.extractAccountType("token.farmerA")).thenReturn("FARMER");
         when(jwtService.extractMobileNumber("token.farmerA")).thenReturn("9876543210");
         when(farmerRepository.findById(1L)).thenReturn(Optional.of(farmerA));
 
@@ -174,6 +183,7 @@ class FarmerProfileSecurityIntegrationTest {
         when(jwtService.validateToken("token.farmerA")).thenReturn(true);
         when(jwtService.extractUserId("token.farmerA")).thenReturn(1L);
         when(jwtService.extractRole("token.farmerA")).thenReturn("FARMER");
+        when(jwtService.extractAccountType("token.farmerA")).thenReturn("FARMER");
         when(jwtService.extractMobileNumber("token.farmerA")).thenReturn("9876543210");
         when(farmerRepository.findById(1L)).thenReturn(Optional.of(farmerA));
 
@@ -201,6 +211,7 @@ class FarmerProfileSecurityIntegrationTest {
         when(jwtService.validateToken("token.farmerA")).thenReturn(true);
         when(jwtService.extractUserId("token.farmerA")).thenReturn(1L);
         when(jwtService.extractRole("token.farmerA")).thenReturn("FARMER");
+        when(jwtService.extractAccountType("token.farmerA")).thenReturn("FARMER");
         when(jwtService.extractMobileNumber("token.farmerA")).thenReturn("9876543210");
         when(farmerRepository.findById(1L)).thenReturn(Optional.of(farmerA));
 

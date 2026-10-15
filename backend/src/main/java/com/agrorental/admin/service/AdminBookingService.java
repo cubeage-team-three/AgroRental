@@ -11,16 +11,20 @@ import com.agrorental.booking.service.BookingService;
 import com.agrorental.equipment.entity.Equipment;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.payment.entity.PaymentStatus;
+import com.agrorental.payment.repository.PaymentRefundRepository;
 import com.agrorental.payment.repository.PaymentRepository;
+import com.agrorental.payment.service.RevenueCalculator;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -38,6 +42,10 @@ public class AdminBookingService {
 
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
+
+    /** Refund records (BIZ-20); headline revenue is net of completed refunds (see RevenueCalculator). */
+    @Autowired(required = false)
+    private PaymentRefundRepository paymentRefundRepository;
     private final PaymentRepository paymentRepository;
     private final BookingService bookingService;
 
@@ -77,7 +85,7 @@ public class AdminBookingService {
 
                 Join<Booking, Equipment> equipmentJoin = root.join("equipment", JoinType.LEFT);
                 searchPredicates.add(cb.like(cb.lower(equipmentJoin.get("name")), term));
-                searchPredicates.add(cb.like(cb.lower(equipmentJoin.get("modelNumber")), term));
+                searchPredicates.add(cb.like(cb.lower(equipmentJoin.get("model")), term));
 
                 Join<Booking, Partner> partnerJoin = root.join("partner", JoinType.LEFT);
                 searchPredicates.add(cb.like(cb.lower(partnerJoin.get("fullName")), term));
@@ -132,7 +140,8 @@ public class AdminBookingService {
                 BookingStatus.REJECTED
         ));
 
-        BigDecimal totalRevenue = paymentRepository.sumAmountByStatus(PaymentStatus.SUCCESS);
+        RevenueCalculator.Totals revenue = RevenueCalculator.platformTotals(
+                paymentRepository.sumAmountByStatus(PaymentStatus.SUCCESS), paymentRefundRepository);
         BigDecimal totalAmount = bookingRepository.sumTotalCostByStatusNotIn(List.of(
                 BookingStatus.CANCELLED,
                 BookingStatus.REJECTED
@@ -144,7 +153,14 @@ public class AdminBookingService {
                 .activeBookings(active)
                 .completedBookings(completed)
                 .cancelledBookings(cancelled)
-                .totalRevenue(totalRevenue != null ? totalRevenue : BigDecimal.ZERO)
+                .totalRevenue(revenue.netRevenue())
+                .grossCollected(revenue.grossCollected())
+                .refundsPendingAmount(revenue.refundsPendingAmount())
+                .refundsPendingCount(revenue.refundsPendingCount())
+                .refundsFailedAmount(revenue.refundsFailedAmount())
+                .refundsFailedCount(revenue.refundsFailedCount())
+                .refundsCompletedAmount(revenue.refundsCompletedAmount())
+                .refundsCompletedCount(revenue.refundsCompletedCount())
                 .totalAmount(totalAmount != null ? totalAmount : BigDecimal.ZERO)
                 .build();
     }
@@ -162,23 +178,26 @@ public class AdminBookingService {
 
     /**
      * Updates booking status or assigns an operator via existing lifecycle validation.
+     * Runs at READ COMMITTED (this transaction is the one BookingService joins) so the overlap check and the
+     * equipment availability recount see bookings committed by whoever held the equipment lock before.
      *
      * @param id Booking identifier
      * @param request Status update payload
      * @return Updated BookingResponse DTO
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponse updateBookingStatus(Long id, BookingStatusUpdateRequest request) {
         return bookingService.updateBookingStatus(id, request);
     }
 
     /**
      * Cancels an existing booking reservation, releasing equipment and cleaning up operator assignments.
+     * READ COMMITTED for the same reason as {@link #updateBookingStatus}.
      *
      * @param id Booking identifier
      * @return Updated BookingResponse DTO
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponse cancelBooking(Long id) {
         return bookingService.cancelBooking(id);
     }

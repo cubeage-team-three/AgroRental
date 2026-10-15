@@ -1,8 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { apiClient } from '../services/apiClient';
+import { apiClient, SESSION_EXPIRED_EVENT } from '../services/apiClient';
 import {
   loginUser as loginApi,
-  loginWithOtp as loginOtpApi,
   saveUserSession,
   logoutUser,
   getCurrentUser,
@@ -14,6 +13,22 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  // True after the backend rejected the stored session (401), until the next sign-in or logout;
+  // lets route guards tell "session expired" apart from "never signed in" / "logged out".
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  // apiClient/api.js clear storage on a 401 and fire this event; mirror it here so protected
+  // routes redirect to the right login page instead of rendering a signed-out console.
+  useEffect(() => {
+    const handleSessionExpired = (event) => {
+      setToken(null);
+      setUser(null);
+      // hadToken=false: the request went out without a session (already signed out elsewhere)
+      if (event.detail?.hadToken) setSessionExpired(true);
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, []);
 
   // Re-derives auth state from localStorage, and for farmers also re-fetches
   // the authoritative profile from the backend — farmer accounts verified via
@@ -34,6 +49,7 @@ export function AuthProvider({ children }) {
     // the network before it can render a real name/mobile/email.
     setToken(storedToken);
     setUser(storedUser);
+    setSessionExpired(false);
 
     if (storedUser.role === 'FARMER') {
       try {
@@ -69,12 +85,8 @@ export function AuthProvider({ children }) {
   const login = async (credentials) => {
     setIsLoading(true);
     try {
-      let response;
-      if (credentials.loginType === 'OTP') {
-        response = await loginOtpApi(credentials);
-      } else {
-        response = await loginApi(credentials);
-      }
+      // Password login only: OTP login is no longer supported by the backend
+      const response = await loginApi(credentials);
 
       const userData = response.data || response;
       saveUserSession(userData);
@@ -84,6 +96,7 @@ export function AuthProvider({ children }) {
 
       setToken(newToken);
       setUser(currentUser);
+      setSessionExpired(false);
 
       return response;
     } finally {
@@ -95,6 +108,7 @@ export function AuthProvider({ children }) {
     logoutUser();
     setToken(null);
     setUser(null);
+    setSessionExpired(false);
   };
 
   const value = {
@@ -103,6 +117,7 @@ export function AuthProvider({ children }) {
     token,
     role: user?.role || null,
     isAuthenticated: Boolean(token && user),
+    sessionExpired,
     isLoading,
     loading: isLoading, // alias for callers written against the older name
     login,

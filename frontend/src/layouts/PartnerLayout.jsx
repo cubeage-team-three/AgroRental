@@ -21,15 +21,22 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
-import { getCurrentUser, logoutUser, getPartnerId } from '../services/authService';
+import { getCurrentUser, getPartnerId } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import { partnerService } from '../services/partnerService';
 import { notificationService } from '../services/notificationService';
+import { useMobileDrawer, drawerPanelClasses, DRAWER_BACKDROP_CLASSES } from '../components/layout/useMobileDrawer';
+import { getLoginPath } from '../utils/auth';
 import agroRentLogo from '../assets/images/agrorent-logo.jpeg';
+
+const SIDEBAR_ID = 'partner-sidebar';
 
 function PartnerLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { logout } = useAuth();
+  // Below lg the sidebar is a drawer; it closes on navigation, Escape and when the viewport reaches lg
+  const drawer = useMobileDrawer();
   const [partner, setPartner] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -60,14 +67,9 @@ function PartnerLayout() {
     return () => window.removeEventListener('notificationsUpdated', fetchUnreadCount);
   }, [partnerId, location.pathname]);
 
-  // Close mobile drawer on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
-
   const handleLogout = () => {
-    logoutUser();
-    navigate('/login');
+    logout(); // clears storage and the AuthContext session, so guarded routes stop rendering
+    navigate(getLoginPath('PARTNER'));
   };
 
   const partnerName = partner?.fullName || currentUser?.fullName || 'Partner Owner';
@@ -78,7 +80,8 @@ function PartnerLayout() {
   const navItems = [
     { path: '/partner/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/partner/profile', label: 'Business Profile', icon: User },
-    { path: '/partner/equipment', label: 'My Equipment', icon: Tractor },
+    // `end`: not also highlighted on its sub-pages, which have their own entries
+    { path: '/partner/equipment', label: 'My Equipment', icon: Tractor, end: true },
     { path: '/partner/equipment/add', label: 'Add Equipment', icon: PlusCircle },
     { path: '/partner/equipment/availability', label: 'Fleet Availability', icon: ToggleLeft },
     { path: '/partner/bookings', label: 'Booking Requests', icon: CalendarCheck },
@@ -91,18 +94,19 @@ function PartnerLayout() {
     <div className="min-h-screen bg-[#F8FAF8] flex font-sans antialiased text-slate-800">
       
       {/* Mobile Drawer Backdrop */}
-      {mobileMenuOpen && (
-        <div
-          onClick={() => setMobileMenuOpen(false)}
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-xs transition-opacity"
-        />
+      {drawer.open && (
+        <div aria-hidden="true" onClick={drawer.closeDrawer} className={DRAWER_BACKDROP_CLASSES} />
       )}
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-[#0F382C] text-white flex flex-col justify-between p-4 shadow-xl border-r border-emerald-950/40 transition-transform duration-300 ease-in-out shrink-0 overflow-y-auto ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        id={SIDEBAR_ID}
+        aria-label="Partner Portal navigation"
+        className={`${drawerPanelClasses(drawer.open)} w-72 max-w-[85vw] bg-[#0F382C] text-white flex flex-col justify-between p-4 shadow-xl border-r border-emerald-950/40`}
+        onClick={(event) => {
+          // Any link used in the open drawer closes it, also one pointing at the current page
+          if (drawer.open && event.target.closest('a')) drawer.closeDrawer();
+        }}
       >
         <div className="space-y-5">
           
@@ -126,10 +130,13 @@ function PartnerLayout() {
 
             {/* Mobile close button */}
             <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="lg:hidden p-1.5 text-emerald-300 hover:text-white rounded-lg hover:bg-emerald-800/50"
+              ref={drawer.closeButtonRef}
+              type="button"
+              onClick={drawer.closeDrawer}
+              aria-label="Close navigation menu"
+              className="lg:hidden p-1.5 text-emerald-300 hover:text-white rounded-lg hover:bg-emerald-800/50 focus-visible:outline-2 focus-visible:outline-lime-400"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 
@@ -193,6 +200,7 @@ function PartnerLayout() {
                 <NavLink
                   key={item.path}
                   to={item.path}
+                  end={item.end}
                   className={({ isActive }) =>
                     `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 ${
                       isActive
@@ -241,19 +249,24 @@ function PartnerLayout() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        
+      {/* Page behind an open drawer is inert: no Tab stops or screen-reader access until it closes */}
+      <div className="flex-1 flex flex-col min-w-0" inert={drawer.open || undefined}>
+
         {/* Top Navbar */}
         <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
           
           {/* Mobile hamburger & Breadcrumb info */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setMobileMenuOpen(true)}
+              ref={drawer.menuButtonRef}
+              type="button"
+              onClick={drawer.openDrawer}
               className="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100"
-              aria-label="Open menu"
+              aria-label="Open navigation menu"
+              aria-expanded={drawer.open}
+              aria-controls={SIDEBAR_ID}
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5" aria-hidden="true" />
             </button>
 
             <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-500">

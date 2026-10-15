@@ -90,19 +90,6 @@ const HERO_CONTENT = {
     subtext:
       'Join 12,000+ verified operators earning steady income with live job alerts and fast payouts.',
   },
-  '/verify-otp/operator': {
-    image: operatorImage,
-    alt: 'Verified AgroRent equipment operator',
-    headline: (
-      <>
-        Secure Identity,
-        <br />
-        Instant Verification.
-      </>
-    ),
-    subtext:
-      'Verify your phone number with instant OTP to secure your machinery operations profile.',
-  },
   '/register/operator/kyc': {
     image: operatorImage,
     alt: 'Verified AgroRent equipment operator',
@@ -114,7 +101,7 @@ const HERO_CONTENT = {
       </>
     ),
     subtext:
-      'Upload your driving license and Aadhaar credentials for fast administrative review.',
+      'Upload your driving license and Aadhaar credentials for administrative review. You can sign in once approved.',
   },
   '/register/operator/pending': {
     image: operatorImage,

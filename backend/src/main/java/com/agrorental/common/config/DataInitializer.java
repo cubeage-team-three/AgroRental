@@ -147,6 +147,13 @@ public class DataInitializer implements CommandLineRunner {
             return false;
         }
 
+        // Mock accounts use well-known passwords, so require an explicitly activated 'dev' profile;
+        // the implicit spring.profiles.default=dev of an unprofiled deployment is not enough.
+        if (!DeploymentProfiles.isExplicitDevelopment(environment)) {
+            log.warn("Mock-data seeding requires the 'dev' profile to be explicitly active (e.g. SPRING_PROFILES_ACTIVE=dev). Skipping DataInitializer.");
+            return false;
+        }
+
         if (partnerRepository.count() > 0) {
             log.info("Database already seeded. Skipping DataInitializer.");
             return false;

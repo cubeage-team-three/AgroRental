@@ -173,10 +173,11 @@ class OperatorControllerTest {
         operator.setId(1L);
         OperatorSummaryResponse summary = OperatorSummaryResponse.builder().id(1L).fullName("Suresh").build();
 
-        when(operatorService.getAllOperators()).thenReturn(List.of(operator));
+        // Platform-wide operator directory: admin only (authorization itself is enforced in the service)
+        when(operatorService.getAllOperatorsForCaller(new com.agrorental.security.principal.CurrentCaller(com.agrorental.security.principal.CurrentCaller.Kind.ADMIN, null))).thenReturn(List.of(operator));
         when(operatorMapper.toSummaryResponseList(anyList())).thenReturn(List.of(summary));
 
-        mockMvc.perform(get("/api/operators"))
+        mockMvc.perform(get("/api/operators").principal(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("ADMIN_1", null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN")))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(1))
@@ -190,10 +191,11 @@ class OperatorControllerTest {
         operator.setId(2L);
         OperatorSummaryResponse summary = OperatorSummaryResponse.builder().id(2L).fullName("Ramesh").build();
 
-        when(operatorService.getAvailableOperators(any(), any(), any())).thenReturn(List.of(operator));
+        when(operatorService.getAvailableOperatorsForCaller(any(), any(), any(),
+                org.mockito.ArgumentMatchers.eq(new com.agrorental.security.principal.CurrentCaller(com.agrorental.security.principal.CurrentCaller.Kind.ADMIN, null)))).thenReturn(List.of(operator));
         when(operatorMapper.toSummaryResponseList(anyList())).thenReturn(List.of(summary));
 
-        mockMvc.perform(get("/api/operators/available"))
+        mockMvc.perform(get("/api/operators/available").principal(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("ADMIN_1", null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN")))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(2))
@@ -207,10 +209,11 @@ class OperatorControllerTest {
         operator.setId(3L);
         OperatorSummaryResponse summary = OperatorSummaryResponse.builder().id(3L).fullName("Mahesh").build();
 
-        when(operatorService.getOperatorsByPartner(10L)).thenReturn(List.of(operator));
+        // A partner's own roster, requested by that partner
+        when(operatorService.getOperatorsByPartnerForCaller(10L, new com.agrorental.security.principal.CurrentCaller(com.agrorental.security.principal.CurrentCaller.Kind.PARTNER, 10L))).thenReturn(List.of(operator));
         when(operatorMapper.toSummaryResponseList(anyList())).thenReturn(List.of(summary));
 
-        mockMvc.perform(get("/api/operators/partner/10"))
+        mockMvc.perform(get("/api/operators/partner/10").principal(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(com.agrorental.security.principal.PartnerPrincipal.builder().id(10L).role("PARTNER").build(), null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_PARTNER")))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(3))

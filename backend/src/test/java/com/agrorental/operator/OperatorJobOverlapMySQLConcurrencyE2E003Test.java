@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
@@ -58,6 +59,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest
 @EnabledIf("isDisposableMysqlRunning")
+// Intentional local MySQL run: the profile must be explicit (StartupSafetyValidator); same properties as the implicit dev default
+@ActiveProfiles("dev")
 @TestPropertySource(properties = {
     "spring.datasource.url=jdbc:mysql://127.0.0.1:33306/agrorental_test?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true",
     "spring.datasource.username=root",

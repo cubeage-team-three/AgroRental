@@ -2,6 +2,7 @@ package com.agrorental.booking.dto;
 
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
@@ -25,8 +26,11 @@ public class BookingCreateRequest {
     @FutureOrPresent(message = "End date must be today or in the future")
     private LocalDate endDate;
 
+    /** bookings.delivery_address is VARCHAR(255). */
+    @Size(max = 255, message = "Delivery address cannot exceed 255 characters")
     private String deliveryAddress;
 
+    @Size(max = 5000, message = "Notes cannot exceed 5000 characters")
     private String notes;
 
     public BookingCreateRequest() {}

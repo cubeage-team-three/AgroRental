@@ -21,6 +21,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 import java.io.IOException;
@@ -40,6 +41,8 @@ import static org.mockito.Mockito.*;
  */
 @SpringBootTest
 @EnabledIf("isDisposableMysqlRunning")
+// Intentional local MySQL run: the profile must be explicit (StartupSafetyValidator); same properties as the implicit dev default
+@ActiveProfiles("dev")
 @TestPropertySource(properties = {
     "spring.datasource.url=jdbc:mysql://localhost:33306/agro_rental_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
     "spring.datasource.username=root",

@@ -22,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,7 +79,7 @@ class PartnerServiceTest {
         request.setFullName("Rajesh Patel");
         request.setMobileNumber("9876543210");
         request.setEmail("rajesh.patel@example.com");
-        request.setPassword("plain_secret_pass");
+        request.setPassword("plain_secret_pass1");
 
         when(partnerRepository.existsByMobileNumber("9876543210"))
                 .thenReturn(false);
@@ -88,7 +87,7 @@ class PartnerServiceTest {
         when(partnerRepository.existsByEmail("rajesh.patel@example.com"))
                 .thenReturn(false);
 
-        when(passwordEncoder.encode("plain_secret_pass"))
+        when(passwordEncoder.encode("plain_secret_pass1"))
                 .thenReturn("encoded_secret_pass");
 
         when(partnerRepository.save(any(Partner.class)))
@@ -119,7 +118,7 @@ class PartnerServiceTest {
 
         request.setFullName("Rajesh Patel");
         request.setMobileNumber("9876543210");
-        request.setPassword("secret");
+        request.setPassword("secret123");
 
         when(partnerRepository.existsByMobileNumber("9876543210"))
                 .thenReturn(true);
@@ -269,154 +268,104 @@ class PartnerServiceTest {
     }
 
     // =========================================================
-    // OTP - SEND
+    // OTP (RETIRED) AND PASSWORD POLICY
     // =========================================================
 
     @Test
-    @DisplayName("Should send OTP successfully")
-    void shouldSendOtp() {
-
-        testPartner.setOtpVerified(false);
-
-        when(partnerRepository.findById(1L))
-                .thenReturn(Optional.of(testPartner));
-
-        when(partnerRepository.save(any(Partner.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        String otp = partnerService.sendOtp(1L);
-
-        assertThat(otp).isNotNull();
-        assertThat(otp).matches("\\d{6}");
-
-        assertThat(testPartner.getOtpCode())
-                .isEqualTo(otp);
-
-        assertThat(testPartner.getOtpExpiry())
-                .isNotNull();
-
-        verify(partnerRepository).save(testPartner);
+    @DisplayName("Partner OTP is retired: PartnerService no longer generates, stores or verifies OTP codes")
+    void partnerOtpIsRetired() {
+        assertThat(java.util.Arrays.stream(PartnerService.class.getDeclaredMethods())
+                .map(java.lang.reflect.Method::getName)
+                .filter(name -> name.toLowerCase().contains("otp")))
+                .isEmpty();
+        assertThat(java.util.Arrays.stream(Partner.class.getDeclaredFields())
+                .map(java.lang.reflect.Field::getName))
+                .doesNotContain("otpCode", "otpExpiry")
+                .contains("otpVerified");
     }
 
-    // =========================================================
-    // OTP - VERIFY
-    // =========================================================
-
     @Test
-    @DisplayName("Should verify OTP successfully")
-    void shouldVerifyOtp() {
+    @DisplayName("Registration enforces the shared password policy before touching the database")
+    void registrationRejectsWeakPassword() {
+        for (String weak : new String[]{"short1", "onlyletters", "1234567890", "        ", "a1".repeat(33)}) {
+            PartnerRegistrationRequest request = new PartnerRegistrationRequest();
+            request.setFullName("Weak Password");
+            request.setMobileNumber("9876500000");
+            request.setPassword(weak);
 
-        testPartner.setOtpVerified(false);
-        testPartner.setOtpCode("654321");
-        testPartner.setOtpExpiry(
-                LocalDateTime.now().plusMinutes(5)
-        );
-
-        when(partnerRepository.findById(1L))
-                .thenReturn(Optional.of(testPartner));
-
-        when(partnerRepository.save(any(Partner.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        PartnerProfileResponse response =
-                partnerService.verifyOtp(1L, "654321");
-
-        assertThat(response).isNotNull();
-
-        assertThat(response.isOtpVerified())
-                .isTrue();
-
-        assertThat(testPartner.isOtpVerified())
-                .isTrue();
-
-        assertThat(testPartner.getOtpCode())
-                .isNull();
-
-        assertThat(testPartner.getOtpExpiry())
-                .isNull();
-
-        verify(partnerRepository).save(testPartner);
+            assertThatThrownBy(() -> partnerService.registerPartner(request))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessage(com.agrorental.auth.service.PasswordPolicy.REQUIREMENTS_MESSAGE);
+        }
+        org.mockito.Mockito.verifyNoInteractions(partnerRepository, passwordEncoder);
     }
 
-    // =========================================================
-    // OTP - INVALID
-    // =========================================================
-
     @Test
-    @DisplayName("Should reject invalid OTP")
-    void shouldRejectInvalidOtp() {
+    @DisplayName("Password change enforces the shared password policy")
+    void passwordChangeRejectsWeakPassword() {
+        when(partnerRepository.findById(1L)).thenReturn(Optional.of(testPartner));
+        when(passwordEncoder.matches("current_pass_1", "encoded_secret_pass")).thenReturn(true);
+        when(passwordEncoder.matches("allletters", "encoded_secret_pass")).thenReturn(false);
 
-        testPartner.setOtpVerified(false);
-        testPartner.setOtpCode("654321");
-        testPartner.setOtpExpiry(
-                LocalDateTime.now().plusMinutes(5)
-        );
-
-        when(partnerRepository.findById(1L))
-                .thenReturn(Optional.of(testPartner));
-
-        assertThatThrownBy(() ->
-                partnerService.verifyOtp(1L, "999999"))
+        assertThatThrownBy(() -> partnerService.changePartnerPassword(1L,
+                PartnerChangePasswordRequest.builder().currentPassword("current_pass_1").newPassword("allletters").build()))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid OTP");
-    }
-
-    // =========================================================
-    // OTP - EXPIRED
-    // =========================================================
-
-    @Test
-    @DisplayName("Should reject expired OTP")
-    void shouldRejectExpiredOtp() {
-
-        testPartner.setOtpVerified(false);
-        testPartner.setOtpCode("654321");
-        testPartner.setOtpExpiry(
-                LocalDateTime.now().minusMinutes(1)
-        );
-
-        when(partnerRepository.findById(1L))
-                .thenReturn(Optional.of(testPartner));
-
-        assertThatThrownBy(() ->
-                partnerService.verifyOtp(1L, "654321"))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("OTP has expired");
-    }
-
-    // =========================================================
-    // OTP - RESEND
-    // =========================================================
-
-    @Test
-    @DisplayName("Should resend OTP successfully")
-    void shouldResendOtp() {
-
-        testPartner.setOtpVerified(false);
-
-        when(partnerRepository.findById(1L))
-                .thenReturn(Optional.of(testPartner));
-
-        when(partnerRepository.save(any(Partner.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        String otp = partnerService.resendOtp(1L);
-
-        assertThat(otp).isNotNull();
-        assertThat(otp).matches("\\d{6}");
-
-        assertThat(testPartner.getOtpCode())
-                .isEqualTo(otp);
-
-        assertThat(testPartner.getOtpExpiry())
-                .isNotNull();
-
-        verify(partnerRepository).save(testPartner);
+                .hasMessage(com.agrorental.auth.service.PasswordPolicy.REQUIREMENTS_MESSAGE);
+        verify(partnerRepository, org.mockito.Mockito.never()).save(any(Partner.class));
     }
 
     // =========================================================
     // DASHBOARD
     // =========================================================
+
+    @Test
+    @DisplayName("Dashboard counts AVAILABLE and BOOKED (not disabled) machines as active, and only this partner's approved active operators")
+    void dashboardCountsMachinesInServiceAndOwnOperators() {
+        com.agrorental.equipment.repository.EquipmentRepository equipmentRepository =
+                org.mockito.Mockito.mock(com.agrorental.equipment.repository.EquipmentRepository.class);
+        com.agrorental.operator.repository.OperatorRepository operatorRepository =
+                org.mockito.Mockito.mock(com.agrorental.operator.repository.OperatorRepository.class);
+        PartnerService service = new PartnerService(partnerRepository, passwordEncoder, equipmentRepository,
+                null, null, null, operatorRepository);
+
+        java.util.List<com.agrorental.equipment.entity.Equipment> fleet = java.util.List.of(
+                machine(com.agrorental.equipment.enums.AvailabilityStatus.AVAILABLE, false),
+                machine(com.agrorental.equipment.enums.AvailabilityStatus.BOOKED, false),
+                machine(com.agrorental.equipment.enums.AvailabilityStatus.BOOKED, false),
+                machine(com.agrorental.equipment.enums.AvailabilityStatus.AVAILABLE, true),
+                machine(com.agrorental.equipment.enums.AvailabilityStatus.UNDER_MAINTENANCE, false),
+                machine(com.agrorental.equipment.enums.AvailabilityStatus.INACTIVE, false));
+        when(partnerRepository.findById(1L)).thenReturn(Optional.of(testPartner));
+        when(equipmentRepository.findByPartnerId(1L)).thenReturn(fleet);
+        when(operatorRepository.findByPartnerId(1L)).thenReturn(java.util.List.of(
+                operator(com.agrorental.operator.entity.OperatorStatus.APPROVED, true),
+                operator(com.agrorental.operator.entity.OperatorStatus.APPROVED, true),
+                operator(com.agrorental.operator.entity.OperatorStatus.APPROVED, false),
+                operator(com.agrorental.operator.entity.OperatorStatus.PENDING, true),
+                operator(com.agrorental.operator.entity.OperatorStatus.REJECTED, false)));
+
+        PartnerDashboardResponse dashboard = service.getPartnerDashboard(1L).orElseThrow();
+
+        assertThat(dashboard.getTotalMachines()).isEqualTo(6);
+        assertThat(dashboard.getActiveMachines()).isEqualTo(3);
+        assertThat(dashboard.getActiveOperators()).isEqualTo(2);
+        org.mockito.Mockito.verify(operatorRepository, org.mockito.Mockito.never())
+                .findByStatus(com.agrorental.operator.entity.OperatorStatus.APPROVED);
+    }
+
+    private static com.agrorental.equipment.entity.Equipment machine(
+            com.agrorental.equipment.enums.AvailabilityStatus status, boolean disabled) {
+        return com.agrorental.equipment.entity.Equipment.builder().name("Machine " + status)
+                .availabilityStatus(status).isDisabled(disabled).build();
+    }
+
+    private static com.agrorental.operator.entity.Operator operator(
+            com.agrorental.operator.entity.OperatorStatus status, boolean active) {
+        com.agrorental.operator.entity.Operator operator = com.agrorental.operator.entity.Operator.builder()
+                .fullName("Fleet Operator").status(status).build();
+        operator.setActive(active);
+        return operator;
+    }
 
     @Test
     @DisplayName("Should return partner dashboard")

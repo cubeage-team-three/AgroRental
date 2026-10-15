@@ -1,19 +1,8 @@
 import { apiRequest } from './api';
 
+/** Registers a farmer with a password; the account is active immediately (no OTP step). */
 export const registerFarmer = async (farmerData) => {
   return await apiRequest('/farmers/register', 'POST', farmerData);
-};
-
-export const sendOtp = async (mobileNumber) => {
-  return await apiRequest('/farmers/send-otp', 'POST', { mobileNumber });
-};
-
-export const verifyOtp = async (mobileNumber, otp) => {
-  return await apiRequest('/farmers/verify-otp', 'POST', { mobileNumber, otp });
-};
-
-export const resendOtp = async (mobileNumber) => {
-  return await apiRequest('/farmers/resend-otp', 'POST', { mobileNumber });
 };
 
 export const getFarmerProfile = async (farmerId) => {

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 import java.io.IOException;
@@ -18,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @EnabledIf("isDisposableMysqlRunning")
+// Intentional local MySQL run: the profile must be explicit (StartupSafetyValidator); same properties as the implicit dev default
+@ActiveProfiles("dev")
 @TestPropertySource(properties = {
     "spring.datasource.url=jdbc:mysql://localhost:33306/agro_rental_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
     "spring.datasource.username=root",
@@ -56,14 +59,14 @@ class FlywayMigrationValidationTest {
 
         MigrationInfo currentMigration = flyway.info().current();
         assertNotNull(currentMigration, "A current migration must be registered in Flyway");
-        assertEquals("1.1", currentMigration.getVersion().getVersion(), "Migration version should be 1.1");
-        assertEquals("add unique constraint payments booking id", currentMigration.getDescription(), "Migration description should match");
+        assertEquals("3", currentMigration.getVersion().getVersion(), "Migration version should be 3");
+        assertEquals("account password reset tokens", currentMigration.getDescription(), "Migration description should match");
         assertTrue(currentMigration.getState().isApplied(), "Migration should be in APPLIED state");
 
         MigrationInfo[] appliedMigrations = flyway.info().applied();
-        assertEquals(2, appliedMigrations.length, "Exactly 2 migrations (V1 and V1.1) should be applied");
+        assertEquals(4, appliedMigrations.length, "Exactly 4 migrations (V1, V1.1, V2 and V3) should be applied");
 
-        // Verify that all 23 domain tables + flyway_schema_history exist
+        // Verify that all 25 domain tables + flyway_schema_history exist
         List<String> tables = jdbcTemplate.queryForList(
             "SELECT table_name FROM information_schema.tables WHERE table_schema = 'agro_rental_test'",
             String.class
@@ -77,7 +80,11 @@ class FlywayMigrationValidationTest {
             "live_tracking", "notifications", "operator_documents", "operator_job_assignments",
             "operator_job_pause_intervals", "operator_locations", "operator_otps",
             "operator_reviews", "operators", "partners", "password_reset_tokens",
-            "payments", "reviews", "users"
+            "payments", "reviews", "users",
+            // V2 (BIZ-20)
+            "payment_refunds", "payment_refund_events",
+            // V3 (password reset tokens, hashed)
+            "account_password_reset_tokens"
         );
 
         for (String expectedTable : expectedTables) {
@@ -87,7 +94,7 @@ class FlywayMigrationValidationTest {
             );
         }
 
-        assertEquals(24, tables.size(), "Database must contain exactly 23 entity tables plus flyway_schema_history");
+        assertEquals(27, tables.size(), "Database must contain exactly 26 entity tables plus flyway_schema_history");
 
         // Verify unique constraint uk_payments_booking_id exists in payments table
         List<String> constraints = jdbcTemplate.queryForList(
@@ -96,6 +103,102 @@ class FlywayMigrationValidationTest {
             String.class
         );
         assertEquals(1, constraints.size(), "uk_payments_booking_id unique constraint must exist on payments table");
+
+        // V2: one refund obligation per payment, one refund per transfer reference, refunds tied to real payments
+        List<String> refundConstraints = jdbcTemplate.queryForList(
+            "SELECT constraint_name FROM information_schema.table_constraints " +
+            "WHERE table_schema = 'agro_rental_test' AND table_name = 'payment_refunds'",
+            String.class
+        );
+        // V3: a reset-token hash can exist only once
+        List<String> resetTokenConstraints = jdbcTemplate.queryForList(
+            "SELECT constraint_name FROM information_schema.table_constraints " +
+            "WHERE table_schema = 'agro_rental_test' AND table_name = 'account_password_reset_tokens'",
+            String.class
+        );
+        assertTrue(resetTokenConstraints.contains("uk_account_password_reset_tokens_token_hash"),
+            "account_password_reset_tokens must keep token hashes unique: " + resetTokenConstraints);
+        assertTrue(refundConstraints.containsAll(List.of(
+                "uk_payment_refunds_payment_id", "uk_payment_refunds_transfer_reference", "fk_payment_refunds_payment")),
+            "payment_refunds constraints must exist: " + refundConstraints);
+    }
+
+    @Test
+    void testRefundTableRejectsSecondObligationForSamePaymentAndDanglingPayment() {
+        Long testBookingId = 88882L;
+        jdbcTemplate.update("DELETE FROM payment_refunds WHERE booking_id = ?", testBookingId);
+        jdbcTemplate.update("DELETE FROM payments WHERE booking_id = ?", testBookingId);
+        jdbcTemplate.update(
+            "INSERT INTO payments (created_at, updated_at, is_active, version, booking_id, farmer_id, amount, payment_method, payment_status, payment_date, transaction_id, invoice_reference) " +
+            "VALUES (NOW(6), NOW(6), 1, 0, ?, 1, 1500.00, 'UPI', 'SUCCESS', NOW(6), 'TXN-TEST-R1', 'INV-TEST-R1')",
+            testBookingId
+        );
+        Long paymentId = jdbcTemplate.queryForObject("SELECT id FROM payments WHERE booking_id = ?", Long.class, testBookingId);
+        String insertRefund = "INSERT INTO payment_refunds (created_at, updated_at, is_active, version, payment_id, booking_id, farmer_id, amount, status, initiation_reason, initiated_at, initiated_by, attempt_count) " +
+            "VALUES (NOW(6), NOW(6), 1, 0, ?, ?, 1, 1500.00, 'REFUND_PENDING', 'test', NOW(6), 'TEST', 1)";
+
+        jdbcTemplate.update(insertRefund, paymentId, testBookingId);
+        assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
+            () -> jdbcTemplate.update(insertRefund, paymentId, testBookingId), "A second refund for the same payment must be rejected");
+        assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
+            () -> jdbcTemplate.update(insertRefund, 987654321L, testBookingId), "A refund must reference an existing payment");
+        assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment_refunds WHERE booking_id = ?", Integer.class, testBookingId));
+        // The original payment row is untouched by refund tracking
+        assertEquals("SUCCESS", jdbcTemplate.queryForObject("SELECT payment_status FROM payments WHERE id = ?", String.class, paymentId));
+
+        jdbcTemplate.update("DELETE FROM payment_refunds WHERE booking_id = ?", testBookingId);
+        jdbcTemplate.update("DELETE FROM payments WHERE booking_id = ?", testBookingId);
+    }
+
+    /**
+     * Upgrade path: a database already at V1.1 holding payments is migrated to V2 in a separate disposable schema.
+     * V2 is additive, so every existing payment row is preserved unchanged and has no refund row (refund status NONE).
+     */
+    @Test
+    void testUpgradeFromV11WithExistingPaymentsPreservesDataAndCreatesNoRefunds() {
+        String upgradeSchema = "agro_rental_upgrade_test";
+        String url = "jdbc:mysql://localhost:33306/" + upgradeSchema
+            + "?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+        org.springframework.jdbc.datasource.DriverManagerDataSource ds =
+            new org.springframework.jdbc.datasource.DriverManagerDataSource(url, "root", "root");
+        JdbcTemplate upgradeJdbc = new JdbcTemplate(ds);
+        try {
+            Flyway v11 = Flyway.configure().dataSource(ds).locations("classpath:db/migration")
+                .cleanDisabled(false).target("1.1").load();
+            v11.clean();
+            v11.migrate();
+            assertEquals("1.1", v11.info().current().getVersion().getVersion());
+
+            upgradeJdbc.update(
+                "INSERT INTO payments (created_at, updated_at, is_active, version, booking_id, farmer_id, partner_id, amount, payment_method, payment_status, payment_date, transaction_id, invoice_reference) " +
+                "VALUES (NOW(6), NOW(6), 1, 0, 501, 11, 21, 5000.00, 'UPI', 'SUCCESS', NOW(6), 'TXN-UPG-1', 'INV-UPG-1'), " +
+                "       (NOW(6), NOW(6), 1, 0, 502, 12, 21, 7500.00, 'NET_BANKING', 'FAILED', NOW(6), 'TXN-UPG-2', 'INV-UPG-2')");
+            List<java.util.Map<String, Object>> before = upgradeJdbc.queryForList(
+                "SELECT id, booking_id, amount, payment_status, transaction_id FROM payments ORDER BY id");
+
+            Flyway v2 = Flyway.configure().dataSource(ds).locations("classpath:db/migration").target("2").load();
+            assertEquals(1, v2.migrate().migrationsExecuted, "Only V2 must run on the upgrade");
+            assertEquals("2", v2.info().current().getVersion().getVersion());
+
+            assertEquals(before, upgradeJdbc.queryForList(
+                "SELECT id, booking_id, amount, payment_status, transaction_id FROM payments ORDER BY id"),
+                "Existing payments must be preserved exactly");
+            assertEquals(0, upgradeJdbc.queryForObject("SELECT COUNT(*) FROM payment_refunds", Integer.class),
+                "No refunds are backfilled: existing payments report refund status NONE");
+            assertEquals(0, upgradeJdbc.queryForObject("SELECT COUNT(*) FROM payment_refund_events", Integer.class));
+
+            // ...and V2 -> V3 (hashed password-reset tokens) is additive too: only V3 runs, payments untouched
+            Flyway v3 = Flyway.configure().dataSource(ds).locations("classpath:db/migration").load();
+            assertEquals(1, v3.migrate().migrationsExecuted, "Only V3 must run on top of V2");
+            assertEquals("3", v3.info().current().getVersion().getVersion());
+            assertEquals(before, upgradeJdbc.queryForList(
+                "SELECT id, booking_id, amount, payment_status, transaction_id FROM payments ORDER BY id"),
+                "Existing payments must still be preserved exactly after V3");
+            assertEquals(0, upgradeJdbc.queryForObject("SELECT COUNT(*) FROM account_password_reset_tokens", Integer.class),
+                "No reset tokens are created by the migration");
+        } finally {
+            upgradeJdbc.execute("DROP DATABASE IF EXISTS " + upgradeSchema);
+        }
     }
 
     @Test

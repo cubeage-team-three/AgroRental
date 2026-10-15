@@ -132,16 +132,16 @@ class LoginCorsIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/operators/login reaches OperatorAuthController with Origin http://localhost:5174")
+    @DisplayName("POST /api/operators/login reaches OperatorAuthController with Origin http://localhost:5174 (retired: 410 Gone)")
     void postOperatorLogin_FromLocalhost5174_ReachesController() throws Exception {
         mockMvc.perform(post("/api/operators/login")
                         .header("Origin", "http://localhost:5174")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isGone())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5174"))
                 .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
-                .andExpect(jsonPath("$.message").value("Validation Error"));
+                .andExpect(jsonPath("$.message").value(OperatorAuthController.LOGIN_RETIRED_MESSAGE));
     }
 
     @Test

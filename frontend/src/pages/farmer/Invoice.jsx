@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Printer, ArrowLeft, ShieldCheck, AlertCircle } from 'lucide-react';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 import { paymentService } from '../../services/paymentService';
+import { RefundNotice } from '../../components/payment/RefundStatus';
 
 function Invoice() {
   const { id } = useParams(); // bookingId
@@ -195,6 +196,16 @@ function Invoice() {
             </div>
           </div>
         </div>
+
+        {/* Refund (tracked separately; the payment above remains the original, successful payment) */}
+        {invoice.refundStatus && invoice.refundStatus !== 'NONE' && (
+          <div className="mt-6 pt-4 border-t border-slate-200">
+            <span className="block mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+              Refund status (separate from the payment above)
+            </span>
+            <RefundNotice refundStatus={invoice.refundStatus} refundAmount={invoice.refundAmount} bookingId={invoice.bookingId} />
+          </div>
+        )}
 
         {/* Footer info */}
         <div className="mt-8 pt-4 border-t border-slate-100 text-center text-[11px] text-slate-400">

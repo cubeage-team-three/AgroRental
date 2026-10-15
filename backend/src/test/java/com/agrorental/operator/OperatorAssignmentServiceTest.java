@@ -250,20 +250,28 @@ class OperatorAssignmentServiceTest {
     }
 
     @Test
-    @DisplayName("Should reject assignment when operator mobile number is unverified")
+    @DisplayName("Contract v1.1: an APPROVED, active operator with an unverified mobile number is assignable")
     void testAssignOperatorMobileUnverified() {
         approvedOperator.setMobileVerified(false);
         when(bookingRepository.findById(100L)).thenReturn(Optional.of(confirmedBooking));
         when(assignmentRepository.existsByBookingIdAndAssignmentStatus(100L, OperatorAssignmentStatus.ASSIGNED)).thenReturn(false);
         when(operatorRepository.findById(1L)).thenReturn(Optional.of(approvedOperator));
+        when(assignmentRepository.save(any(OperatorJobAssignment.class))).thenAnswer(invocation -> {
+            OperatorJobAssignment saved = invocation.getArgument(0);
+            saved.setId(501L);
+            return saved;
+        });
 
         OperatorAssignmentRequest request = OperatorAssignmentRequest.builder()
                 .operatorId(1L)
                 .build();
 
-        assertThatThrownBy(() -> assignmentService.assignOperator(100L, request, "ADMIN"))
-                .isInstanceOf(ForbiddenException.class)
-                .hasMessageContaining("Operator mobile number is not verified");
+        OperatorAssignmentResponse response = assignmentService.assignOperator(100L, request, "ADMIN");
+
+        assertThat(response.getAssignmentStatus()).isEqualTo(OperatorAssignmentStatus.ASSIGNED);
+        assertThat(response.getOperatorId()).isEqualTo(1L);
+        assertThat(confirmedBooking.getStatus()).isEqualTo(BookingStatus.OPERATOR_ASSIGNED);
+        assertThat(approvedOperator.isMobileVerified()).as("no workaround: the flag is left untouched").isFalse();
     }
 
     @Test
@@ -364,7 +372,8 @@ class OperatorAssignmentServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Operator> page = new PageImpl<>(List.of(approvedOperator), pageable, 1);
 
-        when(operatorRepository.searchEligibleOperators(OperatorStatus.APPROVED, true, true, "tractor", pageable))
+        // Contract v1.1: eligibility = APPROVED + active; the query carries no mobile-verification filter
+        when(operatorRepository.searchAssignableOperators(OperatorStatus.APPROVED, true, "tractor", pageable))
                 .thenReturn(page);
 
         Page<EligibleOperatorResponse> result = assignmentService.findEligibleOperators("tractor", pageable);
@@ -373,5 +382,81 @@ class OperatorAssignmentServiceTest {
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).getOperatorId()).isEqualTo(1L);
         assertThat(result.getContent().get(0).getFullName()).isEqualTo("Rajesh Shinde");
+    }
+
+    @Test
+    @DisplayName("Assignment never writes the equipment availability flag (partner-owned UNDER_MAINTENANCE stays)")
+    void testAssignmentLeavesEquipmentFlagAlone() {
+        testEquipment.setAvailabilityStatus(com.agrorental.equipment.enums.AvailabilityStatus.UNDER_MAINTENANCE);
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(confirmedBooking));
+        when(operatorRepository.findById(1L)).thenReturn(Optional.of(approvedOperator));
+        when(assignmentRepository.save(any(OperatorJobAssignment.class))).thenAnswer(invocation -> {
+            OperatorJobAssignment saved = invocation.getArgument(0);
+            saved.setId(502L);
+            return saved;
+        });
+
+        assignmentService.assignOperator(100L, OperatorAssignmentRequest.builder().operatorId(1L).build(), "ADMIN");
+
+        assertThat(confirmedBooking.getStatus()).isEqualTo(BookingStatus.OPERATOR_ASSIGNED);
+        assertThat(testEquipment.getAvailabilityStatus())
+                .isEqualTo(com.agrorental.equipment.enums.AvailabilityStatus.UNDER_MAINTENANCE);
+    }
+
+    @Test
+    @DisplayName("Contract v1.1: partner eligible list = APPROVED + active (unverified mobile included), minimized")
+    void testPartnerEligibleListIncludesUnverifiedOperators() {
+        approvedOperator.setMobileVerified(false);
+        approvedOperator.setAddress("Home address");
+        Pageable pageable = PageRequest.of(0, 10);
+        when(operatorRepository.findByStatusAndActive(OperatorStatus.APPROVED, true, pageable))
+                .thenReturn(new PageImpl<>(List.of(approvedOperator), pageable, 1));
+        when(operatorRepository.searchAssignableOperatorsByNameOrSkills(OperatorStatus.APPROVED, true, "Rajesh", pageable))
+                .thenReturn(new PageImpl<>(List.of(approvedOperator), pageable, 1));
+        com.agrorental.security.principal.CurrentCaller partner = new com.agrorental.security.principal.CurrentCaller(
+                com.agrorental.security.principal.CurrentCaller.Kind.PARTNER, 7L);
+
+        for (String search : new String[]{null, "  Rajesh "}) {
+            Page<EligibleOperatorResponse> result = assignmentService.findEligibleOperatorsForCaller(search, pageable, partner);
+            assertThat(result.getContent()).singleElement().satisfies(r -> {
+                assertThat(r.getOperatorId()).isEqualTo(1L);
+                assertThat(r.isMobileVerified()).isFalse();
+                assertThat(r.getMobileNumber()).isEqualTo("******3210");
+                assertThat(r.getAddress()).isNull();
+            });
+        }
+        verify(operatorRepository, never()).findByStatusAndActiveAndMobileVerified(any(), org.mockito.ArgumentMatchers.anyBoolean(),
+                org.mockito.ArgumentMatchers.anyBoolean(), any());
+    }
+
+    @Test
+    @DisplayName("Current booking assignment: newest active one, else the completed one; declined/cancelled never current")
+    void testCurrentAssignmentSelection() {
+        OperatorJobAssignment rejected = assignment(1L, OperatorAssignmentStatus.REJECTED);
+        OperatorJobAssignment accepted = assignment(2L, OperatorAssignmentStatus.ACCEPTED);
+        OperatorJobAssignment completed = assignment(3L, OperatorAssignmentStatus.COMPLETED);
+        OperatorJobAssignment cancelled = assignment(4L, OperatorAssignmentStatus.CANCELLED);
+        when(assignmentRepository.findCurrentAssignmentForBooking(100L)).thenCallRealMethod();
+
+        when(assignmentRepository.findAllByBookingId(100L)).thenReturn(List.of(rejected, accepted));
+        assertThat(assignmentService.getBookingAssignment(100L).getAssignmentId()).isEqualTo(2L);
+        assertThat(assignmentService.getBookingAssignment(100L).getAssignmentStatus()).isEqualTo(OperatorAssignmentStatus.ACCEPTED);
+
+        when(assignmentRepository.findAllByBookingId(100L)).thenReturn(List.of(completed, cancelled));
+        assertThat(assignmentService.getBookingAssignment(100L).getAssignmentId()).isEqualTo(3L);
+
+        when(assignmentRepository.findAllByBookingId(100L)).thenReturn(List.of(rejected, cancelled));
+        assertThat(assignmentService.getBookingAssignment(100L)).isNull();
+    }
+
+    private OperatorJobAssignment assignment(Long id, OperatorAssignmentStatus status) {
+        OperatorJobAssignment assignment = OperatorJobAssignment.builder()
+                .operator(approvedOperator)
+                .booking(confirmedBooking)
+                .assignmentStatus(status)
+                .assignedAt(LocalDateTime.now())
+                .build();
+        assignment.setId(id);
+        return assignment;
     }
 }

@@ -1,20 +1,29 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Smartphone, MessageCircle, X } from 'lucide-react';
-import { sendOtp } from '../../services/farmerAuthService';
+import { Smartphone, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
 import AuthTextField from '../../components/auth/AuthTextField';
 import AuthPasswordField from '../../components/auth/AuthPasswordField';
 import AuthPrimaryButton from '../../components/auth/AuthPrimaryButton';
-import AuthModeToggle from '../../components/auth/AuthModeToggle';
 
 const ROLES = [
   { id: 'FARMER', label: 'Farmer' },
   { id: 'PARTNER', label: 'Partner' },
   { id: 'OPERATOR', label: 'Operator' },
 ];
+
+const ROLE_IDS = ROLES.map((r) => r.id);
+
+const HOME_BY_ROLE = {
+  FARMER: '/farmer/dashboard',
+  PARTNER: '/partner/dashboard',
+  OPERATOR: '/operator/dashboard',
+  ADMIN: '/admin/overview',
+};
+
+const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please sign in again.';
 
 function GoogleIcon() {
   return (
@@ -39,68 +48,57 @@ function GoogleIcon() {
   );
 }
 
+function resolveRole(propRole, paramRole, stateRole) {
+  const candidate = [propRole, paramRole, stateRole]
+    .map((r) => r?.toUpperCase())
+    .find((r) => r && ROLE_IDS.includes(r));
+  return candidate || 'FARMER';
+}
+
+/** Where to go after login: back to the protected page that sent us here, but only within the same role's area. */
+function destinationFor(role, from) {
+  const home = HOME_BY_ROLE[role] || HOME_BY_ROLE.FARMER;
+  const fromPath = from?.pathname;
+  if (fromPath && fromPath.startsWith(home.substring(0, home.indexOf('/', 1) + 1))) {
+    return `${fromPath}${from.search || ''}`;
+  }
+  return home;
+}
+
 function Login({ initialRole: propRole }) {
   const { t } = useLanguage();
   const auth = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Retrieve initial state from registration redirect or query parameters
-  const initialMobile = location.state?.mobileNumber || location.state?.mobileOrEmail || '';
+  // Initial state from a registration redirect, a protected-route redirect, or query parameters
+  const initialIdentifier = location.state?.mobileNumber || location.state?.mobileOrEmail || '';
   const initialMessage = location.state?.successMessage || location.state?.message || '';
 
   const searchParams = new URLSearchParams(location.search);
-  const paramRole = searchParams.get('role')?.toUpperCase();
-  const stateRole = location.state?.role?.toUpperCase();
-  const rawRole = propRole?.toUpperCase() || paramRole || stateRole || 'FARMER';
-  const initialRole = ['FARMER', 'PARTNER', 'OPERATOR'].includes(rawRole)
-    ? rawRole
-    : 'FARMER';
+  const paramRole = searchParams.get('role');
+  const stateRole = location.state?.role;
 
-  const [selectedRole, setSelectedRole] = useState(initialRole);
+  const [selectedRole, setSelectedRole] = useState(() => resolveRole(propRole, paramRole, stateRole));
 
   useEffect(() => {
-    let nextRole = 'FARMER';
-    if (propRole && ['FARMER', 'PARTNER', 'OPERATOR'].includes(propRole.toUpperCase())) {
-      nextRole = propRole.toUpperCase();
-    } else if (paramRole) {
-      if (['FARMER', 'PARTNER', 'OPERATOR'].includes(paramRole)) {
-        nextRole = paramRole;
-      } else {
-        nextRole = 'FARMER';
-      }
-    } else if (stateRole && ['FARMER', 'PARTNER', 'OPERATOR'].includes(stateRole)) {
-      nextRole = stateRole;
-    }
-    setSelectedRole(nextRole);
-    if (nextRole !== 'FARMER') {
-      setLoginMode('PASSWORD');
-    }
+    setSelectedRole(resolveRole(propRole, paramRole, stateRole));
   }, [propRole, paramRole, stateRole]);
 
-  // Mode: "PASSWORD" or "OTP" (OTP available for Farmer accounts)
-  const [loginMode, setLoginMode] = useState('PASSWORD');
-
   const [formData, setFormData] = useState({
-    mobileOrEmail: initialMobile,
+    mobileOrEmail: initialIdentifier,
     password: '',
-    otp: '',
   });
 
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [devMockOtp, setDevMockOtp] = useState('');
-
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState(initialMessage);
-  const [infoMessage, setInfoMessage] = useState('');
+  const [infoMessage, setInfoMessage] = useState(
+    location.state?.sessionExpired ? SESSION_EXPIRED_MESSAGE : ''
+  );
 
   const handleRoleChange = (roleId) => {
     setSelectedRole(roleId);
-    if (roleId !== 'FARMER' && loginMode === 'OTP') {
-      setLoginMode('PASSWORD');
-    }
     setErrorMessage('');
   };
 
@@ -113,102 +111,44 @@ function Login({ initialRole: propRole }) {
     if (errorMessage) setErrorMessage('');
   };
 
-  const handleSendOtp = async () => {
-    if (!formData.mobileOrEmail.trim()) {
-      setErrorMessage('Please enter your 10-digit mobile number.');
-      return;
-    }
-    const mobile = formData.mobileOrEmail.replace(/\D/g, '');
-    if (mobile.length !== 10) {
-      setErrorMessage('Please enter a valid 10-digit mobile number for OTP login.');
-      return;
-    }
-
-    setSendingOtp(true);
-    setErrorMessage('');
-    setSuccessMessage('');
-
-    try {
-      const res = await sendOtp(mobile);
-      setOtpSent(true);
-      setSuccessMessage('OTP sent successfully to +91 ' + mobile);
-      if (res.data?.devMockOtp) {
-        setDevMockOtp(res.data.devMockOtp);
-      }
-    } catch (err) {
-      console.error('Send OTP error during login:', err);
-      if (err.message && err.message.includes('Network error')) {
-        setErrorMessage('Network error: Failed to send OTP.');
-      } else {
-        setErrorMessage(err.message || 'Failed to send OTP. Please try again.');
-      }
-    } finally {
-      setSendingOtp(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
+    setInfoMessage('');
 
     if (!formData.mobileOrEmail.trim()) {
       setErrorMessage('Please enter your mobile number or email address.');
       return;
     }
 
-    if (loginMode === 'PASSWORD' && !formData.password) {
+    if (!formData.password) {
       setErrorMessage('Password is required.');
-      return;
-    }
-
-    if (loginMode === 'OTP' && (!formData.otp || formData.otp.length !== 6)) {
-      setErrorMessage('Please enter the 6-digit OTP code.');
       return;
     }
 
     setLoading(true);
 
     try {
-      let response;
-      if (loginMode === 'OTP' && selectedRole === 'FARMER') {
-        response = await auth.login({
-          mobileOrEmail: formData.mobileOrEmail.trim(),
-          otp: formData.otp.trim(),
-          role: selectedRole,
-          loginType: 'OTP',
-        });
-      } else {
-        response = await auth.login({
-          mobileOrEmail: formData.mobileOrEmail.trim(),
-          password: formData.password,
-          role: selectedRole,
-          loginType: 'PASSWORD',
-        });
-      }
+      const response = await auth.login({
+        mobileOrEmail: formData.mobileOrEmail.trim(),
+        password: formData.password,
+        role: selectedRole,
+        loginType: 'PASSWORD',
+      });
 
       const userData = response.data || response;
-      if (userData && (userData.role === 'PARTNER' || userData.partnerId)) {
-        setSuccessMessage('Partner login successful! Redirecting to Partner Portal...');
-        setTimeout(() => {
-          navigate('/partner/dashboard');
-        }, 1200);
-      } else if (userData && userData.role === 'ADMIN') {
-        setSuccessMessage('Admin login successful! Redirecting to Admin Portal...');
-        setTimeout(() => {
-          navigate('/admin/overview');
-        }, 1200);
-      } else if (userData && (userData.role === 'OPERATOR' || userData.operatorId)) {
-        setSuccessMessage('Operator login successful! Redirecting to Operator Portal...');
-        setTimeout(() => {
-          navigate('/operator/dashboard');
-        }, 1200);
-      } else {
-        setSuccessMessage('Login successful! Redirecting to Farmer Dashboard...');
-        setTimeout(() => {
-          navigate('/farmer/dashboard');
-        }, 1200);
-      }
+      const role = userData?.role || selectedRole;
+      const labels = {
+        PARTNER: 'Partner login successful! Redirecting to Partner Portal...',
+        ADMIN: 'Admin login successful! Redirecting to Admin Portal...',
+        OPERATOR: 'Operator login successful! Redirecting to Operator Portal...',
+      };
+      setSuccessMessage(labels[role] || 'Login successful! Redirecting to Farmer Dashboard...');
+      const destination = destinationFor(role, location.state?.from);
+      setTimeout(() => {
+        navigate(destination, { replace: true });
+      }, 1200);
     } catch (err) {
       console.error('Login error:', err);
 
@@ -216,19 +156,6 @@ function Login({ initialRole: propRole }) {
         !err.status ||
         err.status === 0 ||
         (err.message && err.message.toLowerCase().includes('network error'));
-
-      const cleanMobile = formData.mobileOrEmail.replace(/\D/g, '');
-
-      // Special rule: PENDING_OTP redirection
-      if (err.message && err.message.includes('PENDING_OTP')) {
-        setErrorMessage('Your account is pending OTP verification. Redirecting...');
-        setTimeout(() => {
-          navigate('/verify-otp', {
-            state: { mobileNumber: cleanMobile },
-          });
-        }, 1500);
-        return;
-      }
 
       if (isNetworkError) {
         setErrorMessage(
@@ -242,12 +169,7 @@ function Login({ initialRole: propRole }) {
     }
   };
 
-  const inputLabel =
-    selectedRole === 'OPERATOR'
-      ? 'Mobile Number or Email'
-      : selectedRole === 'PARTNER'
-      ? 'Partner Mobile or Email'
-      : 'Mobile Number or Email';
+  const inputLabel = selectedRole === 'PARTNER' ? 'Partner Mobile or Email' : 'Mobile Number or Email';
 
   return (
     <RevealGroup stagger={0.07} delayChildren={0.04}>
@@ -256,7 +178,7 @@ function Login({ initialRole: propRole }) {
           Welcome back
         </h1>
         <p className="mt-2 text-[15px] text-slate-500">
-          Sign in to manage your farms, bookings, and machinery.
+          Sign in with your mobile number or email and your password.
         </p>
       </RevealItem>
 
@@ -292,42 +214,17 @@ function Login({ initialRole: propRole }) {
         </div>
       </RevealItem>
 
-      {selectedRole === 'FARMER' && (
-        <RevealItem className="mt-4">
-          <AuthModeToggle
-            activeMode={loginMode}
-            onChange={(mode) => {
-              setLoginMode(mode);
-              setErrorMessage('');
-            }}
-          />
-        </RevealItem>
-      )}
-
-      {devMockOtp && (
-        <RevealItem className="mt-4">
-          <div className="flex items-center justify-between gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800">
-            <span>
-              Verification code: <strong className="text-sm font-bold">{devMockOtp}</strong>
-            </span>
-            <button
-              type="button"
-              onClick={() => setFormData((prev) => ({ ...prev, otp: devMockOtp }))}
-              className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors duration-200 hover:bg-emerald-700"
-            >
-              Auto-fill
-            </button>
-          </div>
-        </RevealItem>
-      )}
-
       {errorMessage && (
         <RevealItem className="mt-4">
-          <div className="flex items-start justify-between gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <div
+            role="alert"
+            className="flex items-start justify-between gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+          >
             <span>{errorMessage}</span>
             <button
               type="button"
               onClick={() => setErrorMessage('')}
+              aria-label="Dismiss error"
               className="shrink-0 text-red-400 transition-colors hover:text-red-600"
             >
               <X className="h-4 w-4" />
@@ -338,7 +235,10 @@ function Login({ initialRole: propRole }) {
 
       {successMessage && (
         <RevealItem className="mt-4">
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+          <div
+            role="status"
+            className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+          >
             {successMessage}
           </div>
         </RevealItem>
@@ -346,14 +246,17 @@ function Login({ initialRole: propRole }) {
 
       {infoMessage && (
         <RevealItem className="mt-4">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600">
+          <div
+            role="status"
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600"
+          >
             {infoMessage}
           </div>
         </RevealItem>
       )}
 
       <RevealItem className="mt-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <AuthTextField
             id="mobileOrEmail"
             name="mobileOrEmail"
@@ -366,101 +269,29 @@ function Login({ initialRole: propRole }) {
             required
           />
 
-          {loginMode === 'PASSWORD' && (
-            <div>
-              <AuthPasswordField
-                id="password"
-                name="password"
-                label="Password"
-                value={formData.password}
-                onChange={handleInputChange}
-                autoComplete="current-password"
-                required
-              />
-              {selectedRole === 'FARMER' && (
-                <div className="mt-2 flex items-center justify-between text-xs">
-                  <Link
-                    to={{
-                      pathname: '/forgot-password',
-                      search: '?role=FARMER',
-                    }}
-                    state={{ mobileOrEmail: formData.mobileOrEmail, role: 'FARMER' }}
-                    className="font-semibold text-emerald-700 underline-offset-2 transition-colors duration-200 hover:text-emerald-800 hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginMode('OTP');
-                      handleSendOtp();
-                    }}
-                    className="font-semibold text-emerald-700 underline-offset-2 transition-colors duration-200 hover:text-emerald-800 hover:underline"
-                  >
-                    Forgot password? Use OTP instead
-                  </button>
-                </div>
-              )}
-              {selectedRole === 'PARTNER' && (
-                <div className="mt-2 text-right">
-                  <Link
-                    to={{
-                      pathname: '/forgot-password',
-                      search: '?role=PARTNER',
-                    }}
-                    state={{ mobileOrEmail: formData.mobileOrEmail, role: 'PARTNER' }}
-                    className="text-xs font-semibold text-emerald-700 underline-offset-2 transition-colors duration-200 hover:text-emerald-800 hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-              )}
-              {selectedRole === 'OPERATOR' && (
-                <div className="mt-2 text-right">
-                  <Link
-                    to={{
-                      pathname: '/forgot-password',
-                      search: '?role=OPERATOR',
-                    }}
-                    state={{ mobileOrEmail: formData.mobileOrEmail, role: 'OPERATOR' }}
-                    className="text-xs font-semibold text-emerald-700 underline-offset-2 transition-colors duration-200 hover:text-emerald-800 hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-              )}
+          <div>
+            <AuthPasswordField
+              id="password"
+              name="password"
+              label="Password"
+              value={formData.password}
+              onChange={handleInputChange}
+              autoComplete="current-password"
+              required
+            />
+            <div className="mt-2 text-right">
+              <Link
+                to={{
+                  pathname: '/forgot-password',
+                  search: `?role=${selectedRole}`,
+                }}
+                state={{ identifier: formData.mobileOrEmail, role: selectedRole }}
+                className="text-xs font-semibold text-emerald-700 underline-offset-2 transition-colors duration-200 hover:text-emerald-800 hover:underline"
+              >
+                Forgot password?
+              </Link>
             </div>
-          )}
-
-          {loginMode === 'OTP' && selectedRole === 'FARMER' && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-600">
-                  6-digit code sent to your phone
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={sendingOtp}
-                  className="text-xs font-bold text-emerald-700 transition-colors hover:underline disabled:opacity-50"
-                >
-                  {sendingOtp ? 'Sending...' : otpSent ? 'Resend OTP' : 'Send OTP'}
-                </button>
-              </div>
-              <AuthTextField
-                id="otp"
-                name="otp"
-                label="Enter 6-digit OTP"
-                type="text"
-                maxLength={6}
-                value={formData.otp}
-                onChange={handleInputChange}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                className="[&_input]:text-center [&_input]:tracking-[0.4em] [&_input]:font-bold"
-              />
-            </div>
-          )}
+          </div>
 
           <AuthPrimaryButton loading={loading} loadingText="Signing in...">
             {t('login')}
@@ -483,27 +314,18 @@ function Login({ initialRole: propRole }) {
             </div>
           </RevealItem>
 
-          <RevealItem className="mt-4 grid grid-cols-2 gap-3">
+          <RevealItem className="mt-4">
             <button
               type="button"
               onClick={() =>
-                setInfoMessage('Google sign-in is coming soon — please use phone or OTP for now.')
+                setInfoMessage(
+                  'Google sign-in is coming soon. Please sign in with your mobile number or email and password.'
+                )
               }
-              className="flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-all duration-200 ease-out hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
+              className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-all duration-200 ease-out hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
             >
               <GoogleIcon />
               Google
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLoginMode('OTP');
-                handleSendOtp();
-              }}
-              className="flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-all duration-200 ease-out hover:border-emerald-300 hover:bg-emerald-50 active:scale-[0.98]"
-            >
-              <MessageCircle className="h-[18px] w-[18px] text-[#25D366]" />
-              WhatsApp
             </button>
           </RevealItem>
         </>
@@ -538,10 +360,7 @@ function Login({ initialRole: propRole }) {
             Machinery Operator?{' '}
             <button
               type="button"
-              onClick={() => {
-                setSelectedRole('OPERATOR');
-                setErrorMessage('');
-              }}
+              onClick={() => handleRoleChange('OPERATOR')}
               className="font-bold text-emerald-800 underline-offset-2 hover:underline cursor-pointer"
             >
               Sign In to Operator Portal →

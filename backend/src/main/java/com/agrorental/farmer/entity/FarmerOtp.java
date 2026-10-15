@@ -23,8 +23,9 @@ public class FarmerOtp {
     @Column(name = "mobile_number", nullable = false, length = 15)
     private String mobileNumber;
 
+    // Keyed one-way hash of the OTP (never the raw code); see FarmerOtpService#hashOtp
     @Column(name = "otp", nullable = false, length = 10)
-    private String otp;
+    private String otpHash;
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;

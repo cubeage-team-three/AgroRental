@@ -1,13 +1,13 @@
 package com.agrorental.farmer.service;
 
-import java.util.UUID;
-
+import com.agrorental.auth.service.AccountIdentifiers;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.agrorental.auth.service.PasswordPolicy;
 import com.agrorental.common.enums.Role;
 import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.farmer.dto.FarmerRegisterRequest;
@@ -29,30 +29,36 @@ public class FarmerService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Registers a farmer with a password (no OTP step). The account is ACTIVE immediately and can log in with
+     * its mobile number (or email) and password.
+     */
     @Transactional
     public FarmerResponse registerFarmer(FarmerRegisterRequest request) {
-        log.info("Processing farmer registration for mobile: {}", request.getMobileNumber());
+        log.info("Processing farmer registration for mobile: {}", AccountIdentifiers.mask(request.getMobileNumber()));
+
+        String rawPassword = request.getPassword();
+        PasswordPolicy.validate(rawPassword);
 
         String mobile = request.getMobileNumber().trim();
         if (farmerRepository.existsByMobileNumber(mobile)) {
-            log.warn("Registration failed. Mobile number {} already registered", mobile);
+            log.warn("Registration failed. Mobile number {} already registered", AccountIdentifiers.mask(mobile));
             throw new BadRequestException("Mobile number is already registered. Please login or use a different number.");
         }
 
         String rawEmail = (request.getEmail() != null && !request.getEmail().trim().isEmpty()) ? request.getEmail().trim() : null;
         if (rawEmail != null && farmerRepository.existsByEmail(rawEmail)) {
-            log.warn("Registration failed. Email {} already registered", rawEmail);
+            log.warn("Registration failed. Email {} already registered", AccountIdentifiers.mask(rawEmail));
             throw new BadRequestException("Email address is already registered to another account.");
         }
 
         String userEmail = rawEmail != null ? rawEmail.toLowerCase() : mobile + "@farmer.agrorent.in";
         if (userRepository.existsByEmail(userEmail)) {
-            log.warn("Registration failed. User email {} already exists in users repository", userEmail);
+            log.warn("Registration failed. User email {} already exists in users repository", AccountIdentifiers.mask(userEmail));
             throw new BadRequestException("An account with this email/mobile already exists.");
         }
 
-        String rawPassword = (request.getPassword() != null && !request.getPassword().trim().isEmpty()) ? request.getPassword().trim() : null;
-        String encodedPassword = passwordEncoder.encode(rawPassword != null ? rawPassword : UUID.randomUUID().toString());
+        String encodedPassword = passwordEncoder.encode(rawPassword);
 
         User user = User.builder()
                 .name(request.getFullName().trim())
@@ -71,9 +77,9 @@ public class FarmerService {
                 .fullName(request.getFullName().trim())
                 .mobileNumber(mobile)
                 .email(rawEmail)
-                .password(rawPassword != null ? encodedPassword : null)
+                .password(encodedPassword)
                 .preferredLanguage(request.getPreferredLanguage() != null ? request.getPreferredLanguage() : "English")
-                .accountStatus("PENDING_OTP")
+                .accountStatus("ACTIVE")
                 .build();
 
         Farmer savedFarmer = farmerRepository.save(farmer);

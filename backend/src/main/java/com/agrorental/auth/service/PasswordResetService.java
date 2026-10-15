@@ -1,571 +1,437 @@
 package com.agrorental.auth.service;
 
 import com.agrorental.auth.dto.ForgotPasswordRequest;
+import com.agrorental.auth.dto.ForgotPasswordResponse;
 import com.agrorental.auth.dto.ResetPasswordRequest;
+import com.agrorental.auth.entity.AccountPasswordResetToken;
+import com.agrorental.auth.entity.PasswordResetAccountType;
+import com.agrorental.auth.repository.AccountPasswordResetTokenRepository;
+import com.agrorental.common.config.DeploymentProfiles;
 import com.agrorental.common.enums.Role;
 import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.farmer.repository.FarmerRepository;
 import com.agrorental.operator.entity.Operator;
-import com.agrorental.operator.otp.OperatorOtp;
-import com.agrorental.operator.otp.OperatorOtpRepository;
-import com.agrorental.operator.otp.OtpPurpose;
 import com.agrorental.operator.repository.OperatorRepository;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
-import com.agrorental.user.entity.PasswordResetToken;
 import com.agrorental.user.entity.User;
-import com.agrorental.user.repository.PasswordResetTokenRepository;
 import com.agrorental.user.repository.UserRepository;
-import com.agrorental.user.service.EmailService;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
+import java.util.Base64;
+import java.util.HexFormat;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 /**
- * Service handling forgot password requests and secure password resets across
- * public roles: FARMER, PARTNER, and OPERATOR.
+ * Self-service password reset for FARMER, PARTNER and OPERATOR accounts (admins excluded).
  *
- * Enforces role isolation, account domain boundary verification, rate limiting,
- * expiration, single-use token invalidation, attempt limits, and non-enumerating responses.
+ * <ul>
+ *   <li>Forgot password always answers with the same status and body for existing and non-existing
+ *       accounts; the message depends only on server configuration (delivery configured or not).</li>
+ *   <li>Requests are rate limited per (role + identifier) and per client address before any lookup.</li>
+ *   <li>Tokens carry 256 bits from {@link SecureRandom}; only their SHA-256 hash is stored
+ *       (table account_password_reset_tokens). They expire after 30 minutes, are redeemed atomically
+ *       (exactly one success under concurrent submission) and a new request or a completed reset
+ *       invalidates the account's other outstanding tokens.</li>
+ *   <li>A reset writes the BCrypt hash into the one account table named by the token's account type.</li>
+ *   <li>Tokens, reset URLs and passwords are never logged. The raw token is returned in the response only
+ *       in explicit development (active 'dev' profile AND app.password-reset.dev-token-in-response=true).</li>
+ * </ul>
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class PasswordResetService {
 
+    public static final Duration TOKEN_TTL = Duration.ofMinutes(30);
+    static final int TOKEN_BYTES = 32;
+    private static final Pattern TOKEN_FORMAT = Pattern.compile("^[A-Za-z0-9_-]{20,128}$");
+
+    public static final String INVALID_TOKEN_MESSAGE = "Invalid or expired password reset token.";
+    public static final String INVALID_ROLE_MESSAGE =
+            "Invalid role specified for password recovery. Allowed roles: FARMER, PARTNER, OPERATOR.";
+    public static final String IDENTIFIER_REQUIRED_MESSAGE = "Account identifier (email or mobile number) is required.";
+    public static final String DELIVERY_CONFIGURED_MESSAGE =
+            "If an account matches these details, password reset instructions have been sent.";
+    public static final String DELIVERY_UNAVAILABLE_MESSAGE =
+            "Password reset is not available because no email or SMS delivery is configured. Please contact support.";
+    public static final String DEV_TOKEN_MESSAGE =
+            "Development mode: no email or SMS delivery is configured. If an account matches these details, "
+                    + "a password reset token has been created and is included in this response.";
+    public static final String DEV_TOKEN_NOTICE =
+            "DEVELOPMENT ONLY: this reset token is returned because the server runs with the explicit 'dev' profile "
+                    + "and app.password-reset.dev-token-in-response=true. It is never returned in staging or production.";
+    public static final String RESET_SUCCESS_MESSAGE = "Password reset successfully. You can now log in with your new password.";
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final int MAX_IDENTIFIER_LENGTH = 254;
+
+    private final AccountPasswordResetTokenRepository tokenRepository;
     private final UserRepository userRepository;
     private final FarmerRepository farmerRepository;
     private final PartnerRepository partnerRepository;
     private final OperatorRepository operatorRepository;
-    private final OperatorOtpRepository operatorOtpRepository;
-    private final PasswordResetTokenRepository resetTokenRepository;
-    private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordResetRateLimiter rateLimiter;
+    private final ObjectProvider<PasswordResetDelivery> deliveryProvider;
+    private final TransactionTemplate transactionTemplate;
+    private final Environment environment;
 
-    private static final int MAX_REQUESTS_PER_WINDOW = 5;
-    private static final int RATE_LIMIT_WINDOW_MINUTES = 15;
-    private static final int COOLDOWN_SECONDS = 30;
-    private static final int MAX_VERIFICATION_ATTEMPTS = 5;
-    private static final int TOKEN_EXPIRY_MINUTES = 30;
+    @Value("${app.password-reset.dev-token-in-response:false}")
+    private boolean devTokenInResponse;
 
-    /**
-     * In-memory token metadata store for cross-role token tracking, attempt counting, and single-use validation.
-     */
-    private final Map<String, RecoveryTokenRecord> tokenRegistry = new ConcurrentHashMap<>();
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendBaseUrl = "http://localhost:5173";
 
-    /**
-     * Rate limit request tracking by (role + ":" + identifier).
-     */
-    private final Map<String, List<LocalDateTime>> requestHistory = new ConcurrentHashMap<>();
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class RecoveryTokenRecord {
-        private String token;
-        private String role; // "FARMER", "PARTNER", "OPERATOR"
-        private Long accountId;
-        private String identifier;
-        private LocalDateTime expiryDate;
-        private boolean used;
-        private int attemptCount;
-        private LocalDateTime createdAt;
+    public PasswordResetService(AccountPasswordResetTokenRepository tokenRepository,
+                                UserRepository userRepository,
+                                FarmerRepository farmerRepository,
+                                PartnerRepository partnerRepository,
+                                OperatorRepository operatorRepository,
+                                PasswordEncoder passwordEncoder,
+                                PasswordResetRateLimiter rateLimiter,
+                                ObjectProvider<PasswordResetDelivery> deliveryProvider,
+                                PlatformTransactionManager transactionManager,
+                                Environment environment) {
+        this.tokenRepository = tokenRepository;
+        this.userRepository = userRepository;
+        this.farmerRepository = farmerRepository;
+        this.partnerRepository = partnerRepository;
+        this.operatorRepository = operatorRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.rateLimiter = rateLimiter;
+        this.deliveryProvider = deliveryProvider;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.environment = environment;
     }
 
-    /**
-     * Processes forgot password request for FARMER, PARTNER, or OPERATOR.
-     * Always returns generic response message to prevent account enumeration attacks.
-     */
-    @Transactional
-    public String processForgotPassword(ForgotPasswordRequest request) {
-        String roleStr = request.getRole() != null && !request.getRole().isBlank()
-                ? request.getRole().trim().toUpperCase()
-                : "FARMER";
-
-        // 1. Validate role against FARMER, PARTNER, and OPERATOR
-        if (!"FARMER".equals(roleStr) && !"PARTNER".equals(roleStr) && !"OPERATOR".equals(roleStr)) {
-            log.warn("Password recovery rejected: Invalid role '{}' specified", roleStr);
-            throw new BadRequestException("Invalid role specified for password recovery. Allowed roles: FARMER, PARTNER, OPERATOR.");
+    @PostConstruct
+    void logConfiguration() {
+        if (devTokenInResponse && !DeploymentProfiles.isExplicitDevelopment(environment)) {
+            log.warn("app.password-reset.dev-token-in-response=true is IGNORED: reset tokens are only disclosed with an "
+                    + "explicitly active 'dev' profile and never in staging or production.");
         }
-
-        String rawIdentifier = request.getAccountIdentifier();
-        if (rawIdentifier == null || rawIdentifier.isBlank()) {
-            throw new BadRequestException("Account identifier (email or mobile number) is required.");
+        PasswordResetDelivery delivery = deliveryProvider.getIfUnique();
+        if (delivery != null && delivery.isConfigured() && !hasFrontendBaseUrl()) {
+            log.error("Password reset: a delivery provider is configured but app.frontend.url (APP_FRONTEND_URL) is empty, "
+                    + "so reset links cannot be built; password reset stays unavailable until it is set.");
         }
-
-        String identifier = rawIdentifier.trim();
-        log.info("Processing forgot password request for role: {} (identifier masked)", roleStr);
-
-        // 2. Enforce rate limiting per role + identifier
-        checkRateLimit(roleStr + ":" + identifier.toLowerCase());
-
-        // Generic non-disclosing message
-        String genericSuccessMessage = "If an account with that identifier exists, password reset instructions have been sent.";
-
-        if ("FARMER".equals(roleStr)) {
-            processFarmerForgotPassword(identifier);
-        } else if ("PARTNER".equals(roleStr)) {
-            processPartnerForgotPassword(identifier);
-        } else if ("OPERATOR".equals(roleStr)) {
-            processOperatorForgotPassword(identifier);
+        if (configuredDelivery() == null) {
+            log.warn("Password reset: no email/SMS delivery provider is configured; forgot-password requests report that "
+                    + "reset is unavailable{}.", isDevTokenDisclosureAllowed() ? " (development token disclosure is ON)" : "");
         }
-
-        return genericSuccessMessage;
     }
 
-    private void processFarmerForgotPassword(String identifier) {
-        Optional<User> userOpt = Optional.empty();
-        if (identifier.contains("@")) {
-            userOpt = userRepository.findByEmailIgnoreCase(identifier)
-                    .filter(u -> u.getRole() == Role.FARMER);
-            if (userOpt.isEmpty()) {
-                userOpt = farmerRepository.findByEmailIgnoreCase(identifier)
-                        .map(Farmer::getUser)
-                        .filter(u -> u != null && u.getRole() == Role.FARMER);
-            }
-        } else {
-            Optional<Farmer> farmerOpt = farmerRepository.findByMobileNumber(identifier);
-            if (farmerOpt.isPresent() && farmerOpt.get().getUser() != null) {
-                userOpt = Optional.of(farmerOpt.get().getUser())
-                        .filter(u -> u.getRole() == Role.FARMER);
-            }
+    // ------------------------------------------------------------------------------------------------
+    // Forgot password
+    // ------------------------------------------------------------------------------------------------
+
+    /**
+     * @param clientAddress the caller's network address, used only as a rate-limit key
+     * @throws PasswordResetRateLimitedException when a rate limit is exceeded (HTTP 429, generic body)
+     */
+    public ForgotPasswordResponse requestReset(ForgotPasswordRequest request, String clientAddress) {
+        String requestedRole = request.getRole() == null || request.getRole().isBlank() ? "FARMER" : request.getRole();
+        PasswordResetAccountType accountType = PasswordResetAccountType.fromRole(requestedRole);
+        if (accountType == null) {
+            throw new BadRequestException(INVALID_ROLE_MESSAGE);
+        }
+        String identifier = request.getAccountIdentifier();
+        if (identifier == null || identifier.isBlank() || identifier.length() > MAX_IDENTIFIER_LENGTH) {
+            throw new BadRequestException(IDENTIFIER_REQUIRED_MESSAGE);
         }
 
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            String tokenString = UUID.randomUUID().toString();
-            LocalDateTime expiry = LocalDateTime.now().plusMinutes(TOKEN_EXPIRY_MINUTES);
+        if (!rateLimiter.tryAcquire(accountType.name() + ":" + AccountIdentifiers.canonical(identifier),
+                clientAddress == null ? "unknown" : clientAddress)) {
+            log.warn("Password reset request rate limited (role {})", accountType);
+            throw new PasswordResetRateLimitedException(rateLimiter.retryAfterSeconds());
+        }
 
-            PasswordResetToken resetToken = PasswordResetToken.builder()
-                    .token(tokenString)
-                    .user(user)
-                    .expiryDate(expiry)
-                    .used(false)
+        PasswordResetDelivery delivery = configuredDelivery();
+        boolean devDisclosure = isDevTokenDisclosureAllowed();
+        if (delivery == null && !devDisclosure) {
+            // Nothing could reach the account holder, so no token is created for anyone
+            log.info("Password reset requested for role {}; no delivery provider configured, no token issued", accountType);
+            return ForgotPasswordResponse.builder()
+                    .message(DELIVERY_UNAVAILABLE_MESSAGE)
+                    .deliveryConfigured(false)
                     .build();
+        }
 
-            resetTokenRepository.save(resetToken);
-            registerToken("FARMER", user.getId(), user.getEmail(), tokenString, expiry);
-            emailService.sendPasswordResetEmail(user.getEmail(), tokenString, "FARMER");
-            log.info("Dispatched password reset instructions for Farmer User ID: {}", user.getId());
+        IssuedToken issued = transactionTemplate.execute(status ->
+                findTarget(accountType, identifier).map(this::issueToken).orElse(null));
+
+        if (issued == null) {
+            log.info("Password reset requested for role {}; no matching account (generic response returned)", accountType);
         } else {
-            log.info("Farmer forgot password requested for non-existent identifier");
+            log.info("Password reset token issued for {} account #{}", accountType, issued.target().accountId());
+            if (delivery != null) {
+                deliver(delivery, issued);
+            }
+        }
+
+        ForgotPasswordResponse.ForgotPasswordResponseBuilder response = ForgotPasswordResponse.builder()
+                .deliveryConfigured(delivery != null)
+                .message(delivery != null ? DELIVERY_CONFIGURED_MESSAGE : DEV_TOKEN_MESSAGE);
+        if (devDisclosure) {
+            response.devNotice(DEV_TOKEN_NOTICE);
+            if (issued != null) {
+                response.devResetToken(issued.rawToken());
+            }
+        }
+        return response.build();
+    }
+
+    private IssuedToken issueToken(ResetTarget target) {
+        LocalDateTime now = LocalDateTime.now();
+        tokenRepository.invalidateOutstanding(target.accountType(), target.accountId(), now);
+
+        String rawToken = newRawToken();
+        LocalDateTime expiresAt = now.plus(TOKEN_TTL);
+        tokenRepository.save(AccountPasswordResetToken.builder()
+                .accountType(target.accountType())
+                .accountId(target.accountId())
+                .tokenHash(sha256Hex(rawToken))
+                .expiresAt(expiresAt)
+                .createdAt(now)
+                .build());
+        return new IssuedToken(rawToken, target, expiresAt);
+    }
+
+    private void deliver(PasswordResetDelivery delivery, IssuedToken issued) {
+        ResetTarget target = issued.target();
+        PasswordResetInstructions instructions = new PasswordResetInstructions(
+                target.accountType(), target.accountId(), target.name(), target.email(), target.mobileNumber(),
+                resetUrl(issued.rawToken()), issued.expiresAt());
+        try {
+            delivery.sendPasswordReset(instructions);
+        } catch (RuntimeException e) {
+            // The exception text may embed the reset URL, so only its type is logged
+            log.error("Password reset delivery failed for {} account #{} ({})",
+                    target.accountType(), target.accountId(), e.getClass().getSimpleName());
         }
     }
 
-    private void processPartnerForgotPassword(String identifier) {
-        Optional<Partner> partnerOpt = Optional.empty();
-        if (identifier.contains("@")) {
-            partnerOpt = partnerRepository.findByEmailIgnoreCase(identifier);
-        } else {
-            partnerOpt = partnerRepository.findByMobileNumber(identifier);
+    private String resetUrl(String rawToken) {
+        String base = frontendBaseUrl == null ? "" : frontendBaseUrl.trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
         }
+        return base + "/reset-password?token=" + rawToken;
+    }
 
-        if (partnerOpt.isPresent()) {
-            Partner partner = partnerOpt.get();
-            String tokenString = UUID.randomUUID().toString();
-            LocalDateTime expiry = LocalDateTime.now().plusMinutes(TOKEN_EXPIRY_MINUTES);
-
-            partner.setOtpCode(tokenString);
-            partner.setOtpExpiry(expiry);
-            partnerRepository.save(partner);
-
-            registerToken("PARTNER", partner.getId(), partner.getEmail(), tokenString, expiry);
-
-            if (partner.getEmail() != null && !partner.getEmail().isBlank()) {
-                emailService.sendPasswordResetEmail(partner.getEmail(), tokenString, "PARTNER");
-                log.info("Dispatched password reset instructions for Partner ID: {}", partner.getId());
-            } else {
-                log.warn("Partner ID {} has no email address configured for reset dispatch", partner.getId());
-            }
-        } else {
-            log.info("Partner forgot password requested for non-existent identifier");
+    private Optional<ResetTarget> findTarget(PasswordResetAccountType accountType, String identifier) {
+        try {
+            return switch (accountType) {
+                case FARMER -> findFarmer(identifier).map(farmer -> new ResetTarget(accountType, farmer.getFarmerId(),
+                        farmer.getFullName(), blankToNull(farmer.getEmail()), farmer.getMobileNumber()));
+                case PARTNER -> findPartner(identifier).map(partner -> new ResetTarget(accountType, partner.getId(),
+                        partner.getFullName(), blankToNull(partner.getEmail()), partner.getMobileNumber()));
+                case OPERATOR -> findOperator(identifier).map(operator -> new ResetTarget(accountType, operator.getId(),
+                        operator.getFullName(), blankToNull(operator.getEmail()), operator.getMobileNumber()));
+            };
+        } catch (IncorrectResultSizeDataAccessException e) {
+            log.warn("Password reset lookup for role {} matched more than one account; no token issued", accountType);
+            return Optional.empty();
         }
     }
 
-    private void processOperatorForgotPassword(String identifier) {
-        String cleanMobile = cleanMobileNumber(identifier);
-        Optional<Operator> operatorOpt = Optional.empty();
-        if (identifier.contains("@")) {
-            operatorOpt = operatorRepository.findByEmailIgnoreCase(identifier)
-                    .or(() -> operatorRepository.findByEmail(identifier));
-        } else {
-            if (cleanMobile != null && cleanMobile.length() == 10) {
-                operatorOpt = operatorRepository.findByMobileNumber(cleanMobile);
+    /** farmers table only (an email may also be found through the farmer's linked core user). */
+    private Optional<Farmer> findFarmer(String identifier) {
+        if (AccountIdentifiers.looksLikeEmail(identifier)) {
+            Optional<Farmer> byEmail = farmerRepository.findByEmailIgnoreCase(identifier);
+            if (byEmail.isPresent()) {
+                return byEmail;
             }
-            if (operatorOpt.isEmpty()) {
-                operatorOpt = operatorRepository.findByMobileNumber(identifier);
-            }
+            return userRepository.findByEmailIgnoreCaseAndRole(identifier, Role.FARMER).map(User::getFarmer);
         }
-
-        if (operatorOpt.isPresent()) {
-            Operator operator = operatorOpt.get();
-            String tokenString = UUID.randomUUID().toString();
-            LocalDateTime expiry = LocalDateTime.now().plusMinutes(TOKEN_EXPIRY_MINUTES);
-
-            registerToken("OPERATOR", operator.getId(), operator.getEmail(), tokenString, expiry);
-
-            if (operator.getEmail() != null && !operator.getEmail().isBlank()) {
-                emailService.sendPasswordResetEmail(operator.getEmail(), tokenString, "OPERATOR");
-                log.info("Dispatched password reset instructions for Operator ID: {}", operator.getId());
-            } else {
-                log.warn("Operator ID {} has no email address configured for reset dispatch", operator.getId());
-            }
-        } else if (identifier.contains("@")) {
-            Optional<User> userOpt = userRepository.findByEmailIgnoreCaseAndRole(identifier, Role.OPERATOR)
-                    .or(() -> userRepository.findByEmailAndRole(identifier, Role.OPERATOR));
-            if (userOpt.isPresent()) {
-                User user = userOpt.get();
-                String tokenString = UUID.randomUUID().toString();
-                LocalDateTime expiry = LocalDateTime.now().plusMinutes(TOKEN_EXPIRY_MINUTES);
-
-                registerToken("OPERATOR", user.getId(), user.getEmail(), tokenString, expiry);
-                emailService.sendPasswordResetEmail(user.getEmail(), tokenString, "OPERATOR");
-                log.info("Dispatched password reset instructions for Operator User ID: {}", user.getId());
-            } else {
-                log.info("Operator forgot password requested for non-existent identifier");
-            }
-        } else {
-            log.info("Operator forgot password requested for non-existent identifier");
-        }
+        String mobile = AccountIdentifiers.normalizeMobile(identifier);
+        return mobile != null ? farmerRepository.findByMobileNumber(mobile) : Optional.empty();
     }
+
+    /** partners table only */
+    private Optional<Partner> findPartner(String identifier) {
+        if (AccountIdentifiers.looksLikeEmail(identifier)) {
+            return partnerRepository.findByEmailIgnoreCase(identifier);
+        }
+        String mobile = AccountIdentifiers.normalizeMobile(identifier);
+        return mobile != null ? partnerRepository.findByMobileNumber(mobile) : Optional.empty();
+    }
+
+    /** operators table only (a users-table account never receives an OPERATOR token) */
+    private Optional<Operator> findOperator(String identifier) {
+        if (AccountIdentifiers.looksLikeEmail(identifier)) {
+            return operatorRepository.findByEmailIgnoreCase(identifier);
+        }
+        String mobile = AccountIdentifiers.normalizeMobile(identifier);
+        return mobile != null ? operatorRepository.findByMobileNumber(mobile) : Optional.empty();
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // Reset password
+    // ------------------------------------------------------------------------------------------------
 
     /**
-     * Resets account password using a valid, non-expired recovery token or verified OTP.
+     * Redeems a reset token and sets the new password on the token's account. Unknown, malformed, expired,
+     * already used and invalidated tokens all fail with the same {@link #INVALID_TOKEN_MESSAGE}.
      */
-    @Transactional
-    public String processResetPassword(ResetPasswordRequest request) {
-        if (request.getNewPassword() == null || request.getConfirmPassword() == null) {
+    public String resetPassword(ResetPasswordRequest request) {
+        String newPassword = request.getNewPassword();
+        if (newPassword == null || request.getConfirmPassword() == null) {
             throw new BadRequestException("New password and confirm password are required.");
         }
-
-        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+        if (!newPassword.equals(request.getConfirmPassword())) {
             throw new BadRequestException("New password and confirm password do not match.");
         }
+        PasswordPolicy.validate(newPassword);
 
-        if (request.getNewPassword().length() < 6) {
-            throw new BadRequestException("New password must be at least 6 characters long.");
+        String rawToken = request.getToken() == null ? "" : request.getToken().trim();
+        if (!TOKEN_FORMAT.matcher(rawToken).matches()) {
+            throw new BadRequestException(INVALID_TOKEN_MESSAGE);
         }
-
-        String tokenString = request.getToken() != null ? request.getToken().trim() : "";
-
-        // Check if token was provided
-        if (tokenString.isEmpty()) {
-            // Check direct OTP reset fallback
-            if (request.getMobileNumber() != null && !request.getMobileNumber().isBlank()
-                    && request.getOtp() != null && !request.getOtp().isBlank()) {
-                return processDirectOtpPasswordReset(request);
-            }
-            throw new BadRequestException("Password reset token is required.");
-        }
-
-        // 1. Look up token in registry or database
-        RecoveryTokenRecord tokenRecord = resolveTokenRecord(tokenString);
-
-        if (tokenRecord == null) {
-            log.warn("Password reset rejected: Token not found");
-            throw new BadRequestException("Invalid or expired password reset token.");
-        }
-
-        // 2. Enforce verification attempt limits
-        tokenRecord.setAttemptCount(tokenRecord.getAttemptCount() + 1);
-        if (tokenRecord.getAttemptCount() > MAX_VERIFICATION_ATTEMPTS) {
-            tokenRecord.setUsed(true);
-            log.warn("Password reset rejected: Maximum attempts exceeded for token");
-            throw new BadRequestException("Maximum verification attempts exceeded. Please request a new password reset link.");
-        }
-
-        // 3. Check if already used
-        if (tokenRecord.isUsed()) {
-            log.warn("Password reset rejected: Token has already been used");
-            throw new BadRequestException("Invalid or expired password reset token.");
-        }
-
-        // 4. Check if expired
-        if (tokenRecord.getExpiryDate().isBefore(LocalDateTime.now())) {
-            log.warn("Password reset rejected: Token expired at {}", tokenRecord.getExpiryDate());
-            throw new BadRequestException("Invalid or expired password reset token.");
-        }
-
-        // 5. Cross-role enforcement: If request provides explicit role, must match token role
+        PasswordResetAccountType requestedType = null;
         if (request.getRole() != null && !request.getRole().isBlank()) {
-            String reqRole = request.getRole().trim().toUpperCase();
-            if (!tokenRecord.getRole().equalsIgnoreCase(reqRole)) {
-                log.warn("Password reset rejected: Cross-role attempt. Token role: {}, Request role: {}",
-                        tokenRecord.getRole(), reqRole);
-                throw new BadRequestException("Invalid or expired password reset token.");
+            requestedType = PasswordResetAccountType.fromRole(request.getRole());
+            if (requestedType == null) {
+                throw new BadRequestException(INVALID_TOKEN_MESSAGE);
             }
         }
 
-        // 6. Securely hash password and update intended entity
-        String hashedPassword = passwordEncoder.encode(request.getNewPassword());
-        String role = tokenRecord.getRole();
-        Long accountId = tokenRecord.getAccountId();
+        String tokenHash = sha256Hex(rawToken);
+        String newPasswordHash = passwordEncoder.encode(newPassword);
+        PasswordResetAccountType expectedType = requestedType;
+        AtomicReference<AccountPasswordResetToken> redeemed = new AtomicReference<>();
 
-        if ("FARMER".equalsIgnoreCase(role)) {
-            User user = userRepository.findById(accountId)
-                    .orElseThrow(() -> new BadRequestException("Account not found for password reset."));
-            user.setPassword(hashedPassword);
-            if (user.getFarmer() != null) {
-                Farmer farmer = user.getFarmer();
-                farmer.setPassword(hashedPassword);
+        try {
+            transactionTemplate.executeWithoutResult(status -> {
+                LocalDateTime now = LocalDateTime.now();
+                if (tokenRepository.consumeIfValid(tokenHash, now) != 1) {
+                    throw new BadRequestException(INVALID_TOKEN_MESSAGE);
+                }
+                AccountPasswordResetToken token = tokenRepository.findByTokenHash(tokenHash)
+                        .orElseThrow(() -> new BadRequestException(INVALID_TOKEN_MESSAGE));
+                if (expectedType != null && expectedType != token.getAccountType()) {
+                    // Rolls back the redemption: a cross-role attempt must not burn the token
+                    throw new BadRequestException(INVALID_TOKEN_MESSAGE);
+                }
+                applyNewPassword(token.getAccountType(), token.getAccountId(), newPasswordHash);
+                tokenRepository.invalidateOutstanding(token.getAccountType(), token.getAccountId(), now);
+                redeemed.set(token);
+            });
+        } catch (TransientDataAccessException e) {
+            // Lock timeouts / concurrent update conflicts: the competing redemption wins, this one is invalid
+            log.warn("Password reset rejected after a concurrent redemption conflict ({})", e.getClass().getSimpleName());
+            throw new BadRequestException(INVALID_TOKEN_MESSAGE);
+        }
+
+        AccountPasswordResetToken token = redeemed.get();
+        log.info("Password reset completed for {} account #{}", token.getAccountType(), token.getAccountId());
+        return RESET_SUCCESS_MESSAGE;
+    }
+
+    /** Writes the new BCrypt hash into the single account table named by the token's account type. */
+    private void applyNewPassword(PasswordResetAccountType accountType, Long accountId, String newPasswordHash) {
+        switch (accountType) {
+            case FARMER -> {
+                Farmer farmer = farmerRepository.findById(accountId)
+                        .orElseThrow(() -> new BadRequestException(INVALID_TOKEN_MESSAGE));
+                farmer.setPassword(newPasswordHash);
                 farmerRepository.save(farmer);
             }
-            userRepository.save(user);
-
-            // Invalidate DB token if present
-            resetTokenRepository.findByToken(tokenString).ifPresent(prt -> {
-                prt.setUsed(true);
-                resetTokenRepository.save(prt);
-            });
-            log.info("Password reset completed successfully for Farmer User ID: {}", user.getId());
-
-        } else if ("PARTNER".equalsIgnoreCase(role)) {
-            Partner partner = partnerRepository.findById(accountId)
-                    .orElseThrow(() -> new BadRequestException("Partner account not found for password reset."));
-            partner.setPassword(hashedPassword);
-            partner.setOtpCode(null);
-            partner.setOtpExpiry(null);
-            // Strictly preserve verificationStatus, otpVerified, and active status
-            partnerRepository.save(partner);
-            log.info("Password reset completed successfully for Partner ID: {}", partner.getId());
-
-        } else if ("OPERATOR".equalsIgnoreCase(role)) {
-            Optional<Operator> operatorOpt = operatorRepository.findById(accountId);
-            if (operatorOpt.isPresent()) {
-                Operator operator = operatorOpt.get();
-                operator.setPassword(hashedPassword);
-                // Strictly preserve status, mobileVerified, and active status
+            case PARTNER -> {
+                Partner partner = partnerRepository.findById(accountId)
+                        .orElseThrow(() -> new BadRequestException(INVALID_TOKEN_MESSAGE));
+                partner.setPassword(newPasswordHash);
+                partnerRepository.save(partner);
+            }
+            case OPERATOR -> {
+                Operator operator = operatorRepository.findById(accountId)
+                        .orElseThrow(() -> new BadRequestException(INVALID_TOKEN_MESSAGE));
+                operator.setPassword(newPasswordHash);
                 operatorRepository.save(operator);
-                log.info("Password reset completed successfully for Operator ID: {}", operator.getId());
-            } else {
-                User user = userRepository.findById(accountId)
-                        .orElseThrow(() -> new BadRequestException("Operator account not found for password reset."));
-                user.setPassword(hashedPassword);
-                userRepository.save(user);
-                log.info("Password reset completed successfully for Operator User ID: {}", user.getId());
-            }
-
-        } else {
-            throw new BadRequestException("Invalid role associated with token.");
-        }
-
-        // 7. Mark token as used
-        tokenRecord.setUsed(true);
-
-        return "Password reset successfully. You can now log in with your new password.";
-    }
-
-    private String processDirectOtpPasswordReset(ResetPasswordRequest request) {
-        String roleStr = request.getRole() != null && !request.getRole().isBlank()
-                ? request.getRole().trim().toUpperCase()
-                : "OPERATOR";
-        String mobile = request.getMobileNumber().trim();
-        String cleanMobile = cleanMobileNumber(mobile);
-        String searchMobile = (cleanMobile != null && cleanMobile.length() == 10) ? cleanMobile : mobile;
-        String otp = request.getOtp().trim();
-
-        if ("OPERATOR".equals(roleStr)) {
-            Optional<OperatorOtp> otpOpt = operatorOtpRepository
-                    .findTopByMobileNumberAndPurposeAndVerifiedFalseOrderByCreatedAtDesc(searchMobile, OtpPurpose.PASSWORD_RESET)
-                    .or(() -> operatorOtpRepository.findTopByMobileNumberAndPurposeAndVerifiedFalseOrderByCreatedAtDesc(mobile, OtpPurpose.PASSWORD_RESET));
-
-            if (otpOpt.isEmpty() || LocalDateTime.now().isAfter(otpOpt.get().getExpiresAt())) {
-                throw new BadRequestException("Invalid or expired verification code.");
-            }
-
-            OperatorOtp otpRecord = otpOpt.get();
-            otpRecord.setAttemptCount(otpRecord.getAttemptCount() + 1);
-
-            if (otpRecord.getAttemptCount() > otpRecord.getMaxAttempts()) {
-                operatorOtpRepository.save(otpRecord);
-                throw new BadRequestException("Maximum verification attempts exceeded. Please request a new OTP.");
-            }
-
-            if (!passwordEncoder.matches(otp, otpRecord.getOtpHash())) {
-                operatorOtpRepository.save(otpRecord);
-                throw new BadRequestException("Invalid verification code.");
-            }
-
-            otpRecord.setVerified(true);
-            operatorOtpRepository.save(otpRecord);
-
-            Operator operator = operatorRepository.findByMobileNumber(searchMobile)
-                    .or(() -> operatorRepository.findByMobileNumber(mobile))
-                    .orElseThrow(() -> new BadRequestException("Operator account not found."));
-            operator.setPassword(passwordEncoder.encode(request.getNewPassword()));
-            operatorRepository.save(operator);
-
-            log.info("Password reset via OTP completed for operator ID: {}", operator.getId());
-            return "Password reset successfully. You can now log in with your new password.";
-
-        } else if ("PARTNER".equals(roleStr)) {
-            Partner partner = partnerRepository.findByMobileNumber(mobile)
-                    .orElseThrow(() -> new BadRequestException("Partner account not found."));
-
-            if (partner.getOtpCode() == null || partner.getOtpExpiry() == null
-                    || LocalDateTime.now().isAfter(partner.getOtpExpiry())) {
-                throw new BadRequestException("Invalid or expired verification code.");
-            }
-
-            if (!partner.getOtpCode().equals(otp)) {
-                throw new BadRequestException("Invalid verification code.");
-            }
-
-            partner.setPassword(passwordEncoder.encode(request.getNewPassword()));
-            partner.setOtpCode(null);
-            partner.setOtpExpiry(null);
-            partnerRepository.save(partner);
-
-            log.info("Password reset via OTP completed for partner ID: {}", partner.getId());
-            return "Password reset successfully. You can now log in with your new password.";
-        }
-
-        throw new BadRequestException("OTP-based reset is not supported for role: " + roleStr);
-    }
-
-    private RecoveryTokenRecord resolveTokenRecord(String tokenString) {
-        RecoveryTokenRecord record = tokenRegistry.get(tokenString);
-        if (record != null) {
-            return record;
-        }
-
-        // Fallback 1: check PasswordResetToken table for Farmer
-        Optional<PasswordResetToken> prtOpt = resetTokenRepository.findByToken(tokenString);
-        if (prtOpt.isPresent()) {
-            PasswordResetToken prt = prtOpt.get();
-            return RecoveryTokenRecord.builder()
-                    .token(prt.getToken())
-                    .role("FARMER")
-                    .accountId(prt.getUser().getId())
-                    .identifier(prt.getUser().getEmail())
-                    .expiryDate(prt.getExpiryDate())
-                    .used(prt.isUsed())
-                    .attemptCount(0)
-                    .createdAt(prt.getCreatedAt() != null ? prt.getCreatedAt() : LocalDateTime.now())
-                    .build();
-        }
-
-        // Fallback 2: check Partner table for otpCode matching tokenString
-        Optional<Partner> partnerOpt = partnerRepository.findByOtpCode(tokenString);
-        if (partnerOpt.isPresent()) {
-            Partner partner = partnerOpt.get();
-            return RecoveryTokenRecord.builder()
-                    .token(tokenString)
-                    .role("PARTNER")
-                    .accountId(partner.getId())
-                    .identifier(partner.getEmail())
-                    .expiryDate(partner.getOtpExpiry() != null ? partner.getOtpExpiry() : LocalDateTime.now().plusMinutes(TOKEN_EXPIRY_MINUTES))
-                    .used(false)
-                    .attemptCount(0)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-        }
-
-        return null;
-    }
-
-    public String createOperatorResetToken(Long operatorId, String mobileNumber) {
-        String tokenString = UUID.randomUUID().toString();
-        LocalDateTime expiry = LocalDateTime.now().plusMinutes(TOKEN_EXPIRY_MINUTES);
-        registerToken("OPERATOR", operatorId, mobileNumber, tokenString, expiry);
-        return tokenString;
-    }
-
-    public void registerToken(String role, Long accountId, String identifier, String token, LocalDateTime expiry) {
-        // Invalidate previous unexpired/unused tokens for this role and accountId
-        tokenRegistry.values().forEach(rec -> {
-            if (rec.getRole().equalsIgnoreCase(role) && rec.getAccountId().equals(accountId) && !rec.isUsed()) {
-                rec.setUsed(true);
-            }
-        });
-
-        RecoveryTokenRecord record = RecoveryTokenRecord.builder()
-                .token(token)
-                .role(role)
-                .accountId(accountId)
-                .identifier(identifier)
-                .expiryDate(expiry)
-                .used(false)
-                .attemptCount(0)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        tokenRegistry.put(token, record);
-    }
-
-    private void checkRateLimit(String key) {
-        LocalDateTime now = LocalDateTime.now();
-        List<LocalDateTime> history = requestHistory.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>());
-
-        // Evict expired entries older than RATE_LIMIT_WINDOW_MINUTES
-        history.removeIf(timestamp -> timestamp.isBefore(now.minusMinutes(RATE_LIMIT_WINDOW_MINUTES)));
-
-        // Enforce cooldown
-        if (!history.isEmpty()) {
-            LocalDateTime lastRequest = history.get(history.size() - 1);
-            if (lastRequest.isAfter(now.minusSeconds(COOLDOWN_SECONDS))) {
-                throw new BadRequestException("Please wait " + COOLDOWN_SECONDS + " seconds before requesting another password reset.");
             }
         }
-
-        // Enforce max requests per window
-        if (history.size() >= MAX_REQUESTS_PER_WINDOW) {
-            throw new BadRequestException("Too many password reset requests. Please try again after 15 minutes.");
-        }
-
-        history.add(now);
     }
 
-    // Test support methods
-    public void registerTestToken(String token, String role, Long accountId, String identifier, LocalDateTime expiry, boolean used) {
-        RecoveryTokenRecord record = RecoveryTokenRecord.builder()
-                .token(token)
-                .role(role)
-                .accountId(accountId)
-                .identifier(identifier)
-                .expiryDate(expiry)
-                .used(used)
-                .attemptCount(0)
-                .createdAt(LocalDateTime.now())
-                .build();
-        tokenRegistry.put(token, record);
+    // ------------------------------------------------------------------------------------------------
+    // Configuration and helpers
+    // ------------------------------------------------------------------------------------------------
+
+    /** True only with an explicitly active 'dev' profile AND the opt-in property; never in staging/prod. */
+    public boolean isDevTokenDisclosureAllowed() {
+        return devTokenInResponse && DeploymentProfiles.isExplicitDevelopment(environment);
     }
 
-    public void clearTokens() {
-        tokenRegistry.clear();
-        requestHistory.clear();
+    public boolean isDeliveryConfigured() {
+        return configuredDelivery() != null;
     }
 
-    private String cleanMobileNumber(String input) {
-        if (input == null || input.contains("@")) {
-            return null;
+    /** The delivery provider, or null when none is configured or reset links cannot be built. */
+    private PasswordResetDelivery configuredDelivery() {
+        PasswordResetDelivery delivery = deliveryProvider.getIfUnique();
+        return delivery != null && delivery.isConfigured() && hasFrontendBaseUrl() ? delivery : null;
+    }
+
+    private boolean hasFrontendBaseUrl() {
+        return frontendBaseUrl != null && !frontendBaseUrl.isBlank();
+    }
+
+    /** Test support. */
+    public void setDevTokenInResponse(boolean devTokenInResponse) {
+        this.devTokenInResponse = devTokenInResponse;
+    }
+
+    /** Test support. */
+    public void setFrontendBaseUrl(String frontendBaseUrl) {
+        this.frontendBaseUrl = frontendBaseUrl;
+    }
+
+    static String newRawToken() {
+        byte[] bytes = new byte[TOKEN_BYTES];
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    /** Lowercase hex SHA-256, the only form in which a token is stored. */
+    public static String sha256Hex(String rawToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(rawToken.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
         }
-        String digits = input.replaceAll("\\D", "");
-        if (digits.length() == 10) {
-            return digits;
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private record ResetTarget(PasswordResetAccountType accountType, Long accountId, String name,
+                               String email, String mobileNumber) {
+    }
+
+    private record IssuedToken(String rawToken, ResetTarget target, LocalDateTime expiresAt) {
+        @Override
+        public String toString() {
+            return "IssuedToken[" + target.accountType() + " #" + target.accountId() + ", token=<redacted>]";
         }
-        if (digits.length() == 12 && digits.startsWith("91")) {
-            return digits.substring(2);
-        }
-        if (digits.length() == 11 && digits.startsWith("0")) {
-            return digits.substring(1);
-        }
-        return null;
     }
 }

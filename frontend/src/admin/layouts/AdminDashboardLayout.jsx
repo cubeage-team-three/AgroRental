@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   CalendarRange,
   Handshake,
+  IndianRupee,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -15,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { adminAuthService } from '../services/adminAuthService';
+import { useAuth } from '../../context/AuthContext';
 import { getCurrentUser } from '../../services/authService';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
 
@@ -25,6 +27,7 @@ const NAV_ITEMS = [
   { label: 'Operators', to: '/admin/operators', icon: UserCheck },
   { label: 'Equipment Approvals', to: '/admin/equipment', icon: Tractor },
   { label: 'Bookings', to: '/admin/bookings', icon: CalendarRange },
+  { label: 'Refunds', to: '/admin/payments', icon: IndianRupee },
   { label: 'Disputes', to: '/admin/complaints', icon: AlertTriangle },
 ];
 
@@ -45,8 +48,10 @@ function AdminDashboardLayout() {
     setChecked(true);
   }, [navigate]);
 
+  const { logout } = useAuth();
+
   const handleLogout = () => {
-    adminAuthService.logout();
+    logout(); // clears storage and the in-memory session, so no page keeps showing a signed-in admin
     navigate('/admin/login', { replace: true });
   };
 

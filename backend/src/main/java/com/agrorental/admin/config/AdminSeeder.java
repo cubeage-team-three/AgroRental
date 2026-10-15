@@ -2,9 +2,9 @@ package com.agrorental.admin.config;
 
 import com.agrorental.admin.entity.Admin;
 import com.agrorental.admin.repository.AdminRepository;
+import com.agrorental.common.config.DeploymentProfiles;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -13,15 +13,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.Arrays;
-import java.util.List;
-
 /**
- * Seeds an initial admin account for local/dev use or when explicitly configured.
- * Excluded from the "prod" profile so this known dev password is never created in production.
- * In the "staging" profile, hardcoded default credentials are strictly prohibited:
- * an initial admin will ONLY be seeded if AGRORENTAL_ADMIN_PASSWORD is explicitly set to
- * a secure, non-default value.
+ * Seeds an initial admin account only when explicitly configured.
+ * Excluded from the "prod" profile. There is no fallback password: unless AGRORENTAL_ADMIN_PASSWORD
+ * (agrorental.admin.seed.password) is set, no admin is seeded in any profile. The formerly committed
+ * default password is rejected everywhere except an explicitly active "dev" profile.
  */
 @Slf4j
 @Component
@@ -30,7 +26,9 @@ import java.util.List;
 public class AdminSeeder implements CommandLineRunner {
 
     public static final String DEFAULT_ADMIN_EMAIL = "agrorent@admin.in";
-    public static final String DEFAULT_ADMIN_PASSWORD = "agrorent21";
+
+    /** Previously committed default password (public in history); never accepted outside explicit dev. */
+    public static final String KNOWN_INSECURE_ADMIN_PASSWORD = "agrorent21";
 
     private final AdminRepository adminRepository;
     private final PasswordEncoder passwordEncoder;
@@ -44,7 +42,18 @@ public class AdminSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        boolean isStaging = isStagingProfileActive();
+        if (!StringUtils.hasText(configuredAdminPassword)) {
+            log.warn("AdminSeeder: No admin seed password configured (AGRORENTAL_ADMIN_PASSWORD). "
+                    + "Skipping admin seeding; no default credentials are used.");
+            return;
+        }
+
+        String password = configuredAdminPassword.trim();
+        if (KNOWN_INSECURE_ADMIN_PASSWORD.equals(password) && !DeploymentProfiles.isExplicitDevelopment(environment)) {
+            log.warn("AdminSeeder: The configured admin password is a known, publicly committed default. "
+                    + "It is only accepted with an explicitly active 'dev' profile. Skipping admin seeding.");
+            return;
+        }
 
         String email = StringUtils.hasText(configuredAdminEmail)
                 ? configuredAdminEmail.trim()
@@ -55,20 +64,6 @@ public class AdminSeeder implements CommandLineRunner {
             return;
         }
 
-        if (isStaging) {
-            // In staging, hardcoded default credentials are strictly prohibited
-            if (!StringUtils.hasText(configuredAdminPassword) || DEFAULT_ADMIN_PASSWORD.equals(configuredAdminPassword.trim())) {
-                log.warn("AdminSeeder: Hardcoded or missing admin password detected under 'staging' profile. " +
-                        "Default admin seeding is disabled in staging to prevent hardcoded credentials. " +
-                        "To seed an initial admin account in staging, set AGRORENTAL_ADMIN_PASSWORD to a secure non-default password.");
-                return;
-            }
-        }
-
-        String password = StringUtils.hasText(configuredAdminPassword)
-                ? configuredAdminPassword.trim()
-                : DEFAULT_ADMIN_PASSWORD;
-
         Admin admin = Admin.builder()
                 .fullName("AgroRent Administrator")
                 .email(email)
@@ -78,13 +73,4 @@ public class AdminSeeder implements CommandLineRunner {
         adminRepository.save(admin);
         log.info("Seeded initial admin account: {}", email);
     }
-
-    private boolean isStagingProfileActive() {
-        if (environment == null) {
-            return false;
-        }
-        List<String> activeProfiles = Arrays.asList(environment.getActiveProfiles());
-        return activeProfiles.contains("staging");
-    }
 }
-

@@ -141,6 +141,67 @@ export const adminService = {
       method: 'PATCH',
     });
   },
+
+  /**
+   * Lists refund obligations (unpaginated). With a status the server returns that status oldest-first;
+   * without one, all refunds newest-first. List entries do not include the audit history.
+   * @param {string} [status] - 'REFUND_PENDING' | 'REFUND_FAILED' | 'REFUNDED'; omit or 'ALL' for every refund
+   * @returns {Promise<Array>} RefundResponse[]
+   */
+  getRefunds: async (status) => {
+    const endpoint = status && status !== 'ALL'
+      ? `/admin/refunds?status=${encodeURIComponent(status)}`
+      : '/admin/refunds';
+    return await request(endpoint);
+  },
+
+  /**
+   * Retrieves one refund with its full audit history.
+   * @param {number|string} id - Refund ID
+   * @returns {Promise<Object>} RefundResponse
+   */
+  getRefundById: async (id) => {
+    return await request(`/admin/refunds/${id}`);
+  },
+
+  /**
+   * Records a verified bank/UPI transfer and marks the refund REFUNDED (REFUND_PENDING only; cannot be undone).
+   * @param {number|string} id - Refund ID
+   * @param {Object} completionData - { transferReference, note }
+   * @returns {Promise<Object>} RefundResponse
+   */
+  completeRefund: async (id, completionData) => {
+    return await request(`/admin/refunds/${id}/complete`, {
+      method: 'POST',
+      body: JSON.stringify(completionData),
+    });
+  },
+
+  /**
+   * Records a failed transfer attempt; the refund stays owed as REFUND_FAILED (REFUND_PENDING only).
+   * @param {number|string} id - Refund ID
+   * @param {Object} failureData - { reason }
+   * @returns {Promise<Object>} RefundResponse
+   */
+  failRefund: async (id, failureData) => {
+    return await request(`/admin/refunds/${id}/fail`, {
+      method: 'POST',
+      body: JSON.stringify(failureData),
+    });
+  },
+
+  /**
+   * Re-opens a failed refund for another transfer attempt on the same obligation (REFUND_FAILED only).
+   * @param {number|string} id - Refund ID
+   * @param {Object} retryData - { note }
+   * @returns {Promise<Object>} RefundResponse
+   */
+  retryRefund: async (id, retryData) => {
+    return await request(`/admin/refunds/${id}/retry`, {
+      method: 'POST',
+      body: JSON.stringify(retryData),
+    });
+  },
 };
 
 export default adminService;

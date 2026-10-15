@@ -1,14 +1,18 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getLoginPath } from '../../utils/auth';
 import { Loader2 } from 'lucide-react';
 
 /**
  * ProtectedRoute Component
  * Guards routes against unauthenticated users and unauthorized roles.
+ * Signed-out users (including a session that just expired with a 401) go to the login page of the
+ * area they tried to open, e.g. /admin/login for admin routes.
  */
 export default function ProtectedRoute({ allowedRoles = [] }) {
-  const { isAuthenticated, isLoading, role } = useAuth();
+  const { isAuthenticated, isLoading, role, sessionExpired } = useAuth();
   const location = useLocation();
+  const loginPath = getLoginPath(allowedRoles.length === 1 ? allowedRoles[0] : null);
 
   // 1. Wait for initial authentication state initialization
   if (isLoading) {
@@ -20,9 +24,10 @@ export default function ProtectedRoute({ allowedRoles = [] }) {
     );
   }
 
-  // 2. Redirect unauthenticated users to Login, preserving requested location state
+  // 2. Redirect unauthenticated users to their Login page, preserving requested location state
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const state = sessionExpired ? { from: location, sessionExpired: true } : { from: location };
+    return <Navigate to={loginPath} state={state} replace />;
   }
 
   // 3. Perform Role-Based Access Control (RBAC) checks
@@ -37,7 +42,7 @@ export default function ProtectedRoute({ allowedRoles = [] }) {
     } else if (role === 'OPERATOR') {
       return <Navigate to="/operator/dashboard" replace />;
     }
-    return <Navigate to="/login" replace />;
+    return <Navigate to={loginPath} replace />;
   }
 
   return <Outlet />;

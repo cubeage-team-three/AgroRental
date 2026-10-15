@@ -15,6 +15,7 @@ import com.agrorental.operator.service.OperatorEarningsService;
 import com.agrorental.security.jwt.JwtAuthenticationFilter;
 import com.agrorental.security.jwt.JwtService;
 import com.agrorental.security.principal.OperatorPrincipal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -70,6 +71,12 @@ class OperatorEarningsSecurityIntegrationTest {
     private OperatorEarningsController earningsController;
 
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    /** The JWT filter authenticates on this thread; never leak that principal into later test classes. */
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     @BeforeEach
     void setUp() {
@@ -142,6 +149,7 @@ class OperatorEarningsSecurityIntegrationTest {
         when(jwtService.validateToken(token)).thenReturn(true);
         when(jwtService.extractUserId(token)).thenReturn(1L);
         when(jwtService.extractRole(token)).thenReturn("OPERATOR");
+        when(jwtService.extractAccountType(token)).thenReturn("OPERATOR");
         when(jwtService.extractMobileNumber(token)).thenReturn("9876543210");
 
         Operator operator = Operator.builder()

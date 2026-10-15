@@ -3,23 +3,21 @@ package com.agrorental.operator.controller;
 import com.agrorental.common.dto.ApiResponse;
 import com.agrorental.common.exception.UnauthorizedException;
 import com.agrorental.operator.dto.AuthenticatedOperatorResponse;
-import com.agrorental.operator.dto.OperatorLoginRequest;
-import com.agrorental.operator.dto.OperatorLoginResponse;
 import com.agrorental.operator.service.OperatorAuthService;
 import com.agrorental.security.principal.OperatorPrincipal;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST Controller managing Operator authentication and session identity verification (FR-39).
+ * Operator session identity (FR-39). Operators sign in through the shared POST /api/auth/login
+ * (role OPERATOR); the former duplicate login endpoint is retired.
  */
 @Slf4j
 @RestController
@@ -27,19 +25,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class OperatorAuthController {
 
+    public static final String LOGIN_RETIRED_MESSAGE =
+            "This login endpoint has been retired. Sign in with POST /api/auth/login using role OPERATOR.";
+
     private final OperatorAuthService operatorAuthService;
 
     /**
-     * Authenticates an operator and issues a signed JWT access token.
-     *
-     * @param request Operator login credentials (mobile and password).
-     * @return ApiResponse containing JWT token and safe operator profile.
+     * Retired duplicate of POST /api/auth/login (no client uses it). Answers 410 Gone without reading the
+     * request, so it never authenticates anyone and never reveals whether an account exists.
      */
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<OperatorLoginResponse>> login(@Valid @RequestBody OperatorLoginRequest request) {
-        log.info("REST request to authenticate operator with mobile: [PROTECTED]");
-        OperatorLoginResponse response = operatorAuthService.login(request);
-        return ResponseEntity.ok(ApiResponse.success("Operator login successful", response));
+    public ResponseEntity<ApiResponse<Object>> login() {
+        log.info("Rejected call to the retired operator login endpoint");
+        return ResponseEntity.status(HttpStatus.GONE).body(ApiResponse.error(LOGIN_RETIRED_MESSAGE));
     }
 
     /**

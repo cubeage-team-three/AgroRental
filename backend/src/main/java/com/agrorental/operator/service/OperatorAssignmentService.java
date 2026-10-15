@@ -8,7 +8,6 @@ import com.agrorental.common.exception.ForbiddenException;
 import com.agrorental.common.exception.ResourceNotFoundException;
 import com.agrorental.notification.service.NotificationService;
 import com.agrorental.equipment.entity.Equipment;
-import com.agrorental.equipment.enums.AvailabilityStatus;
 import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.operator.dto.EligibleOperatorResponse;
 import com.agrorental.operator.dto.OperatorAssignedJobResponse;
@@ -29,6 +28,7 @@ import com.agrorental.operator.repository.OperatorLocationRepository;
 import com.agrorental.operator.repository.OperatorRepository;
 import com.agrorental.operator.repository.OperatorReviewRepository;
 import com.agrorental.partner.entity.Partner;
+import com.agrorental.security.principal.CurrentCaller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -107,10 +107,11 @@ public class OperatorAssignmentService {
                 .or(() -> bookingRepository.findById(bookingId))
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + bookingId));
 
-        // 2. Validate Partner ownership
-        if (requestingPartnerId != null && booking.getPartner() != null && !booking.getPartner().getId().equals(requestingPartnerId)) {
+        // 2. Validate Partner ownership (fail closed: a booking without a partner belongs to no partner)
+        if (requestingPartnerId != null
+                && (booking.getPartner() == null || !booking.getPartner().getId().equals(requestingPartnerId))) {
             log.warn("Assignment rejected: Booking {} belongs to partner {}, requesting partner was {}",
-                    bookingId, booking.getPartner().getId(), requestingPartnerId);
+                    bookingId, booking.getPartner() != null ? booking.getPartner().getId() : null, requestingPartnerId);
             throw new BadRequestException("Unauthorized: Booking does not belong to the specified partner.");
         }
 
@@ -133,7 +134,8 @@ public class OperatorAssignmentService {
                 .or(() -> operatorRepository.findById(request.getOperatorId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Operator not found with ID: " + request.getOperatorId()));
 
-        // 6. Validate Operator eligibility
+        // 6. Validate Operator eligibility: account active + APPROVED (contract v1.1: mobileVerified is
+        //    informational only and is not an assignment gate)
         if (!operator.isActive()) {
             log.warn("Assignment rejected: Operator {} is inactive", operator.getId());
             throw new ForbiddenException("Operator account is inactive");
@@ -142,11 +144,6 @@ public class OperatorAssignmentService {
         if (operator.getStatus() != OperatorStatus.APPROVED) {
             log.warn("Assignment rejected: Operator {} status is {}", operator.getId(), operator.getStatus());
             throw new ForbiddenException("Operator is not approved");
-        }
-
-        if (!operator.isMobileVerified()) {
-            log.warn("Assignment rejected: Operator {} mobile is unverified", operator.getId());
-            throw new ForbiddenException("Operator mobile number is not verified");
         }
 
         // 7. Validate schedule conflict / overlapping active assignments across all active states
@@ -188,13 +185,11 @@ public class OperatorAssignmentService {
 
         OperatorJobAssignment savedAssignment = assignmentRepository.save(assignment);
 
-        // 9. Synchronize booking relationship and transition status to OPERATOR_ASSIGNED
+        // 9. Synchronize booking relationship and transition status to OPERATOR_ASSIGNED. Equipment availability is
+        //    not touched: CONFIRMED and OPERATOR_ASSIGNED both reserve the machine, so its flag is already right,
+        //    and partner-owned UNDER_MAINTENANCE / INACTIVE flags must never be overridden by booking events.
         booking.setOperator(operator);
         booking.setStatus(BookingStatus.OPERATOR_ASSIGNED);
-        Equipment equipment = booking.getEquipment();
-        if (equipment != null) {
-            equipment.setAvailabilityStatus(AvailabilityStatus.BOOKED);
-        }
         bookingRepository.save(booking);
 
         // 10. Dispatch notifications
@@ -273,18 +268,67 @@ public class OperatorAssignmentService {
     }
 
     /**
-     * Retrieves the current active assignment for a Booking (Admin/Partner visibility).
+     * Retrieves the booking's current assignment (Admin/Partner visibility): the active one in any state from
+     * ASSIGNED through PAUSED, otherwise the completed one. Declined or cancelled assignments are not current,
+     * so after a decline the booking shows no operator until it is reassigned.
      *
      * @param bookingId Booking identifier
-     * @return OperatorAssignmentResponse DTO or null if no active assignment
+     * @return OperatorAssignmentResponse DTO or null if there is no current assignment
      */
     @Transactional(readOnly = true)
     public OperatorAssignmentResponse getBookingAssignment(Long bookingId) {
         log.info("Fetching operator assignment for booking ID: {}", bookingId);
 
-        return assignmentRepository.findByBookingIdAndAssignmentStatus(bookingId, OperatorAssignmentStatus.ASSIGNED)
+        return assignmentRepository.findCurrentAssignmentForBooking(bookingId)
                 .map(assignmentMapper::toAssignmentResponse)
                 .orElse(null);
+    }
+
+    /**
+     * Current assignment (including the assigned operator's contact number) for the partner that owns
+     * the booking, or an admin. Ownership is checked before any assignment data is read.
+     */
+    @Transactional(readOnly = true)
+    public OperatorAssignmentResponse getBookingAssignmentForCaller(Long bookingId, CurrentCaller caller) {
+        if (!caller.isAdmin()) {
+            Booking booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + bookingId));
+            if (booking.getPartner() == null || !caller.is(CurrentCaller.Kind.PARTNER, booking.getPartner().getId())) {
+                throw new ForbiddenException("Access is denied. You are not authorized to view this booking's operator.");
+            }
+        }
+        return getBookingAssignment(bookingId);
+    }
+
+    /**
+     * Eligible-operator selection for assignment. Admins get the full view; partners get only what
+     * selection needs: search by name/skills, masked mobile number and no home address. Other callers are refused.
+     */
+    @Transactional(readOnly = true)
+    public Page<EligibleOperatorResponse> findEligibleOperatorsForCaller(String search, Pageable pageable, CurrentCaller caller) {
+        if (caller.isAdmin()) {
+            return findEligibleOperators(search, pageable);
+        }
+        if (caller.kind() != CurrentCaller.Kind.PARTNER) {
+            throw new ForbiddenException("Access is denied. Only partners and administrators can list eligible operators.");
+        }
+        // Eligible = APPROVED + active (contract v1.1: no mobile-verification filter)
+        Page<Operator> operators = (search != null && !search.trim().isEmpty())
+                ? operatorRepository.searchAssignableOperatorsByNameOrSkills(OperatorStatus.APPROVED, true, search.trim(), pageable)
+                : operatorRepository.findByStatusAndActive(OperatorStatus.APPROVED, true, pageable);
+        return operators.map(operator -> {
+            EligibleOperatorResponse response = assignmentMapper.toEligibleResponse(operator);
+            response.setMobileNumber(maskMobile(response.getMobileNumber()));
+            response.setAddress(null);
+            return response;
+        });
+    }
+
+    private static String maskMobile(String mobile) {
+        if (mobile == null || mobile.length() < 4) {
+            return null;
+        }
+        return "******" + mobile.substring(mobile.length() - 4);
     }
 
     /**
@@ -298,19 +342,18 @@ public class OperatorAssignmentService {
     public Page<EligibleOperatorResponse> findEligibleOperators(String search, Pageable pageable) {
         log.info("Searching eligible operators with query: '{}'", search);
 
+        // Eligible = APPROVED + active (contract v1.1: no mobile-verification filter)
         Page<Operator> operators;
         if (search != null && !search.trim().isEmpty()) {
-            operators = operatorRepository.searchEligibleOperators(
+            operators = operatorRepository.searchAssignableOperators(
                     OperatorStatus.APPROVED,
-                    true,
                     true,
                     search.trim(),
                     pageable
             );
         } else {
-            operators = operatorRepository.findByStatusAndActiveAndMobileVerified(
+            operators = operatorRepository.findByStatusAndActive(
                     OperatorStatus.APPROVED,
-                    true,
                     true,
                     pageable
             );

@@ -60,7 +60,8 @@ public class AdminOperatorService {
 
     /**
      * Processes Admin approval or rejection for an Operator account.
-     * Enforces strict state transitions: only PENDING operators can be approved or rejected.
+     * Enforces strict state transitions: only PENDING operators can be approved or rejected. Mobile (OTP)
+     * verification is informational only and is not a precondition for approval (contract v1.1).
      */
     @Transactional
     public OperatorDetailResponse verifyOperator(Long id, OperatorVerificationRequest request) {
@@ -77,9 +78,6 @@ public class AdminOperatorService {
         }
 
         if (targetStatus == OperatorStatus.APPROVED) {
-            if (!operator.isMobileVerified()) {
-                throw new BadRequestException("Operator mobile number must be verified before approval.");
-            }
             operator.setStatus(OperatorStatus.APPROVED);
             operator.setActive(true);
             operator.setRejectionReason(null);

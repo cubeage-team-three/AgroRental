@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Request DTO for changing authenticated Operator password.
@@ -14,6 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"currentPassword", "newPassword", "confirmPassword"})
 public class OperatorChangePasswordRequest {
 
     @NotBlank(message = "Current password is required")

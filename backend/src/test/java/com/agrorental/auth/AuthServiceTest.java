@@ -9,7 +9,6 @@ import com.agrorental.common.enums.Role;
 import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.farmer.repository.FarmerRepository;
-import com.agrorental.farmer.service.FarmerOtpService;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.repository.OperatorRepository;
@@ -36,6 +35,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,9 +58,6 @@ class AuthServiceTest {
 
     @Mock
     private OperatorRepository operatorRepository;
-
-    @Mock
-    private FarmerOtpService farmerOtpService;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -177,10 +176,32 @@ class AuthServiceTest {
         when(farmerRepository.findByMobileNumberOrEmail("testpartner@gmail.com", "testpartner@gmail.com")).thenReturn(Optional.empty());
         when(partnerRepository.findByMobileNumberOrEmailIgnoreCase("testpartner@gmail.com", "testpartner@gmail.com"))
                 .thenReturn(Optional.of(pendingPartner));
+        when(passwordEncoder.matches("plain_password", "encoded_password")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Your account verification is currently pending admin approval");
+        verifyNoInteractions(jwtService);
+    }
+
+    @Test
+    @DisplayName("Gate order: a pending partner with a WRONG password only gets the generic credential error")
+    void shouldNotRevealPendingStatusBeforePasswordCheck() {
+        LoginRequest request = LoginRequest.builder()
+                .mobileOrEmail("testpartner@gmail.com")
+                .password("wrong_password")
+                .build();
+
+        when(adminRepository.findByEmail("testpartner@gmail.com")).thenReturn(Optional.empty());
+        when(farmerRepository.findByMobileNumberOrEmail("testpartner@gmail.com", "testpartner@gmail.com")).thenReturn(Optional.empty());
+        when(partnerRepository.findByMobileNumberOrEmailIgnoreCase("testpartner@gmail.com", "testpartner@gmail.com"))
+                .thenReturn(Optional.of(pendingPartner));
+        when(passwordEncoder.matches("wrong_password", "encoded_password")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
+        verifyNoInteractions(jwtService);
     }
 
     @Test
@@ -197,10 +218,12 @@ class AuthServiceTest {
         when(farmerRepository.findByMobileNumberOrEmail("ramesh@agro.com", "ramesh@agro.com")).thenReturn(Optional.empty());
         when(partnerRepository.findByMobileNumberOrEmailIgnoreCase("ramesh@agro.com", "ramesh@agro.com"))
                 .thenReturn(Optional.of(approvedPartner));
+        when(passwordEncoder.matches("plain_password", "encoded_password")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Partner account is currently deactivated");
+        verifyNoInteractions(jwtService);
     }
 
     @Test
@@ -219,7 +242,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid mobile/email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
@@ -237,7 +260,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
@@ -450,7 +473,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
@@ -470,7 +493,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
@@ -484,12 +507,11 @@ class AuthServiceTest {
                 .build();
 
         when(partnerRepository.findByMobileNumberOrEmailIgnoreCase("admin@agro.com", "admin@agro.com")).thenReturn(Optional.empty());
-        when(userRepository.findByEmailAndRole("admin@agro.com", Role.PARTNER)).thenReturn(Optional.empty());
         when(userRepository.findByEmailIgnoreCaseAndRole("admin@agro.com", Role.PARTNER)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
@@ -506,7 +528,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
@@ -526,7 +548,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
@@ -540,103 +562,92 @@ class AuthServiceTest {
                 .build();
 
         when(partnerRepository.findByMobileNumberOrEmailIgnoreCase("farmer@agro.com", "farmer@agro.com")).thenReturn(Optional.empty());
-        when(userRepository.findByEmailAndRole("farmer@agro.com", Role.PARTNER)).thenReturn(Optional.empty());
         when(userRepository.findByEmailIgnoreCaseAndRole("farmer@agro.com", Role.PARTNER)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
-    @DisplayName("Security: Non-Farmer roles must reject OTP login mode")
-    void shouldRejectOtpLoginForNonFarmerRoles() {
-        LoginRequest partnerOtp = LoginRequest.builder()
-                .mobileOrEmail("partner@agro.com")
-                .role("PARTNER")
-                .loginType("OTP")
-                .build();
+    @DisplayName("Security: OTP login mode is rejected for every role (FARMER included) before any account lookup")
+    void shouldRejectOtpLoginForEveryRole() {
+        for (String role : new String[]{"FARMER", "PARTNER", "OPERATOR", "ADMIN", null}) {
+            LoginRequest otpLogin = LoginRequest.builder()
+                    .mobileOrEmail("9876543297")
+                    .otp("123456")
+                    .role(role)
+                    .loginType("OTP")
+                    .build();
 
-        assertThatThrownBy(() -> authService.login(partnerOtp))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("OTP login is only supported for Farmer accounts");
-
-        LoginRequest operatorOtp = LoginRequest.builder()
-                .mobileOrEmail("operator@agro.com")
-                .role("OPERATOR")
-                .loginType("OTP")
-                .build();
-
-        assertThatThrownBy(() -> authService.login(operatorOtp))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("OTP login is only supported for Farmer accounts");
-
-        LoginRequest adminOtp = LoginRequest.builder()
-                .mobileOrEmail("admin@agro.com")
-                .role("ADMIN")
-                .loginType("OTP")
-                .build();
-
-        assertThatThrownBy(() -> authService.login(adminOtp))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("OTP login is only supported for Farmer accounts");
+            assertThatThrownBy(() -> authService.login(otpLogin))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessage(AuthService.OTP_LOGIN_DISABLED_MESSAGE);
+        }
+        verifyNoInteractions(userRepository, farmerRepository, partnerRepository, adminRepository, operatorRepository,
+                passwordEncoder, jwtService);
     }
 
     @Test
-    @DisplayName("Operator Lifecycle: Pending, inactive, or unverified operator accounts must be blocked")
+    @DisplayName("Operator Lifecycle: pending, rejected and inactive operators are blocked after the password check; unverified mobile is allowed")
     void shouldEnforceOperatorLifecycleConstraints() {
-        Operator pendingOp = Operator.builder()
-                .fullName("Pending Op")
-                .mobileNumber("9876543201")
-                .email("pending@agro.com")
-                .password("pwd")
-                .status(OperatorStatus.PENDING)
-                .mobileVerified(true)
-                .build();
-        pendingOp.setId(51L);
-        pendingOp.setActive(true);
+        when(passwordEncoder.matches("pwd", "enc_pwd")).thenReturn(true);
 
-        LoginRequest req1 = LoginRequest.builder()
-                .mobileOrEmail("pending@agro.com")
-                .password("pwd")
-                .role("OPERATOR")
-                .build();
-
-        when(operatorRepository.findByMobileNumberOrEmailIgnoreCase("pending@agro.com", "pending@agro.com"))
-                .thenReturn(Optional.of(pendingOp));
-
-        assertThatThrownBy(() -> authService.login(req1))
+        Operator pendingOp = operator(51L, "pending@agro.com", OperatorStatus.PENDING, true, true);
+        assertThatThrownBy(() -> authService.login(operatorLogin("pending@agro.com", "pwd")))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Operator account is pending admin approval.");
 
-        Operator unverifiedOp = Operator.builder()
-                .fullName("Unverified Op")
-                .mobileNumber("9876543202")
-                .email("unverified@agro.com")
-                .password("pwd")
-                .status(OperatorStatus.APPROVED)
-                .mobileVerified(false)
-                .build();
-        unverifiedOp.setId(52L);
-        unverifiedOp.setActive(true);
-
-        LoginRequest req2 = LoginRequest.builder()
-                .mobileOrEmail("unverified@agro.com")
-                .password("pwd")
-                .role("OPERATOR")
-                .build();
-
-        when(operatorRepository.findByMobileNumberOrEmailIgnoreCase("unverified@agro.com", "unverified@agro.com"))
-                .thenReturn(Optional.of(unverifiedOp));
-
-        assertThatThrownBy(() -> authService.login(req2))
+        Operator rejectedOp = operator(53L, "rejected@agro.com", OperatorStatus.REJECTED, true, true);
+        rejectedOp.setRejectionReason("Licence expired");
+        assertThatThrownBy(() -> authService.login(operatorLogin("rejected@agro.com", "pwd")))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Mobile number is not verified");
+                .hasMessage("Operator account has been rejected: Licence expired");
+
+        Operator inactiveOp = operator(54L, "inactive@agro.com", OperatorStatus.APPROVED, false, true);
+        assertThatThrownBy(() -> authService.login(operatorLogin("inactive@agro.com", "pwd")))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Operator account is inactive");
+
+        // Contract v1.1: mobile (OTP) verification is no longer a login requirement
+        Operator unverifiedOp = operator(52L, "unverified@agro.com", OperatorStatus.APPROVED, true, false);
+        when(jwtService.generateOperatorToken(52L, unverifiedOp.getMobileNumber())).thenReturn("op.jwt");
+        LoginResponse response = authService.login(operatorLogin("unverified@agro.com", "pwd"));
+        assertThat(response.getOperatorId()).isEqualTo(52L);
+        assertThat(response.getToken()).isEqualTo("op.jwt");
+
+        // Wrong password on a pending operator reveals nothing about its status
+        when(passwordEncoder.matches("bad", "enc_pwd")).thenReturn(false);
+        assertThatThrownBy(() -> authService.login(operatorLogin("pending@agro.com", "bad")))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
+        verify(jwtService, never()).generateOperatorToken(51L, pendingOp.getMobileNumber());
+        verify(jwtService, never()).generateOperatorToken(53L, rejectedOp.getMobileNumber());
+        verify(jwtService, never()).generateOperatorToken(54L, inactiveOp.getMobileNumber());
+    }
+
+    private Operator operator(Long id, String email, OperatorStatus status, boolean active, boolean mobileVerified) {
+        Operator operator = Operator.builder()
+                .fullName("Op " + id)
+                .mobileNumber("98765432" + (id % 100))
+                .email(email)
+                .password("enc_pwd")
+                .status(status)
+                .mobileVerified(mobileVerified)
+                .build();
+        operator.setId(id);
+        operator.setActive(active);
+        when(operatorRepository.findByMobileNumberOrEmailIgnoreCase(email, email)).thenReturn(Optional.of(operator));
+        return operator;
+    }
+
+    private static LoginRequest operatorLogin(String identifier, String password) {
+        return LoginRequest.builder().mobileOrEmail(identifier).password(password).role("OPERATOR").build();
     }
 
     @Test
-    @DisplayName("Farmer Lifecycle: Pending OTP farmer account must be blocked from password login")
-    void shouldBlockLoginForFarmerPendingOtp() {
+    @DisplayName("Farmer Lifecycle: a legacy PENDING_OTP farmer can log in with its password (PENDING_OTP no longer blocks)")
+    void shouldAllowPasswordLoginForFarmerPendingOtp() {
         Farmer pendingFarmer = Farmer.builder()
                 .fullName("Pending Farmer")
                 .mobileNumber("9876543299")
@@ -655,10 +666,37 @@ class AuthServiceTest {
                 .build();
 
         when(farmerRepository.findByMobileNumber("9876543299")).thenReturn(Optional.of(pendingFarmer));
+        when(passwordEncoder.matches("plain_pwd", "encoded_pwd")).thenReturn(true);
+        when(jwtService.generateToken(anyLong(), anyString(), anyString(), any())).thenReturn("pending.otp.farmer.jwt");
+
+        LoginResponse response = authService.login(request);
+        assertThat(response.getFarmerId()).isEqualTo(701L);
+        assertThat(response.getToken()).isEqualTo("pending.otp.farmer.jwt");
+    }
+
+    @Test
+    @DisplayName("Farmer Lifecycle: a farmer without a password (former OTP-only account) fails exactly like a wrong password")
+    void shouldRejectFarmerWithoutPasswordGenerically() {
+        Farmer otpOnlyFarmer = Farmer.builder()
+                .fullName("OTP Only Farmer")
+                .mobileNumber("9876543288")
+                .accountStatus("ACTIVE")
+                .build();
+        otpOnlyFarmer.setId(706L);
+        otpOnlyFarmer.setActive(true);
+
+        LoginRequest request = LoginRequest.builder()
+                .mobileOrEmail("9876543288")
+                .password("anything123")
+                .role("FARMER")
+                .loginType("PASSWORD")
+                .build();
+        when(farmerRepository.findByMobileNumber("9876543288")).thenReturn(Optional.of(otpOnlyFarmer));
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("PENDING_OTP: Account is not activated yet");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
+        verifyNoInteractions(jwtService);
     }
 
     @Test
@@ -682,24 +720,17 @@ class AuthServiceTest {
                 .build();
 
         when(farmerRepository.findByMobileNumber("9876543298")).thenReturn(Optional.of(inactiveFarmer));
+        when(passwordEncoder.matches("plain_pwd", "encoded_pwd")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Account has been deactivated");
+        verifyNoInteractions(jwtService);
     }
 
     @Test
-    @DisplayName("Farmer OTP: Should successfully log in farmer using OTP")
-    void shouldLoginFarmerViaOtp() {
-        Farmer farmer = Farmer.builder()
-                .fullName("OTP Farmer")
-                .mobileNumber("9876543297")
-                .email("otpfarmer@agro.com")
-                .accountStatus("ACTIVE")
-                .build();
-        farmer.setId(703L);
-        farmer.setActive(true);
-
+    @DisplayName("Farmer OTP: OTP login no longer issues a session, even for an active farmer")
+    void shouldRejectFarmerOtpLogin() {
         LoginRequest request = LoginRequest.builder()
                 .mobileOrEmail("9876543297")
                 .otp("123456")
@@ -707,15 +738,10 @@ class AuthServiceTest {
                 .loginType("OTP")
                 .build();
 
-        when(farmerRepository.findByMobileNumber("9876543297")).thenReturn(Optional.of(farmer));
-        when(jwtService.generateToken(anyLong(), anyString(), anyString(), any())).thenReturn("mock.farmer.otp.jwt");
-
-        LoginResponse response = authService.login(request);
-
-        assertThat(response).isNotNull();
-        assertThat(response.getRole()).isEqualTo("FARMER");
-        assertThat(response.getFarmerId()).isEqualTo(703L);
-        assertThat(response.getToken()).isEqualTo("mock.farmer.otp.jwt");
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(AuthService.OTP_LOGIN_DISABLED_MESSAGE);
+        verifyNoInteractions(farmerRepository, jwtService);
     }
 
     @Test
@@ -776,6 +802,7 @@ class AuthServiceTest {
         Farmer linkedFarmer = Farmer.builder()
                 .fullName("Core Farmer")
                 .mobileNumber("9876543295")
+                .password("encoded_pwd")
                 .preferredLanguage("Marathi")
                 .accountStatus("ACTIVE")
                 .build();
@@ -814,6 +841,35 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("Core User: the farmer profile's password is authoritative; a users-table password alone never authenticates a farmer")
+    void shouldNotAuthenticateFarmerWithCoreUserPasswordOnly() {
+        Farmer linkedFarmer = Farmer.builder()
+                .fullName("Core Farmer")
+                .mobileNumber("9876543294")
+                .accountStatus("ACTIVE")
+                .build();
+        linkedFarmer.setId(707L);
+        User user = User.builder()
+                .name("Core Farmer")
+                .email("corefarmer2@agro.com")
+                .password("encoded_user_only_pwd")
+                .role(Role.FARMER)
+                .enabled(true)
+                .build();
+        user.setId(502L);
+        user.setFarmer(linkedFarmer);
+
+        when(userRepository.findByEmailAndRole("corefarmer2@agro.com", Role.FARMER)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.login(LoginRequest.builder()
+                .mobileOrEmail("corefarmer2@agro.com").password("plain_pwd").role("FARMER").build()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
+        verify(passwordEncoder, never()).matches("plain_pwd", "encoded_user_only_pwd");
+        verifyNoInteractions(jwtService);
+    }
+
+    @Test
     @DisplayName("Admin Lifecycle: Deactivated admin account must be blocked")
     void shouldBlockDeactivatedAdmin() {
         Admin inactiveAdmin = Admin.builder()
@@ -832,9 +888,55 @@ class AuthServiceTest {
                 .build();
 
         when(adminRepository.findByEmail("inactiveadmin@agro.com")).thenReturn(Optional.of(inactiveAdmin));
+        when(passwordEncoder.matches("pwd", "pwd")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Admin account is currently deactivated");
+        verifyNoInteractions(jwtService);
+    }
+
+    @Test
+    @DisplayName("Admin Lifecycle: a deactivated admin with a wrong password gets only the generic error")
+    void shouldNotRevealDeactivatedAdminBeforePasswordCheck() {
+        Admin inactiveAdmin = Admin.builder()
+                .fullName("Inactive Admin")
+                .email("inactiveadmin@agro.com")
+                .password("pwd")
+                .build();
+        inactiveAdmin.setId(9L);
+        inactiveAdmin.setActive(false);
+        when(adminRepository.findByEmail("inactiveadmin@agro.com")).thenReturn(Optional.of(inactiveAdmin));
+        when(passwordEncoder.matches("nope", "pwd")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.login(LoginRequest.builder()
+                .mobileOrEmail("inactiveadmin@agro.com").password("nope").role("ADMIN").loginType("PASSWORD").build()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
+    }
+
+    @Test
+    @DisplayName("Non-enumeration: unknown account, wrong password and missing password produce the identical message")
+    void unknownAndWrongPasswordAreIndistinguishable() {
+        // lenient: the same lookups/checks are intentionally invoked with other arguments for the unknown account
+        // (including a dummy BCrypt check that equalizes timing)
+        org.mockito.Mockito.lenient().when(partnerRepository.findByMobileNumberOrEmailIgnoreCase("ramesh@agro.com", "ramesh@agro.com"))
+                .thenReturn(Optional.of(approvedPartner));
+        org.mockito.Mockito.lenient().when(passwordEncoder.matches("wrong_password", "encoded_password")).thenReturn(false);
+
+        String unknown = catchMessage(LoginRequest.builder().mobileOrEmail("nobody@agro.com").password("x1234567").role("PARTNER").build());
+        String wrong = catchMessage(LoginRequest.builder().mobileOrEmail("ramesh@agro.com").password("wrong_password").role("PARTNER").build());
+        String missing = catchMessage(LoginRequest.builder().mobileOrEmail("ramesh@agro.com").role("PARTNER").build());
+
+        assertThat(unknown).isEqualTo(wrong).isEqualTo(missing).isEqualTo(AuthService.INVALID_CREDENTIALS_MESSAGE);
+    }
+
+    private String catchMessage(LoginRequest request) {
+        try {
+            authService.login(request);
+        } catch (BadRequestException e) {
+            return e.getMessage();
+        }
+        throw new AssertionError("login unexpectedly succeeded");
     }
 }

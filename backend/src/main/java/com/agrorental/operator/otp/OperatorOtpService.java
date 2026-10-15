@@ -1,5 +1,6 @@
 package com.agrorental.operator.otp;
 
+import com.agrorental.common.config.DeploymentProfiles;
 import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.operator.dto.OperatorOtpResponse;
 import com.agrorental.operator.dto.OperatorOtpSendRequest;
@@ -26,6 +27,10 @@ import java.util.Optional;
 /**
  * Service managing the Operator OTP lifecycle: generation, delivery, secure hashing,
  * attempt counting, expiration enforcement, and mobile verification updates.
+ *
+ * <p>OTP is no longer part of registration, login or approval: a verified mobile number is informational
+ * only (contract v1.1). OTPs never yield a session or a password reset token; the OTP-based password reset
+ * purpose is refused (operators use POST /api/auth/forgot-password).
  */
 @Slf4j
 @Service
@@ -37,12 +42,8 @@ public class OperatorOtpService {
     private final PasswordEncoder passwordEncoder;
     private final OtpDeliveryService otpDeliveryService;
 
-    private com.agrorental.auth.service.PasswordResetService passwordResetService;
-
-    @Autowired(required = false)
-    public void setPasswordResetService(com.agrorental.auth.service.PasswordResetService passwordResetService) {
-        this.passwordResetService = passwordResetService;
-    }
+    static final String OTP_PASSWORD_RESET_RETIRED_MESSAGE =
+            "OTP-based password reset is no longer supported. Please use 'Forgot password?' on the login page.";
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -69,6 +70,7 @@ public class OperatorOtpService {
     public OperatorOtpResponse sendOtp(OperatorOtpSendRequest request) {
         String mobile = request.getMobileNumber().trim();
         OtpPurpose purpose = request.getPurpose() != null ? request.getPurpose() : OtpPurpose.MOBILE_VERIFICATION;
+        rejectRetiredPurpose(purpose);
 
         // Check for resend cooldown on latest OTP
         Optional<OperatorOtp> latestOtpOpt = operatorOtpRepository
@@ -138,6 +140,7 @@ public class OperatorOtpService {
         String mobile = request.getMobileNumber().trim();
         String userOtp = request.getOtp().trim();
         OtpPurpose purpose = request.getPurpose() != null ? request.getPurpose() : OtpPurpose.MOBILE_VERIFICATION;
+        rejectRetiredPurpose(purpose);
 
         OperatorOtp otpRecord = operatorOtpRepository
                 .findTopByMobileNumberAndPurposeAndVerifiedFalseOrderByCreatedAtDesc(mobile, purpose)
@@ -172,28 +175,27 @@ public class OperatorOtpService {
         otpRecord.setVerified(true);
         operatorOtpRepository.save(otpRecord);
 
-        // Mark Operator mobileVerified = true if account exists and purpose is MOBILE_VERIFICATION
+        // Record the (informational) verified mobile number if an operator account exists
         Optional<Operator> operatorOpt = operatorRepository.findByMobileNumber(mobile);
-        if (operatorOpt.isPresent() && purpose == OtpPurpose.MOBILE_VERIFICATION) {
+        if (operatorOpt.isPresent()) {
             Operator operator = operatorOpt.get();
             operator.setMobileVerified(true);
             operatorRepository.save(operator);
             log.info("Updated mobileVerified=true for operator ID: {}", operator.getId());
         }
 
-        String resetToken = null;
-        if (purpose == OtpPurpose.PASSWORD_RESET && operatorOpt.isPresent() && passwordResetService != null) {
-            resetToken = passwordResetService.createOperatorResetToken(operatorOpt.get().getId(), mobile);
-        }
-
+        // Never a session or reset token: resetToken stays null
         return OperatorOtpResponse.builder()
                 .mobileNumber(mobile)
                 .verified(true)
-                .message(purpose == OtpPurpose.PASSWORD_RESET
-                        ? "OTP verified successfully. You can now reset your password."
-                        : "Mobile number verified successfully.")
-                .resetToken(resetToken)
+                .message("Mobile number verified successfully.")
                 .build();
+    }
+
+    private void rejectRetiredPurpose(OtpPurpose purpose) {
+        if (purpose == OtpPurpose.PASSWORD_RESET) {
+            throw new BadRequestException(OTP_PASSWORD_RESET_RETIRED_MESSAGE);
+        }
     }
 
     private String maskMobile(String mobile) {
@@ -218,13 +220,11 @@ public class OperatorOtpService {
 
     /**
      * Determines whether mock OTP disclosure in API responses is permitted.
-     * Guaranteed to return false in staging or production environments, regardless of property configuration.
+     * Requires the explicit opt-in property AND an explicitly active "dev" profile; always false in
+     * staging or production and when no profile was activated (implicit default), regardless of properties.
      */
     public boolean isDevMockOtpAllowed() {
-        if (isProductionOrStagingEnvironment()) {
-            return false;
-        }
-        return includeDevMock;
+        return DeploymentProfiles.isExplicitDevelopment(environment) && includeDevMock;
     }
 
     private boolean isProductionOrStagingEnvironment() {

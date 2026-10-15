@@ -130,8 +130,8 @@ function OperatorNotifications() {
                 <p className="text-xs text-slate-600 font-medium leading-relaxed">{n.message}</p>
                 {n.bookingId && (
                   <div className="pt-1">
-                    <Link to={`/operator/jobs/${n.bookingId}`} className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1">
-                      Inspect Assigned Job <ArrowRight className="w-3.5 h-3.5" />
+                    <Link to="/operator/jobs" className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1">
+                      View Assigned Jobs <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 )}

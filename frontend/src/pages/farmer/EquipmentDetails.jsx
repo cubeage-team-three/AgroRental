@@ -80,7 +80,8 @@ function EquipmentDetails() {
   }
 
   const badge = getStatusBadgeInfo(equipment.availabilityStatus);
-  const isAvailable = equipment.availabilityStatus === 'AVAILABLE' && !equipment.isDisabled;
+  // BOOKED only means the machine already has some reservations; other dates stay bookable (overlaps are refused by the server)
+  const isAvailable = ['AVAILABLE', 'BOOKED'].includes(equipment.availabilityStatus) && !equipment.isDisabled;
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-8">
@@ -195,6 +196,11 @@ function EquipmentDetails() {
 
           {/* Action Button */}
           <div className="pt-2">
+            {isAvailable && equipment.availabilityStatus === 'BOOKED' && (
+              <p className="mb-2 text-xs font-medium text-slate-500">
+                This machine already has some reservations. You can book any dates that are still free.
+              </p>
+            )}
             {isAvailable ? (
               <button
                 onClick={() => navigate(`/farmer/book/${equipment.id}`)}

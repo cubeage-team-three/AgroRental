@@ -9,7 +9,6 @@ import com.agrorental.common.enums.Role;
 import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.farmer.repository.FarmerRepository;
-import com.agrorental.farmer.service.FarmerOtpService;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.repository.OperatorRepository;
@@ -45,7 +44,7 @@ import static org.mockito.Mockito.when;
  * registration, admin approval, and authentication lifecycle as specified
  * in AgroRent P0 requirements:
  * 1. Partner registration persists the correct initial status (PENDING).
- * 2. A pending Partner is rejected with the intended error.
+ * 2. A pending Partner is rejected with the intended error (only after the password was verified).
  * 3. An authorized admin can approve a Partner through the existing workflow.
  * 4. An approved Partner can log in and receives the correct role and token claims.
  * 5. An approved Partner is not incorrectly rejected as pending.
@@ -79,9 +78,6 @@ class PartnerRegistrationApprovalLifecycleIntegrationTest {
     @Mock
     private JwtService jwtService;
 
-    @Mock
-    private FarmerOtpService farmerOtpService;
-
     private PartnerService partnerService;
     private AuthService authService;
 
@@ -101,7 +97,6 @@ class PartnerRegistrationApprovalLifecycleIntegrationTest {
                 partnerRepository,
                 adminRepository,
                 operatorRepository,
-                farmerOtpService,
                 passwordEncoder,
                 jwtService
         );
@@ -191,7 +186,7 @@ class PartnerRegistrationApprovalLifecycleIntegrationTest {
     }
 
     @Test
-    @DisplayName("Lifecycle 2: Pending Partner attempting login is blocked with HTTP 400 and intended approval message")
+    @DisplayName("Lifecycle 2: Pending Partner with the correct password is blocked with the intended approval message")
     void testPendingPartnerLoginRejectedWithPendingApprovalMessage() {
         LoginRequest loginRequest = LoginRequest.builder()
                 .mobileOrEmail("9823456789")
@@ -202,10 +197,31 @@ class PartnerRegistrationApprovalLifecycleIntegrationTest {
 
         when(partnerRepository.findByMobileNumberOrEmail("9823456789", "9823456789"))
                 .thenReturn(Optional.of(registeredPendingPartner));
+        when(passwordEncoder.matches("SecretPass@123", "encoded_pass_123")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.login(loginRequest))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Your account verification is currently pending admin approval. Please check back later.");
+        org.mockito.Mockito.verify(jwtService, org.mockito.Mockito.never()).generateToken(any(), any(), any(), anyMap());
+    }
+
+    @Test
+    @DisplayName("Lifecycle 2b: Pending Partner with a wrong password gets only the generic credential error (no status leak)")
+    void testPendingPartnerWithWrongPasswordGetsGenericError() {
+        LoginRequest loginRequest = LoginRequest.builder()
+                .mobileOrEmail("9823456789")
+                .password("WrongPassword@999")
+                .role("PARTNER")
+                .loginType("PASSWORD")
+                .build();
+
+        when(partnerRepository.findByMobileNumberOrEmail("9823456789", "9823456789"))
+                .thenReturn(Optional.of(registeredPendingPartner));
+        when(passwordEncoder.matches("WrongPassword@999", "encoded_pass_123")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.login(loginRequest))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
@@ -295,7 +311,7 @@ class PartnerRegistrationApprovalLifecycleIntegrationTest {
 
         assertThatThrownBy(() -> authService.login(loginRequest))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessage("Invalid mobile/email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
@@ -356,7 +372,7 @@ class PartnerRegistrationApprovalLifecycleIntegrationTest {
 
         assertThatThrownBy(() -> authService.login(partnerAsFarmer))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessage("Invalid email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
 
         // 2. Partner credentials submitted with ADMIN role
         LoginRequest partnerAsAdmin = LoginRequest.builder()
@@ -373,7 +389,7 @@ class PartnerRegistrationApprovalLifecycleIntegrationTest {
 
         assertThatThrownBy(() -> authService.login(partnerAsAdmin))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessage("Invalid email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test

@@ -21,6 +21,16 @@ public class AdminBookingStatsResponse {
     private long activeBookings;
     private long completedBookings;
     private long cancelledBookings;
+    /** Net revenue: gross collected minus completed refunds (BIZ-20, see RevenueCalculator). */
     private BigDecimal totalRevenue;
     private BigDecimal totalAmount;
+
+    // BIZ-20 refund breakdown
+    private BigDecimal grossCollected;
+    private BigDecimal refundsPendingAmount;
+    private long refundsPendingCount;
+    private BigDecimal refundsFailedAmount;
+    private long refundsFailedCount;
+    private BigDecimal refundsCompletedAmount;
+    private long refundsCompletedCount;
 }

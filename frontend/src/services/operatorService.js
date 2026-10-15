@@ -1,5 +1,5 @@
 import { request } from './apiClient';
-import { saveOperatorSession, clearAuth } from '../utils/auth';
+import { clearAuth } from '../utils/auth';
 
 /**
  * Service for interacting with backend Operator REST APIs.
@@ -38,9 +38,11 @@ export const operatorService = {
   },
 
   /**
-   * Registers a new operator account with PENDING verification status.
+   * Registers a new operator account with PENDING verification status (password, no OTP step).
+   * The response includes `onboardingToken`: a short-lived token that only allows uploading this
+   * operator's own KYC documents while the account awaits admin approval. It is not a login.
    * @param {Object} operatorData - Operator registration payload
-   * @returns {Promise<Object>} OperatorResponse payload
+   * @returns {Promise<Object>} OperatorResponse payload (+ onboardingToken)
    */
   registerOperator: async (operatorData) => {
     return await request('/operators/register', {
@@ -50,43 +52,18 @@ export const operatorService = {
   },
 
   /**
-   * Dispatches an OTP to the Operator's mobile number.
-   * @param {string} mobileNumber - 10-digit mobile number
-   * @param {string} purpose - Purpose of OTP (e.g. MOBILE_VERIFICATION)
-   * @returns {Promise<Object>} OperatorOtpResponse payload
+   * Uploads a KYC document during registration using the registration onboarding token (sent explicitly
+   * in the Authorization header; never stored in localStorage and never used as a session).
+   * @param {number|string} operatorId - The newly registered operator's ID
+   * @param {Object} documentData - { documentType, documentNumber, fileName, fileUrl, fileSize, mimeType }
+   * @param {string} onboardingToken - Token returned by registerOperator
+   * @returns {Promise<Object>} OperatorDocumentResponse payload
    */
-  sendOtp: async (mobileNumber, purpose = 'MOBILE_VERIFICATION') => {
-    return await request('/operators/otp/send', {
+  uploadOnboardingDocument: async (operatorId, documentData, onboardingToken) => {
+    return await request(`/operators/${operatorId}/documents`, {
       method: 'POST',
-      body: JSON.stringify({ mobileNumber, purpose }),
-    });
-  },
-
-  sendOperatorOtp: async (mobileNumber, purpose = 'MOBILE_VERIFICATION') => {
-    return await request('/operators/otp/send', {
-      method: 'POST',
-      body: JSON.stringify({ mobileNumber, purpose }),
-    });
-  },
-
-  /**
-   * Verifies the submitted OTP for the Operator's mobile number.
-   * @param {string} mobileNumber - 10-digit mobile number
-   * @param {string} otp - 6-digit OTP string
-   * @param {string} purpose - Purpose of OTP
-   * @returns {Promise<Object>} OperatorOtpResponse payload
-   */
-  verifyOtp: async (mobileNumber, otp, purpose = 'MOBILE_VERIFICATION') => {
-    return await request('/operators/otp/verify', {
-      method: 'POST',
-      body: JSON.stringify({ mobileNumber, otp, purpose }),
-    });
-  },
-
-  verifyOperatorOtp: async (mobileNumber, otp, purpose = 'MOBILE_VERIFICATION') => {
-    return await request('/operators/otp/verify', {
-      method: 'POST',
-      body: JSON.stringify({ mobileNumber, otp, purpose }),
+      body: JSON.stringify(documentData),
+      headers: { Authorization: `Bearer ${onboardingToken}` },
     });
   },
 
@@ -110,23 +87,6 @@ export const operatorService = {
    */
   getOperatorDocuments: async (operatorId) => {
     return await request(`/operators/${operatorId}/documents`);
-  },
-
-  /**
-   * Authenticates an operator using mobile number and password (FR-39).
-   * Automatically stores the session token upon successful login.
-   * @param {Object} credentials - { mobileNumber, password }
-   * @returns {Promise<Object>} OperatorLoginResponse payload
-   */
-  loginOperator: async (credentials) => {
-    const data = await request('/operators/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-    if (data && data.accessToken) {
-      saveOperatorSession(data);
-    }
-    return data;
   },
 
   /**

@@ -145,7 +145,7 @@ class BookingServiceTest {
     @Test
     @DisplayName("createBooking: Successfully creates reservation with Farm and sets equipment status to BOOKED")
     void createBooking_Success() {
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(testEquipment));
+        when(equipmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testEquipment));
         when(bookingRepository.existsOverlappingBooking(anyLong(), anyList(), any(), any())).thenReturn(false);
         when(farmRepository.findById(20L)).thenReturn(Optional.of(testFarm));
         when(bookingMapper.toEntity(any(), any(), any(), any(), any())).thenReturn(testBooking);
@@ -177,7 +177,7 @@ class BookingServiceTest {
     @Test
     @DisplayName("createBooking: Throws ResourceNotFoundException when provided farmId does not exist")
     void createBooking_FarmNotFound_ThrowsException() {
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(testEquipment));
+        when(equipmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testEquipment));
         when(bookingRepository.existsOverlappingBooking(anyLong(), anyList(), any(), any())).thenReturn(false);
         when(farmRepository.findById(20L)).thenReturn(Optional.empty());
 
@@ -191,7 +191,7 @@ class BookingServiceTest {
     @DisplayName("createBooking: Throws BadRequestException when farm belongs to a different farmer")
     void createBooking_FarmOwnershipMismatch_ThrowsException() {
         testFarm.setFarmerId(999L); // Different farmer
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(testEquipment));
+        when(equipmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testEquipment));
         when(bookingRepository.existsOverlappingBooking(anyLong(), anyList(), any(), any())).thenReturn(false);
         when(farmRepository.findById(20L)).thenReturn(Optional.of(testFarm));
 
@@ -216,7 +216,7 @@ class BookingServiceTest {
     @Test
     @DisplayName("createBooking: Throws BadRequestException when overlapping reservation exists")
     void createBooking_OverlapConflict_ThrowsException() {
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(testEquipment));
+        when(equipmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testEquipment));
         when(bookingRepository.existsOverlappingBooking(anyLong(), anyList(), any(), any())).thenReturn(true);
 
         BadRequestException exception = assertThrows(BadRequestException.class,
@@ -333,41 +333,24 @@ class BookingServiceTest {
     }
 
     @Test
-    @DisplayName("rejectBooking: Cleans up active operator assignment, deactivates tracking, and sets status to REJECTED")
-    void rejectBooking_CleansUpActiveOperatorAssignment() {
+    @DisplayName("rejectBooking: A CONFIRMED booking with an active operator assignment cannot be rejected and nothing changes")
+    void rejectBooking_ConfirmedBookingWithActiveAssignment_RefusedAndUnchanged() {
+        // BIZ-14: rejection is only valid while PENDING; cancellation (covered above) is the path that cleans up assignments
+        testBooking.setStatus(BookingStatus.CONFIRMED);
         testEquipment.setAvailabilityStatus(AvailabilityStatus.BOOKED);
         when(bookingRepository.findById(500L)).thenReturn(Optional.of(testBooking));
-        when(bookingRepository.save(any(Booking.class))).thenReturn(testBooking);
-        when(bookingMapper.toResponse(any(Booking.class))).thenReturn(
-                BookingResponse.builder().id(500L).status(BookingStatus.REJECTED).build()
-        );
 
-        Operator operator = Operator.builder().fullName("Suresh Kumar").build();
-        operator.setId(88L);
+        BadRequestException ex = assertThrows(BadRequestException.class, () ->
+                bookingService.rejectBooking(500L, 10L, "Equipment unavailable for requested dates"));
 
-        OperatorJobAssignment activeAssignment = OperatorJobAssignment.builder()
-                .operator(operator)
-                .booking(testBooking)
-                .assignmentStatus(OperatorAssignmentStatus.ASSIGNED)
-                .build();
-        activeAssignment.setId(79L);
-
-        when(operatorJobAssignmentRepository.findAllByBookingId(500L))
-                .thenReturn(List.of(activeAssignment));
-
-        BookingResponse response = bookingService.rejectBooking(500L, 10L, "Equipment unavailable for requested dates");
-
-        assertNotNull(response);
-        assertEquals(BookingStatus.REJECTED, testBooking.getStatus());
-        assertEquals("Equipment unavailable for requested dates", testBooking.getRejectionReason());
-        assertEquals(AvailabilityStatus.AVAILABLE, testEquipment.getAvailabilityStatus());
-        assertEquals(OperatorAssignmentStatus.CANCELLED, activeAssignment.getAssignmentStatus());
-
-        verify(operatorJobAssignmentRepository).save(activeAssignment);
-        verify(operatorLocationRepository).deactivateTrackingForAssignment(79L);
-        verify(notificationService).sendNotification(
-                eq("OPERATOR"), eq(88L), eq("Job Assignment Cancelled"), anyString(), eq("JOB_CANCELLED"), eq(500L)
-        );
+        assertTrue(ex.getMessage().contains("Only pending bookings can be rejected"));
+        assertEquals(BookingStatus.CONFIRMED, testBooking.getStatus());
+        assertNull(testBooking.getRejectionReason());
+        assertEquals(AvailabilityStatus.BOOKED, testEquipment.getAvailabilityStatus());
+        verify(bookingRepository, never()).save(any(Booking.class));
+        verify(operatorJobAssignmentRepository, never()).save(any());
+        verify(operatorLocationRepository, never()).deactivateTrackingForAssignment(anyLong());
+        verify(notificationService, never()).sendNotification(anyString(), anyLong(), anyString(), anyString(), anyString(), anyLong());
     }
 
     @Test

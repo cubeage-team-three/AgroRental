@@ -7,7 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Data Transfer Object for initiating password reset request across FARMER, PARTNER, and OPERATOR roles.
+ * Starts a password reset for a FARMER, PARTNER or OPERATOR account: {@code {role, identifier}}, where the
+ * identifier is the registered mobile number or email address. Admin accounts cannot use self-service reset.
  */
 @Data
 @NoArgsConstructor
@@ -16,24 +17,17 @@ import lombok.NoArgsConstructor;
 public class ForgotPasswordRequest {
 
     /**
-     * Target role for account recovery: "FARMER", "PARTNER", or "OPERATOR".
-     * Defaults to "FARMER" if omitted for backward compatibility.
+     * Target role: "FARMER", "PARTNER" or "OPERATOR". Defaults to "FARMER" when omitted (backward compatibility).
      */
     private String role;
 
-    /**
-     * Registered email address.
-     */
+    /** Legacy alias of {@link #identifier}. */
     private String email;
 
-    /**
-     * Mobile number or email address identifier.
-     */
+    /** Legacy alias of {@link #identifier}. */
     private String mobileOrEmail;
 
-    /**
-     * Explicit identifier field (mobile number or email address).
-     */
+    /** Registered mobile number or email address. */
     private String identifier;
 
     public String getAccountIdentifier() {
@@ -55,4 +49,3 @@ public class ForgotPasswordRequest {
         return id != null && !id.trim().isEmpty();
     }
 }
-

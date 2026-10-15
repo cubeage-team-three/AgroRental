@@ -1,5 +1,6 @@
 package com.agrorental.partner.service;
 
+import com.agrorental.auth.service.PasswordPolicy;
 import com.agrorental.booking.entity.Booking;
 import com.agrorental.booking.entity.BookingStatus;
 import com.agrorental.booking.repository.BookingRepository;
@@ -18,8 +19,10 @@ import com.agrorental.partner.dto.PartnerRegistrationRequest;
 import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
 import com.agrorental.payment.entity.Payment;
-import com.agrorental.payment.entity.PaymentStatus;
+import com.agrorental.payment.entity.PaymentRefund;
+import com.agrorental.payment.repository.PaymentRefundRepository;
 import com.agrorental.payment.repository.PaymentRepository;
+import com.agrorental.payment.service.RevenueCalculator;
 import com.agrorental.review.repository.ReviewRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +50,10 @@ public class PartnerService {
     private final ReviewRepository reviewRepository;
     private final OperatorRepository operatorRepository;
 
+    /** Refund records (BIZ-20); headline revenue is net of completed refunds (see RevenueCalculator). */
+    @Autowired(required = false)
+    private PaymentRefundRepository paymentRefundRepository;
+
     public PartnerService(
             PartnerRepository partnerRepository,
             PasswordEncoder passwordEncoder,
@@ -64,8 +71,13 @@ public class PartnerService {
         this.operatorRepository = operatorRepository;
     }
 
+    /**
+     * Registers a partner with a password (no OTP step). The account starts PENDING and cannot log in until
+     * an admin approves it; otpVerified is informational only and is never required.
+     */
     @Transactional
     public Partner registerPartner(PartnerRegistrationRequest request) {
+        PasswordPolicy.validate(request.getPassword());
         if (partnerRepository.existsByMobileNumber(request.getMobileNumber())) {
             throw new BadRequestException("Mobile number already registered");
         }
@@ -153,6 +165,7 @@ public class PartnerService {
         if (passwordEncoder.matches(request.getNewPassword(), partner.getPassword())) {
             throw new BadRequestException("New password cannot be the same as the current password.");
         }
+        PasswordPolicy.validate(request.getNewPassword());
 
         partner.setPassword(passwordEncoder.encode(request.getNewPassword()));
         partnerRepository.save(partner);
@@ -174,8 +187,11 @@ public class PartnerService {
         if (equipmentRepository != null) {
             partnerEquipment = equipmentRepository.findByPartnerId(id);
             totalMachines = partnerEquipment.size();
+            // In service = bookable now (AVAILABLE) or holding reservations (BOOKED), and not disabled
             activeMachines = partnerEquipment.stream()
-                    .filter(e -> e.getAvailabilityStatus() == AvailabilityStatus.AVAILABLE && !Boolean.TRUE.equals(e.getIsDisabled()))
+                    .filter(e -> (e.getAvailabilityStatus() == AvailabilityStatus.AVAILABLE
+                            || e.getAvailabilityStatus() == AvailabilityStatus.BOOKED)
+                            && !Boolean.TRUE.equals(e.getIsDisabled()))
                     .count();
         }
 
@@ -206,21 +222,24 @@ public class PartnerService {
         }
 
         // 3. Payment & Revenue metrics
+        // Revenue is NET of completed refunds, cash basis (BIZ-20, see RevenueCalculator)
         BigDecimal monthlyRevenue = BigDecimal.ZERO;
         List<Payment> partnerPayments = new ArrayList<>();
+        List<PaymentRefund> partnerRefunds = paymentRefundRepository != null
+                ? paymentRefundRepository.findByPartnerId(id) : List.of();
         if (paymentRepository != null) {
             partnerPayments = paymentRepository.findByPartnerIdOrderByCreatedAtDesc(id);
             LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-            monthlyRevenue = partnerPayments.stream()
-                    .filter(p -> p.getPaymentStatus() == PaymentStatus.SUCCESS && p.getPaymentDate() != null && !p.getPaymentDate().isBefore(startOfMonth))
-                    .map(Payment::getAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            monthlyRevenue = RevenueCalculator.netInPeriod(partnerPayments, partnerRefunds,
+                    startOfMonth, startOfMonth.plusMonths(1));
         }
 
-        // 4. Operator metrics
+        // 4. Operator metrics: this partner's own approved, active operators (operators.partner_id)
         long activeOperators = 0;
         if (operatorRepository != null) {
-            activeOperators = operatorRepository.findByStatus(OperatorStatus.APPROVED).size();
+            activeOperators = operatorRepository.findByPartnerId(id).stream()
+                    .filter(operator -> operator.getStatus() == OperatorStatus.APPROVED && operator.isActive())
+                    .count();
         }
 
         // 5. Customer Rating metrics
@@ -244,10 +263,8 @@ public class PartnerService {
             YearMonth ym = YearMonth.from(now.minusMonths(i));
             String monthName = ym.getMonth().name().substring(0, 3);
 
-            BigDecimal rev = partnerPayments.stream()
-                    .filter(p -> p.getPaymentStatus() == PaymentStatus.SUCCESS && p.getPaymentDate() != null && YearMonth.from(p.getPaymentDate().toLocalDate()).equals(ym))
-                    .map(Payment::getAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal rev = RevenueCalculator.netInPeriod(partnerPayments, partnerRefunds,
+                    ym.atDay(1).atStartOfDay(), ym.plusMonths(1).atDay(1).atStartOfDay());
 
             long bCount = partnerBookings.stream()
                     .filter(b -> b.getCreatedAt() != null && YearMonth.from(b.getCreatedAt().toLocalDate()).equals(ym))
@@ -312,70 +329,6 @@ public class PartnerService {
                 .bookingStatusDistribution(statusDistribution)
                 .build());
     }
-    @Transactional
-public String sendOtp(Long partnerId) {
-
-    Partner partner = partnerRepository.findById(partnerId)
-            .orElseThrow(() -> new ResourceNotFoundException(
-                    "Partner not found with ID: " + partnerId));
-
-    if (partner.isOtpVerified()) {
-        throw new BadRequestException("Partner mobile number is already verified.");
-    }
-
-    String otp = String.format("%06d", new Random().nextInt(1000000));
-
-    partner.setOtpCode(otp);
-    partner.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
-
-    partnerRepository.save(partner);
-
-    log.info("OTP generated for partner ID: {}. OTP: {}", partnerId, otp);
-
-    return otp;
-}
-
-@Transactional
-public PartnerProfileResponse verifyOtp(Long partnerId, String otp) {
-
-    Partner partner = partnerRepository.findById(partnerId)
-            .orElseThrow(() -> new ResourceNotFoundException(
-                    "Partner not found with ID: " + partnerId));
-
-    if (partner.isOtpVerified()) {
-        throw new BadRequestException("Mobile number is already verified.");
-    }
-
-    if (partner.getOtpCode() == null) {
-        throw new BadRequestException("OTP not generated. Please request a new OTP.");
-    }
-
-    if (partner.getOtpExpiry() == null ||
-            LocalDateTime.now().isAfter(partner.getOtpExpiry())) {
-
-        throw new BadRequestException("OTP has expired. Please request a new OTP.");
-    }
-
-    if (!partner.getOtpCode().equals(otp)) {
-        throw new BadRequestException("Invalid OTP.");
-    }
-
-    partner.setOtpVerified(true);
-    partner.setOtpCode(null);
-    partner.setOtpExpiry(null);
-
-    Partner updatedPartner = partnerRepository.save(partner);
-
-    log.info("Partner OTP verified successfully for ID: {}", partnerId);
-
-    return toProfileResponse(updatedPartner);
-}
-
-@Transactional
-public String resendOtp(Long partnerId) {
-    return sendOtp(partnerId);
-}
-
     public PartnerProfileResponse toProfileResponse(Partner partner) {
         return PartnerProfileResponse.builder()
                 .id(partner.getId())

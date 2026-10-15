@@ -10,8 +10,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Spring Data JPA repository for managing OperatorJobAssignment persistence and query operations.
@@ -21,9 +25,39 @@ public interface OperatorJobAssignmentRepository extends JpaRepository<OperatorJ
 
     Optional<OperatorJobAssignment> findByBookingIdAndAssignmentStatus(Long bookingId, OperatorAssignmentStatus assignmentStatus);
 
+    /**
+     * Single-result lookup: fails with a non-unique-result error once a booking has more than one assignment
+     * (an operator declined and the booking was reassigned). Use {@link #findCurrentAssignmentForBooking} instead.
+     */
     Optional<OperatorJobAssignment> findByBookingId(Long bookingId);
 
     List<OperatorJobAssignment> findAllByBookingId(Long bookingId);
+
+    /**
+     * The booking's current operator assignment: the newest active one (ASSIGNED, ACCEPTED, TRAVELING, REACHED,
+     * IN_PROGRESS, PAUSED), otherwise the newest COMPLETED one. REJECTED and CANCELLED assignments are history and
+     * never "current". Safe for bookings that accumulated several assignments through decline and reassignment.
+     */
+    default Optional<OperatorJobAssignment> findCurrentAssignmentForBooking(Long bookingId) {
+        List<OperatorJobAssignment> assignments = findAllByBookingId(bookingId);
+        Comparator<OperatorJobAssignment> byId = Comparator.comparing(OperatorJobAssignment::getId,
+                Comparator.nullsFirst(Comparator.naturalOrder()));
+        Optional<OperatorJobAssignment> active = assignments.stream()
+                .filter(a -> CURRENT_ACTIVE_STATUSES.contains(a.getAssignmentStatus()))
+                .max(byId);
+        return active.isPresent()
+                ? active
+                : assignments.stream().filter(a -> a.getAssignmentStatus() == OperatorAssignmentStatus.COMPLETED).max(byId);
+    }
+
+    /** Assignment states in which the operator still holds the job. */
+    Set<OperatorAssignmentStatus> CURRENT_ACTIVE_STATUSES = Collections.unmodifiableSet(EnumSet.of(
+            OperatorAssignmentStatus.ASSIGNED,
+            OperatorAssignmentStatus.ACCEPTED,
+            OperatorAssignmentStatus.TRAVELING,
+            OperatorAssignmentStatus.REACHED,
+            OperatorAssignmentStatus.IN_PROGRESS,
+            OperatorAssignmentStatus.PAUSED));
 
     boolean existsByBookingIdAndAssignmentStatus(Long bookingId, OperatorAssignmentStatus assignmentStatus);
 

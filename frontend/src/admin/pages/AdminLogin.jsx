@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { adminAuthService } from '../services/adminAuthService';
@@ -9,7 +9,9 @@ import MagneticButton from '../../components/ui/MagneticButton';
 
 function AdminLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { refreshUser } = useAuth();
+  const sessionExpired = Boolean(location.state?.sessionExpired);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,7 +32,10 @@ function AdminLogin() {
     try {
       await adminAuthService.login(email.trim(), password);
       await refreshUser();
-      navigate('/admin/overview');
+      // Return to the admin page that required the login, never to another role's area
+      const from = location.state?.from;
+      const target = from?.pathname?.startsWith('/admin/') ? `${from.pathname}${from.search || ''}` : '/admin/overview';
+      navigate(target, { replace: true });
     } catch (err) {
       setErrorMessage(err.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -63,6 +68,15 @@ function AdminLogin() {
         </RevealItem>
 
         <RevealItem className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] backdrop-blur-2xl sm:p-8">
+          {sessionExpired && !errorMessage && (
+            <div
+              role="status"
+              className="mb-5 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/70"
+            >
+              Your session has expired. Please sign in again.
+            </div>
+          )}
+
           {errorMessage && (
             <div className="mb-5 flex items-start gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />

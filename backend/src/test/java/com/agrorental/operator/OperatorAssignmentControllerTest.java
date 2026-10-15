@@ -22,6 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -113,7 +115,12 @@ class OperatorAssignmentControllerTest {
         when(assignmentService.assignOperator(eq(100L), any(OperatorAssignmentRequest.class), any()))
                 .thenReturn(response);
 
+        // Assignment requires an authenticated admin (or the owning partner); the request itself carries no identity
+        UsernamePasswordAuthenticationToken admin = new UsernamePasswordAuthenticationToken(
+                "ADMIN_1", null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+
         mockMvc.perform(post("/api/bookings/100/operator")
+                        .principal(admin)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -148,9 +155,10 @@ class OperatorAssignmentControllerTest {
                 .assignmentStatus(OperatorAssignmentStatus.ASSIGNED)
                 .build();
 
-        when(assignmentService.getBookingAssignment(100L)).thenReturn(response);
+        // The owning partner's view of its booking's assignment (ownership enforced in the service)
+        when(assignmentService.getBookingAssignmentForCaller(100L, new com.agrorental.security.principal.CurrentCaller(com.agrorental.security.principal.CurrentCaller.Kind.PARTNER, 7L))).thenReturn(response);
 
-        mockMvc.perform(get("/api/bookings/100/operator")
+        mockMvc.perform(get("/api/bookings/100/operator").principal(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(com.agrorental.security.principal.PartnerPrincipal.builder().id(7L).role("PARTNER").build(), null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_PARTNER"))))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
@@ -172,9 +180,10 @@ class OperatorAssignmentControllerTest {
                 .build();
 
         Page<EligibleOperatorResponse> page = new PageImpl<>(List.of(eligible), org.springframework.data.domain.PageRequest.of(0, 10), 1);
-        when(assignmentService.findEligibleOperators(any(), any(Pageable.class))).thenReturn(page);
+        when(assignmentService.findEligibleOperatorsForCaller(org.mockito.ArgumentMatchers.eq("tractor"), any(Pageable.class),
+                org.mockito.ArgumentMatchers.eq(new com.agrorental.security.principal.CurrentCaller(com.agrorental.security.principal.CurrentCaller.Kind.PARTNER, 7L)))).thenReturn(page);
 
-        mockMvc.perform(get("/api/operators/eligible?search=tractor")
+        mockMvc.perform(get("/api/operators/eligible?search=tractor").principal(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(com.agrorental.security.principal.PartnerPrincipal.builder().id(7L).role("PARTNER").build(), null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_PARTNER"))))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))

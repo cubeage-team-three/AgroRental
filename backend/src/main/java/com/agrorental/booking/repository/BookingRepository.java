@@ -75,6 +75,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
             @Param("endDate") LocalDate endDate);
 
     /**
+     * Same overlap check, ignoring one booking (the booking being transitioned must not conflict with itself).
+     */
+    @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.equipment.id = :equipmentId AND b.id <> :excludedBookingId "
+            + "AND b.status IN :activeStatuses AND b.startDate <= :endDate AND b.endDate >= :startDate")
+    boolean existsOverlappingBookingExcluding(
+            @Param("equipmentId") Long equipmentId,
+            @Param("activeStatuses") List<BookingStatus> activeStatuses,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("excludedBookingId") Long excludedBookingId);
+
+    /**
      * Checks if an equipment has any active reservation matching the specified statuses.
      *
      * @param equipmentId Equipment identifier
@@ -82,6 +94,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
      * @return true if active booking exists
      */
     boolean existsByEquipmentIdAndStatusIn(Long equipmentId, List<BookingStatus> statuses);
+
+    /**
+     * Whether a booking other than {@code excludedBookingId} of the equipment is in one of the statuses.
+     */
+    @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.equipment.id = :equipmentId AND b.id <> :excludedBookingId "
+            + "AND b.status IN :statuses")
+    boolean existsOtherBookingInStatuses(
+            @Param("equipmentId") Long equipmentId,
+            @Param("excludedBookingId") Long excludedBookingId,
+            @Param("statuses") List<BookingStatus> statuses);
+
+    /** Whether the equipment has any booking at all (history included). */
+    boolean existsByEquipmentId(Long equipmentId);
 
     /**
      * Retrieves the most recently created bookings platform-wide, for the

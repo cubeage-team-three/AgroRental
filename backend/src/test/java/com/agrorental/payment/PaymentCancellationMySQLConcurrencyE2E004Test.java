@@ -19,7 +19,11 @@ import com.agrorental.payment.dto.PaymentRequest;
 import com.agrorental.payment.dto.PaymentResponse;
 import com.agrorental.payment.entity.Payment;
 import com.agrorental.payment.entity.PaymentMethod;
+import com.agrorental.payment.entity.PaymentRefund;
 import com.agrorental.payment.entity.PaymentStatus;
+import com.agrorental.payment.entity.RefundStatus;
+import com.agrorental.payment.repository.PaymentRefundEventRepository;
+import com.agrorental.payment.repository.PaymentRefundRepository;
 import com.agrorental.payment.repository.PaymentRepository;
 import com.agrorental.payment.service.PaymentService;
 import org.junit.jupiter.api.AfterEach;
@@ -33,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 import java.io.IOException;
@@ -63,6 +68,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 @SpringBootTest
 @EnabledIf("isDisposableMysqlRunning")
+// Intentional local MySQL run: the profile must be explicit (StartupSafetyValidator); same properties as the implicit dev default
+@ActiveProfiles("dev")
 @TestPropertySource(properties = {
     "spring.datasource.url=jdbc:mysql://127.0.0.1:33306/agrorental_test?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true",
     "spring.datasource.username=root",
@@ -97,6 +104,12 @@ class PaymentCancellationMySQLConcurrencyE2E004Test {
     private PaymentRepository paymentRepository;
 
     @Autowired
+    private PaymentRefundRepository paymentRefundRepository;
+
+    @Autowired
+    private PaymentRefundEventRepository paymentRefundEventRepository;
+
+    @Autowired
     private BookingRepository bookingRepository;
 
     @Autowired
@@ -118,6 +131,8 @@ class PaymentCancellationMySQLConcurrencyE2E004Test {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
+        paymentRefundEventRepository.deleteAll();
+        paymentRefundRepository.deleteAll();
         paymentRepository.deleteAll();
         bookingRepository.deleteAll();
         equipmentRepository.deleteAll();
@@ -165,6 +180,20 @@ class PaymentCancellationMySQLConcurrencyE2E004Test {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+    }
+
+    /** BIZ-20: a paid booking that was cancelled/rejected carries exactly one full REFUND_PENDING obligation. */
+    private void assertSinglePendingFullRefund(Long bookingId, Payment payment) {
+        List<PaymentRefund> refunds = paymentRefundRepository.findAll().stream()
+                .filter(r -> r.getBookingId().equals(bookingId)).toList();
+        assertThat(refunds).hasSize(1);
+        assertThat(refunds.get(0).getStatus()).isEqualTo(RefundStatus.REFUND_PENDING);
+        assertThat(refunds.get(0).getAmount()).isEqualByComparingTo(payment.getAmount());
+        assertThat(refunds.get(0).getPayment().getId()).isEqualTo(payment.getId());
+    }
+
+    private void assertNoRefund(Long bookingId) {
+        assertThat(paymentRefundRepository.findAll().stream().filter(r -> r.getBookingId().equals(bookingId))).isEmpty();
     }
 
     private Booking createBooking(BookingStatus initialStatus, BigDecimal cost) {
@@ -258,6 +287,7 @@ class PaymentCancellationMySQLConcurrencyE2E004Test {
             assertThat(paymentException.get().getMessage()).contains("Cannot process payment for a booking with status: CANCELLED");
             assertThat(finalBooking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
             assertThat(finalPayment).isEmpty();
+            assertNoRefund(bookingId); // nothing was paid, so nothing is owed
         } else {
             // SERIAL OUTCOME B: Payment won row lock first on MySQL
             assertThat(paymentException.get()).isNull();
@@ -266,16 +296,18 @@ class PaymentCancellationMySQLConcurrencyE2E004Test {
             assertThat(cancelException.get()).isNull();
             assertThat(finalBooking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
             assertThat(finalPayment).isPresent();
-            assertThat(finalPayment.get().getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS);
+            assertThat(finalPayment.get().getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS); // original payment preserved
+            // BIZ-20: the cancel saw the committed payment (booking -> payment lock order) and owes a full refund
+            assertSinglePendingFullRefund(bookingId, finalPayment.get());
         }
 
         assertThat(finalBooking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
     }
 
     @Test
-    @DisplayName("Required Check 2: Barrier-Coordinated Concurrent Payment vs Partner Rejection on MySQL 8.0/InnoDB")
+    @DisplayName("Required Check 2: Concurrent Payment vs Partner Rejection of a PENDING booking on MySQL 8.0/InnoDB never records a payment")
     void testPaymentVsRejection_ConcurrentRaceOnMySQL() throws Exception {
-        Booking booking = createBooking(BookingStatus.CONFIRMED, new BigDecimal("7500.00"));
+        Booking booking = createBooking(BookingStatus.PENDING, new BigDecimal("7500.00"));  // BIZ-14: only PENDING bookings can be rejected
         final Long bookingId = booking.getId();
         final Long partnerId = testPartner.getId();
         final Long farmerId = testFarmer.getId();
@@ -327,22 +359,16 @@ class PaymentCancellationMySQLConcurrencyE2E004Test {
                 finalBooking.getStatus(),
                 finalPayment.isPresent());
 
-        if (rejectException.get() == null && paymentException.get() != null) {
-            // SERIAL OUTCOME A: Partner rejection won row lock first on MySQL
-            assertThat(paymentException.get()).isInstanceOf(BadRequestException.class);
-            assertThat(paymentException.get().getMessage()).contains("Cannot process payment for a booking with status: REJECTED");
-            assertThat(finalBooking.getStatus()).isEqualTo(BookingStatus.REJECTED);
-            assertThat(finalPayment).isEmpty();
-        } else {
-            // SERIAL OUTCOME B: Payment won row lock first on MySQL
-            assertThat(paymentException.get()).isNull();
-            assertThat(paymentResult.get()).isNotNull();
-            assertThat(paymentResult.get().getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS);
-            assertThat(rejectException.get()).isNull();
-            assertThat(finalBooking.getStatus()).isEqualTo(BookingStatus.REJECTED);
-            assertThat(finalPayment).isPresent();
-            assertThat(finalPayment.get().getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS);
-        }
+        // BIZ-20: payment is accepted only for CONFIRMED bookings, and only PENDING bookings can be rejected, so
+        // whichever request wins the booking lock, the payment is refused (PENDING or REJECTED) and nothing is owed.
+        assertThat(rejectException.get()).isNull();
+        assertThat(paymentResult.get()).isNull();
+        assertThat(paymentException.get()).isInstanceOf(BadRequestException.class);
+        assertThat(paymentException.get().getMessage())
+                .containsAnyOf("Cannot process payment for a booking with status: PENDING",
+                        "Cannot process payment for a booking with status: REJECTED");
+        assertThat(finalPayment).isEmpty();
+        assertNoRefund(bookingId);
 
         assertThat(finalBooking.getStatus()).isEqualTo(BookingStatus.REJECTED);
         assertThat(finalBooking.getRejectionReason()).contains("emergency government relief");
@@ -370,6 +396,7 @@ class PaymentCancellationMySQLConcurrencyE2E004Test {
 
         assertThat(ex.getMessage()).contains("Cannot process payment for a booking with status: CANCELLED");
         assertThat(paymentRepository.findByBookingId(booking.getId())).isEmpty();
+        assertNoRefund(booking.getId());
 
         Integer paymentRowCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM payments WHERE booking_id = ?", Integer.class, booking.getId());
@@ -379,7 +406,7 @@ class PaymentCancellationMySQLConcurrencyE2E004Test {
     @Test
     @DisplayName("Required Check 3b: Serial Outcome - When Rejection Commits First, Payment is Strictly Rejected")
     void testRejectionCommittedFirst_PaymentStrictlyRejectedOnMySQL() {
-        Booking booking = createBooking(BookingStatus.CONFIRMED, new BigDecimal("5000.00"));
+        Booking booking = createBooking(BookingStatus.PENDING, new BigDecimal("5000.00"));  // BIZ-14: only PENDING bookings can be rejected
         bookingService.rejectBooking(booking.getId(), testPartner.getId(), "Machinery undergoing scheduled maintenance");
 
         Booking rejectedBooking = bookingRepository.findById(booking.getId()).orElseThrow();
@@ -427,10 +454,14 @@ class PaymentCancellationMySQLConcurrencyE2E004Test {
 
         assertThat(reloadedBooking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(reloadedPayment.getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS);
+        assertSinglePendingFullRefund(booking.getId(), reloadedPayment);
 
         Integer paymentRowCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM payments WHERE booking_id = ?", Integer.class, booking.getId());
         assertThat(paymentRowCount).isEqualTo(1);
+        Integer refundRowCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM payment_refunds WHERE booking_id = ? AND status = 'REFUND_PENDING'", Integer.class, booking.getId());
+        assertThat(refundRowCount).isEqualTo(1);
     }
 
     @Test

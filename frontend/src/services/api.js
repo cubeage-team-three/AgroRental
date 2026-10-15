@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../utils/constants';
+import { expireSession } from './apiClient';
 
 export async function apiRequest(endpoint, method = 'GET', body = null) {
   const headers = {};
@@ -48,6 +49,11 @@ export async function apiRequest(endpoint, method = 'GET', body = null) {
     }
 
     if (!response.ok) {
+      // Same session handling as apiClient: a 401 on a protected endpoint ends the stored session
+      if (response.status === 401) {
+        expireSession(endpoint, token);
+      }
+
       const errorMsg =
         (data && data.message) ||
         (data && data.data

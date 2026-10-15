@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import {
   CalendarRange,
   Clock,
@@ -113,6 +114,28 @@ export default function ManageBookings() {
   const [actionSubmitting, setActionSubmitting] = useState(false);
 
   const activeRequestId = useRef(0);
+
+  // ?bookingId= opens that exact booking's detail drawer (e.g. links from Refund Management)
+  const [searchParams] = useSearchParams();
+  const linkedBookingId = searchParams.get('bookingId');
+  useEffect(() => {
+    if (!/^[0-9]+$/.test(linkedBookingId || '')) return undefined;
+    let cancelled = false;
+    setDetailsLoading(true);
+    adminService.getBookingById(linkedBookingId)
+      .then((detail) => {
+        if (!cancelled && detail) setSelectedBooking(detail);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message || `Booking #${linkedBookingId} could not be loaded.`);
+      })
+      .finally(() => {
+        if (!cancelled) setDetailsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [linkedBookingId]);
 
   // Debounce search query
   useEffect(() => {

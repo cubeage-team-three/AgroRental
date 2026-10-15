@@ -28,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -96,19 +97,59 @@ class OperatorLocationServiceTest {
     }
 
     @Test
-    @DisplayName("startTracking successfully activates tracking for active assignment")
+    @DisplayName("startTracking activates tracking for an active assignment without inventing a position when no fix exists yet")
     void startTracking_success() {
         when(operatorRepository.findById(1L)).thenReturn(Optional.of(operator));
         when(assignmentRepository.findById(100L)).thenReturn(Optional.of(assignment));
         when(locationRepository.findTopByAssignmentIdOrderByRecordedAtDesc(100L)).thenReturn(Optional.empty());
-        when(locationRepository.save(any(OperatorLocation.class))).thenReturn(location);
 
         OperatorLocationResponse response = locationService.startTracking(100L, 1L);
 
         assertThat(response).isNotNull();
         assertThat(response.isTrackingActive()).isTrue();
+        assertThat(response.getAssignmentId()).isEqualTo(100L);
+        assertThat(response.getOperatorId()).isEqualTo(1L);
+        // No fabricated (0, 0) point: the farmer would see it as the operator's live position
+        assertThat(response.getLatitude()).isNull();
+        assertThat(response.getLongitude()).isNull();
+        assertThat(response.getRecordedAt()).isNull();
         verify(locationRepository).deactivateTrackingForAssignment(100L);
-        verify(locationRepository).save(any(OperatorLocation.class));
+        verify(locationRepository, never()).save(any(OperatorLocation.class));
+    }
+
+    @Test
+    @DisplayName("startTracking resumes on the latest real fix, keeping its real timestamp (no stale point shown as fresh)")
+    void startTracking_resumesOnLatestFix() {
+        LocalDateTime fixTime = LocalDateTime.now().minusMinutes(40);
+        location.setRecordedAt(fixTime);
+        location.setTrackingActive(false);
+        when(operatorRepository.findById(1L)).thenReturn(Optional.of(operator));
+        when(assignmentRepository.findById(100L)).thenReturn(Optional.of(assignment));
+        when(locationRepository.findTopByAssignmentIdOrderByRecordedAtDesc(100L)).thenReturn(Optional.of(location));
+        when(locationRepository.save(location)).thenReturn(location);
+
+        OperatorLocationResponse response = locationService.startTracking(100L, 1L);
+
+        assertThat(response.isTrackingActive()).isTrue();
+        assertThat(response.getLatitude()).isEqualTo(18.5204);
+        assertThat(response.getRecordedAt()).isEqualTo(fixTime);
+        assertThat(location.isTrackingActive()).isTrue();
+        verify(locationRepository).save(location);
+    }
+
+    @Test
+    @DisplayName("Contract v1.1: an APPROVED, active operator with an unverified mobile can track its job")
+    void startTracking_unverifiedMobileAllowed() {
+        operator.setMobileVerified(false);
+        when(operatorRepository.findById(1L)).thenReturn(Optional.of(operator));
+        when(assignmentRepository.findById(100L)).thenReturn(Optional.of(assignment));
+        when(locationRepository.save(any(OperatorLocation.class))).thenReturn(location);
+
+        OperatorLocationResponse response = locationService.updateLocation(100L, 1L, OperatorLocationUpdateRequest.builder()
+                .latitude(18.5204).longitude(73.8567).build());
+
+        assertThat(response.getLatitude()).isEqualTo(18.5204);
+        assertThat(operator.isMobileVerified()).isFalse();
     }
 
     @Test

@@ -101,9 +101,16 @@ class BookingControllerTest {
     @Test
     @DisplayName("GET /api/bookings/{id} - Returns HTTP 200 OK")
     void getBookingById_Returns200OK() throws Exception {
-        when(bookingService.getBookingById(100L)).thenReturn(sampleResponse);
+        // Booking detail is resolved for the authenticated caller; ownership itself is enforced in the service
+        com.agrorental.security.principal.FarmerPrincipal owner = com.agrorental.security.principal.FarmerPrincipal.builder()
+                .id(10L).role("FARMER").build();
+        when(bookingService.getBookingForCaller(org.mockito.ArgumentMatchers.eq(100L),
+                org.mockito.ArgumentMatchers.eq(new com.agrorental.security.principal.CurrentCaller(
+                        com.agrorental.security.principal.CurrentCaller.Kind.FARMER, 10L))))
+                .thenReturn(sampleResponse);
 
-        mockMvc.perform(get("/api/bookings/100"))
+        mockMvc.perform(get("/api/bookings/100").principal(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        owner, null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_FARMER")))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(100));

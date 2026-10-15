@@ -1,5 +1,6 @@
 package com.agrorental.farmer.controller;
 
+import com.agrorental.auth.service.AccountIdentifiers;
 import com.agrorental.common.dto.ApiResponse;
 import com.agrorental.farmer.dto.FarmerRegisterRequest;
 import com.agrorental.farmer.dto.FarmerResponse;
@@ -21,9 +22,10 @@ public class FarmerAuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<FarmerResponse>> registerFarmer(@Valid @RequestBody FarmerRegisterRequest request) {
-        log.info("Received registration request for farmer: {}", request.getMobileNumber());
+        log.info("Received registration request for farmer: {}", AccountIdentifiers.mask(request.getMobileNumber()));
         FarmerResponse responseData = farmerService.registerFarmer(request);
-        ApiResponse<FarmerResponse> response = ApiResponse.success("Farmer account created successfully. Please verify OTP.", responseData);
+        ApiResponse<FarmerResponse> response = ApiResponse.success(
+                "Farmer account created successfully. You can now log in with your mobile number and password.", responseData);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 }

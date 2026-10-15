@@ -1,5 +1,7 @@
 package com.agrorental.user.service;
 
+import com.agrorental.auth.service.PasswordPolicy;
+import com.agrorental.auth.service.PasswordResetService;
 import com.agrorental.common.enums.Role;
 import com.agrorental.common.exception.BadRequestException;
 import com.agrorental.farmer.entity.Farmer;
@@ -21,7 +23,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Business service handling User Registration, email verification tokens, and profile linkage.
+ * Legacy users-table registration (POST /api/auth/register) with farmer profile linkage, plus the optional
+ * email verification flag. No UI uses this endpoint (farmers register through /api/farmers/register); it
+ * applies the shared {@link PasswordPolicy} and creates an ACTIVE farmer that can log in with its password
+ * immediately. Email verification is informational only and never gates login.
  */
 @Slf4j
 @Service
@@ -45,16 +50,20 @@ public class UserRegistrationService {
             throw new BadRequestException("Email address is already registered: " + email);
         }
 
-        // Determine user role (defaults to FARMER if unspecified)
+        // Public self-registration creates FARMER accounts only (default when unspecified).
+        // Partners and operators are provisioned through their own registration + approval flows
+        // (/api/partners/register, /api/operators/register); admins are never self-registered.
         Role targetRole = request.getRole() != null ? request.getRole() : Role.FARMER;
 
-        if (targetRole == Role.ADMIN) {
-            log.warn("Registration rejected: Cannot register as ADMIN directly");
-            throw new BadRequestException("Registration as ADMIN is not permitted.");
+        if (targetRole != Role.FARMER) {
+            log.warn("Registration rejected: role {} cannot be self-registered via /api/auth/register", targetRole);
+            throw new BadRequestException("Only farmer accounts can be registered here. Partners and operators must use "
+                    + "their dedicated registration and approval process.");
         }
 
-        // 2. Hash raw password securely using BCrypt PasswordEncoder
+        // 2. Enforce the shared password policy, then hash with the BCrypt PasswordEncoder
         String rawPassword = request.getPassword();
+        PasswordPolicy.validate(rawPassword);
         String storedPassword = processPassword(rawPassword);
 
         // 3. Create core User entity record
@@ -83,7 +92,7 @@ public class UserRegistrationService {
                     .mobileNumber(mobile)
                     .address(request.getAddress())
                     .preferredLanguage(request.getPreferredLanguage() != null ? request.getPreferredLanguage() : "English")
-                    .accountStatus("PENDING_OTP")
+                    .accountStatus("ACTIVE")
                     .build();
 
             user.setFarmer(farmer);
@@ -92,17 +101,17 @@ public class UserRegistrationService {
         User savedUser = userRepository.save(user);
         log.info("User registered successfully with ID: {} and Role: {}", savedUser.getId(), savedUser.getRole());
 
-        // 5. Generate Email Verification Token (valid for 24 hours)
+        // 5. Generate Email Verification Token (valid for 24 hours); only its SHA-256 hash is stored
         String tokenString = UUID.randomUUID().toString();
         EmailVerificationToken verificationToken = EmailVerificationToken.builder()
-                .token(tokenString)
+                .token(PasswordResetService.sha256Hex(tokenString))
                 .user(savedUser)
                 .expiryDate(LocalDateTime.now().plusHours(24))
                 .used(false)
                 .build();
         tokenRepository.save(verificationToken);
 
-        // 6. Send Email Verification Notification
+        // 6. Email verification link (no email provider is configured: nothing is sent, nothing is logged)
         emailService.sendVerificationEmail(savedUser.getEmail(), tokenString);
 
         if (savedUser.getFarmer() != null) {
@@ -119,7 +128,7 @@ public class UserRegistrationService {
                 .verified(savedUser.isVerified())
                 .farmerId(farmerId)
                 .createdAt(savedUser.getCreatedAt())
-                .message("User registered successfully. Verification email sent.")
+                .message("User registered successfully. You can now log in with your email address and password.")
                 .build();
     }
 
@@ -135,9 +144,9 @@ public class UserRegistrationService {
             throw new BadRequestException("Verification token is required.");
         }
 
-        Optional<EmailVerificationToken> tokenOpt = tokenRepository.findByToken(token.trim());
+        Optional<EmailVerificationToken> tokenOpt = tokenRepository.findByToken(PasswordResetService.sha256Hex(token.trim()));
         if (tokenOpt.isEmpty()) {
-            log.warn("Email verification failed: Token {} not found", token);
+            log.warn("Email verification failed: token not found");
             throw new BadRequestException("Invalid or expired email verification token.");
         }
 
@@ -149,7 +158,8 @@ public class UserRegistrationService {
         }
 
         if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-            log.warn("Email verification failed: Token {} expired at {}", token, verificationToken.getExpiryDate());
+            log.warn("Email verification failed: token for user ID {} expired at {}",
+                    verificationToken.getUser().getId(), verificationToken.getExpiryDate());
             throw new BadRequestException("Invalid or expired email verification token.");
         }
 

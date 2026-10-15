@@ -111,6 +111,83 @@ class PaymentServiceTest {
     }
 
     @Test
+    void processPayment_PartnerOrOperatorCaller_DeniedEvenWithBookingFarmerId() {
+        when(bookingService.getBookingById(10L)).thenReturn(mockBooking);
+        Object[] nonFarmerPrincipals = {
+                com.agrorental.security.principal.PartnerPrincipal.builder().id(1L).role("PARTNER").build(),
+                com.agrorental.security.principal.OperatorPrincipal.builder().id(1L).role("OPERATOR").build()
+        };
+        String[] authorities = {"ROLE_PARTNER", "ROLE_OPERATOR"};
+
+        for (int i = 0; i < nonFarmerPrincipals.length; i++) {
+            SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                    nonFarmerPrincipals[i], null, List.of(new SimpleGrantedAuthority(authorities[i]))));
+            // The request names the booking's real farmer (1L), which used to be enough to pass
+            PaymentRequest request = PaymentRequest.builder()
+                    .bookingId(10L)
+                    .farmerId(1L)
+                    .amount(BigDecimal.valueOf(4500))
+                    .paymentMethod(PaymentMethod.UPI)
+                    .build();
+
+            assertThrows(AccessDeniedException.class, () -> paymentService.processPayment(request));
+        }
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processPayment_AuthenticatedFarmer_UsesPrincipalNotRequestFarmerId() {
+        when(bookingService.getBookingById(10L)).thenReturn(mockBooking);
+        when(paymentRepository.save(any(Payment.class))).thenReturn(mockPayment);
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                FarmerPrincipal.builder().id(1L).build(), null, List.of(new SimpleGrantedAuthority("ROLE_FARMER"))));
+
+        PaymentRequest request = PaymentRequest.builder()
+                .bookingId(10L)
+                .farmerId(999L) // ignored: the authenticated owning farmer is used
+                .amount(BigDecimal.valueOf(4500))
+                .paymentMethod(PaymentMethod.UPI)
+                .build();
+
+        paymentService.processPayment(request);
+
+        assertEquals(1L, request.getFarmerId());
+        verify(paymentRepository, times(1)).save(any(Payment.class));
+    }
+
+    @Test
+    void processPayment_Admin_RecordsPaymentForBookingsOwnFarmer() {
+        when(bookingService.getBookingById(10L)).thenReturn(mockBooking);
+        when(paymentRepository.save(any(Payment.class))).thenReturn(mockPayment);
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                "ADMIN_1", null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+
+        PaymentRequest request = PaymentRequest.builder()
+                .bookingId(10L)
+                .farmerId(999L) // a caller-supplied farmer must never be recorded
+                .amount(BigDecimal.valueOf(4500))
+                .paymentMethod(PaymentMethod.UPI)
+                .build();
+
+        paymentService.processPayment(request);
+
+        assertEquals(1L, request.getFarmerId());
+    }
+
+    @Test
+    void processPayment_InternalCallWithoutFarmerId_Denied() {
+        when(bookingService.getBookingById(10L)).thenReturn(mockBooking);
+        PaymentRequest request = PaymentRequest.builder()
+                .bookingId(10L)
+                .amount(BigDecimal.valueOf(4500))
+                .paymentMethod(PaymentMethod.UPI)
+                .build();
+
+        assertThrows(AccessDeniedException.class, () -> paymentService.processPayment(request));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
     void getFarmerPayments_ReturnsList() {
         when(paymentRepository.findByFarmerIdOrderByPaymentDateDesc(1L)).thenReturn(List.of(mockPayment));
 

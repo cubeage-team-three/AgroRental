@@ -1,9 +1,9 @@
 package com.agrorental.partner.controller;
 
+import com.agrorental.auth.service.AccountIdentifiers;
 import com.agrorental.common.dto.ApiResponse;
 import com.agrorental.partner.dto.PartnerChangePasswordRequest;
 import com.agrorental.partner.dto.PartnerDashboardResponse;
-import com.agrorental.partner.dto.PartnerOtpRequest;
 import com.agrorental.partner.dto.PartnerProfileResponse;
 import com.agrorental.partner.dto.PartnerProfileUpdateRequest;
 import com.agrorental.partner.dto.PartnerRegistrationRequest;
@@ -36,6 +36,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/partners")
 @RequiredArgsConstructor
 public class PartnerController {
+
+    public static final String PARTNER_OTP_RETIRED_MESSAGE =
+            "Partner OTP verification is no longer used. Your account only needs admin approval.";
 
     private final PartnerService partnerService;
 
@@ -70,7 +73,7 @@ public class PartnerController {
     public ResponseEntity<ApiResponse<PartnerProfileResponse>> registerPartner(
             @Valid @RequestBody PartnerRegistrationRequest request) {
 
-        log.info("Registering new partner with mobile: {}", request.getMobileNumber());
+        log.info("Registering new partner with mobile: {}", AccountIdentifiers.mask(request.getMobileNumber()));
 
         Partner partner = partnerService.registerPartner(request);
 
@@ -192,68 +195,19 @@ public class PartnerController {
     }
 
     // =========================
-    // SEND OTP
+    // PARTNER OTP (RETIRED)
     // =========================
 
-    @PostMapping("/{id}/otp/send")
-    public ResponseEntity<ApiResponse<String>> sendOtp(
-            @PathVariable Long id) {
-
+    /**
+     * Partner mobile OTP verification is retired: it is not part of registration, login or approval
+     * (otpVerified is informational only), and its former implementation stored and logged plaintext codes.
+     * The routes answer 410 Gone and never touch the account.
+     */
+    @PostMapping({"/{id}/otp/send", "/{id}/otp/verify", "/{id}/otp/resend"})
+    public ResponseEntity<ApiResponse<Object>> retiredOtp(@PathVariable Long id) {
         validatePartnerOwnership(id);
-        log.info("Sending OTP for partner ID: {}", id);
-
-        partnerService.sendOtp(id);
-
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "OTP sent successfully",
-                        "OTP sent to registered mobile number"
-                )
-        );
-    }
-
-    // =========================
-    // VERIFY OTP
-    // =========================
-
-    @PostMapping("/{id}/otp/verify")
-    public ResponseEntity<ApiResponse<PartnerProfileResponse>> verifyOtp(
-            @PathVariable Long id,
-            @Valid @RequestBody PartnerOtpRequest request) {
-
-        validatePartnerOwnership(id);
-        log.info("Verifying OTP for partner ID: {}", id);
-
-        PartnerProfileResponse response =
-                partnerService.verifyOtp(id, request.getOtp());
-
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "OTP verified successfully",
-                        response
-                )
-        );
-    }
-
-    // =========================
-    // RESEND OTP
-    // =========================
-
-    @PostMapping("/{id}/otp/resend")
-    public ResponseEntity<ApiResponse<String>> resendOtp(
-            @PathVariable Long id) {
-
-        validatePartnerOwnership(id);
-        log.info("Resending OTP for partner ID: {}", id);
-
-        partnerService.resendOtp(id);
-
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "OTP resent successfully",
-                        "OTP resent to registered mobile number"
-                )
-        );
+        log.info("Rejected call to retired partner OTP endpoint for partner ID: {}", id);
+        return ResponseEntity.status(HttpStatus.GONE).body(ApiResponse.error(PARTNER_OTP_RETIRED_MESSAGE));
     }
 
     // =========================

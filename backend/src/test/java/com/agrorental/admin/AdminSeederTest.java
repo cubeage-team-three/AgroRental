@@ -36,11 +36,24 @@ class AdminSeederTest {
     private AdminSeeder adminSeeder;
 
     @Test
-    @DisplayName("Dev Profile: Seeds default admin when none exists")
-    void devProfile_SeedsDefaultAdminWhenNoneExists() {
-        when(environment.getActiveProfiles()).thenReturn(new String[]{"dev"});
+    @DisplayName("Dev Profile: Does not seed any admin when no admin password is configured (no default credentials)")
+    void devProfile_WithoutConfiguredPassword_SkipsSeeding() {
+        ReflectionTestUtils.setField(adminSeeder, "configuredAdminEmail", "");
+        ReflectionTestUtils.setField(adminSeeder, "configuredAdminPassword", "");
+
+        adminSeeder.run();
+
+        verify(adminRepository, never()).save(any(Admin.class));
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    @DisplayName("Dev Profile: Seeds admin with the explicitly configured password and default email")
+    void devProfile_SeedsAdminWithConfiguredPassword() {
+        ReflectionTestUtils.setField(adminSeeder, "configuredAdminEmail", "");
+        ReflectionTestUtils.setField(adminSeeder, "configuredAdminPassword", "Local_Dev_Admin_Pw_1");
         when(adminRepository.existsByEmail(AdminSeeder.DEFAULT_ADMIN_EMAIL)).thenReturn(false);
-        when(passwordEncoder.encode(AdminSeeder.DEFAULT_ADMIN_PASSWORD)).thenReturn("$2a$10$encodedDevPassword");
+        when(passwordEncoder.encode("Local_Dev_Admin_Pw_1")).thenReturn("$2a$10$encodedDevPassword");
 
         adminSeeder.run();
 
@@ -54,7 +67,7 @@ class AdminSeederTest {
     @Test
     @DisplayName("Dev Profile: Skips seeding when admin already exists")
     void devProfile_SkipsWhenAdminAlreadyExists() {
-        when(environment.getActiveProfiles()).thenReturn(new String[]{"dev"});
+        ReflectionTestUtils.setField(adminSeeder, "configuredAdminPassword", "Local_Dev_Admin_Pw_1");
         when(adminRepository.existsByEmail(AdminSeeder.DEFAULT_ADMIN_EMAIL)).thenReturn(true);
 
         adminSeeder.run();
@@ -65,10 +78,8 @@ class AdminSeederTest {
     @Test
     @DisplayName("Staging Profile: Strictly skips seeding when admin password is empty or missing")
     void stagingProfile_RefusesDefaultAdminWhenPasswordMissing() {
-        when(environment.getActiveProfiles()).thenReturn(new String[]{"staging"});
         ReflectionTestUtils.setField(adminSeeder, "configuredAdminEmail", "");
         ReflectionTestUtils.setField(adminSeeder, "configuredAdminPassword", "");
-        when(adminRepository.existsByEmail(AdminSeeder.DEFAULT_ADMIN_EMAIL)).thenReturn(false);
 
         adminSeeder.run();
 
@@ -76,22 +87,45 @@ class AdminSeederTest {
     }
 
     @Test
-    @DisplayName("Staging Profile: Strictly skips seeding when configured password matches the hardcoded default")
+    @DisplayName("Staging Profile: Strictly skips seeding when configured password matches the known committed default")
     void stagingProfile_RefusesDefaultAdminWhenConfiguredWithKnownDefaultPassword() {
         when(environment.getActiveProfiles()).thenReturn(new String[]{"staging"});
         ReflectionTestUtils.setField(adminSeeder, "configuredAdminEmail", "custom-admin@agrorent.in");
-        ReflectionTestUtils.setField(adminSeeder, "configuredAdminPassword", AdminSeeder.DEFAULT_ADMIN_PASSWORD);
-        when(adminRepository.existsByEmail("custom-admin@agrorent.in")).thenReturn(false);
+        ReflectionTestUtils.setField(adminSeeder, "configuredAdminPassword", AdminSeeder.KNOWN_INSECURE_ADMIN_PASSWORD);
 
         adminSeeder.run();
 
         verify(adminRepository, never()).save(any(Admin.class));
+    }
+
+    @Test
+    @DisplayName("Implicit default profile: Refuses the known committed default password")
+    void implicitDefaultProfile_RefusesKnownDefaultPassword() {
+        when(environment.getActiveProfiles()).thenReturn(new String[]{});
+        when(environment.getDefaultProfiles()).thenReturn(new String[]{"dev"});
+        ReflectionTestUtils.setField(adminSeeder, "configuredAdminPassword", AdminSeeder.KNOWN_INSECURE_ADMIN_PASSWORD);
+
+        adminSeeder.run();
+
+        verify(adminRepository, never()).save(any(Admin.class));
+    }
+
+    @Test
+    @DisplayName("Explicit dev profile: Known committed default password is accepted only for local development")
+    void explicitDevProfile_AcceptsKnownDefaultPasswordWhenExplicitlyConfigured() {
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"dev"});
+        ReflectionTestUtils.setField(adminSeeder, "configuredAdminPassword", AdminSeeder.KNOWN_INSECURE_ADMIN_PASSWORD);
+        when(adminRepository.existsByEmail(AdminSeeder.DEFAULT_ADMIN_EMAIL)).thenReturn(false);
+        when(passwordEncoder.encode(AdminSeeder.KNOWN_INSECURE_ADMIN_PASSWORD)).thenReturn("$2a$10$encodedLocalPassword");
+
+        adminSeeder.run();
+
+        verify(adminRepository).save(any(Admin.class));
     }
 
     @Test
     @DisplayName("Staging Profile: Seeds admin when custom non-default password is provided")
     void stagingProfile_SeedsAdminWhenCustomPasswordProvided() {
-        when(environment.getActiveProfiles()).thenReturn(new String[]{"staging"});
         ReflectionTestUtils.setField(adminSeeder, "configuredAdminEmail", "secure-staging-admin@agrorent.in");
         ReflectionTestUtils.setField(adminSeeder, "configuredAdminPassword", "CustomSecret_Staging_99!");
         when(adminRepository.existsByEmail("secure-staging-admin@agrorent.in")).thenReturn(false);

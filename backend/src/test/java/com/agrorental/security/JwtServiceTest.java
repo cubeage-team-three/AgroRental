@@ -1,6 +1,7 @@
 package com.agrorental.security;
 
 import com.agrorental.security.jwt.JwtProperties;
+import com.agrorental.security.jwt.AccountType;
 import com.agrorental.security.jwt.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,7 +44,7 @@ class JwtServiceTest {
     @Test
     @DisplayName("Should validate token and extract claims correctly")
     void testExtractClaims() {
-        String token = jwtService.generateToken(202L, "ADMIN", "9123456780", new HashMap<>());
+        String token = jwtService.generateToken(202L, "ADMIN", "9123456780", JwtService.accountTypeClaims(AccountType.ADMIN));
 
         assertTrue(jwtService.validateToken(token));
         assertEquals(202L, jwtService.extractUserId(token));
@@ -96,12 +97,13 @@ class JwtServiceTest {
         String[] roles = {"FARMER", "PARTNER", "OPERATOR", "ADMIN"};
         for (long id = 1; id <= roles.length; id++) {
             String role = roles[(int) (id - 1)];
-            String token = jwtService.generateToken(id, role, "987650000" + id, new HashMap<>());
+            String token = jwtService.generateToken(id, role, "987650000" + id, JwtService.accountTypeClaims(AccountType.valueOf(role)));
 
             assertTrue(jwtService.validateToken(token), "Token must validate for role: " + role);
             assertEquals(id, jwtService.extractUserId(token));
             assertEquals(role, jwtService.extractRole(token));
             assertEquals("987650000" + id, jwtService.extractMobileNumber(token));
+            assertEquals(role, jwtService.extractAccountType(token));
         }
     }
 }

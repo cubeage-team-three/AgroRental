@@ -47,7 +47,7 @@ function Navbar() {
   }, []);
 
   const getDashboardLink = () => {
-    if (auth.role === 'ADMIN') return '/admin/dashboard';
+    if (auth.role === 'ADMIN') return '/admin/overview';
     if (auth.role === 'PARTNER') return '/partner/dashboard';
     if (auth.role === 'OPERATOR') return '/operator/dashboard';
     return '/farmer/dashboard';
@@ -184,20 +184,45 @@ function Navbar() {
               </a>
             ))}
             <div className="flex flex-col gap-2 pt-3">
-              <Link
-                to="/login"
-                onClick={() => setIsOpen(false)}
-                className="rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-semibold text-slate-700 transition-all duration-300 ease-out hover:border-emerald-300 hover:text-emerald-800"
-              >
-                {t('login', 'Log In')}
-              </Link>
-              <Link
-                to="/register"
-                onClick={() => setIsOpen(false)}
-                className="rounded-xl bg-lime-400 px-4 py-3 text-center text-sm font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:bg-lime-300"
-              >
-                {t('register', 'Sign Up Free')}
-              </Link>
+              {/* Same signed-in actions as the desktop bar */}
+              {auth.isAuthenticated ? (
+                <>
+                  <Link
+                    to={getDashboardLink()}
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-xl bg-emerald-700 px-4 py-3 text-center text-sm font-semibold text-white transition-all duration-300 ease-out hover:bg-emerald-800"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      auth.logout();
+                      setIsOpen(false);
+                    }}
+                    className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700 hover:bg-red-100"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-semibold text-slate-700 transition-all duration-300 ease-out hover:border-emerald-300 hover:text-emerald-800"
+                  >
+                    {t('login', 'Log In')}
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-xl bg-lime-400 px-4 py-3 text-center text-sm font-semibold text-emerald-950 shadow-[0_0_15px_rgba(132,204,22,0.45)] transition-all duration-300 ease-out hover:bg-lime-300"
+                  >
+                    {t('register', 'Sign Up Free')}
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

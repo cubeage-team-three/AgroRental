@@ -248,7 +248,7 @@ function FarmerDashboard() {
           </div>
 
           <div
-            onClick={() => navigate('/farmer/live-tracking')}
+            onClick={() => navigate('/farmer/bookings')}
             className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:border-emerald-600 hover:shadow-md transition-all cursor-pointer group"
           >
             <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">

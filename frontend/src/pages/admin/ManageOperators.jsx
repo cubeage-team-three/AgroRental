@@ -112,11 +112,6 @@ function ManageOperators() {
   const handleVerify = async (status) => {
     if (!selectedOperatorId) return;
 
-    if (status === 'APPROVED' && operatorDetail && !operatorDetail.mobileVerified) {
-      alert('Cannot approve operator: Mobile number must be verified first.');
-      return;
-    }
-
     if (status === 'REJECTED' && !rejectionReason.trim()) {
       alert('Please specify a reason for rejecting the operator application.');
       return;
@@ -573,7 +568,7 @@ function ManageOperators() {
 
                       <button
                         type="button"
-                        disabled={actionLoading || !operatorDetail.mobileVerified}
+                        disabled={actionLoading}
                         onClick={() => handleVerify('APPROVED')}
                         className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black rounded-xl shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                       >

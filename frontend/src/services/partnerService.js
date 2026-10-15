@@ -4,7 +4,7 @@ import { request } from './apiClient';
  * Partner Service abstraction for managing Partner Profile and Partner features.
  * Uses apiClient's request(), which automatically attaches the caller's
  * Authorization: Bearer token — required for every one of these endpoints
- * except registration and the pre-login OTP steps.
+ * except registration (partners register with a password; there is no OTP step).
  */
 export const partnerService = {
   /**
@@ -70,23 +70,6 @@ export const partnerService = {
    */
   rejectKyc: async (partnerId) => {
     return await request(`/partners/${partnerId}/kyc/reject`, { method: 'PUT' });
-  },
-
-  /**
-   * Send OTP for partner verification.
-   */
-  sendOtp: async (partnerId) => {
-    return await request(`/partners/${partnerId}/otp/send`, { method: 'POST' });
-  },
-
-  /**
-   * Verify partner OTP code.
-   */
-  verifyOtp: async (partnerId, otp) => {
-    return await request(`/partners/${partnerId}/otp/verify`, {
-      method: 'POST',
-      body: JSON.stringify({ otp }),
-    });
   },
 };
 

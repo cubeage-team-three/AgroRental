@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import ProtectedRoute from '../components/common/ProtectedRoute';
 
@@ -59,7 +59,6 @@ import JobHistory from '../pages/operator/JobHistory';
 import OperatorRatings from '../pages/operator/Ratings';
 import OperatorNotifications from '../pages/operator/Notifications';
 
-import AdminDashboard from '../pages/admin/AdminDashboard';
 import ManageFarmers from '../pages/admin/ManageFarmers';
 import ManagePartners from '../pages/admin/ManagePartners';
 import ManageOperators from '../pages/admin/ManageOperators';
@@ -71,6 +70,13 @@ import Reports from '../pages/admin/Reports';
 import AdminNotifications from '../pages/admin/Notifications';
 import SystemSettings from '../pages/admin/SystemSettings';
 import AuditLogs from '../pages/admin/AuditLogs';
+
+// Duplicate/legacy URLs keep working but land on the one canonical URL (query string kept), so the
+// sidebar highlights the right entry and each page has a single address.
+function RedirectTo({ to }) {
+  const { search, hash } = useLocation();
+  return <Navigate to={{ pathname: to, search, hash }} replace />;
+}
 
 function AppRoutes() {
   return (
@@ -103,22 +109,24 @@ function AppRoutes() {
       {/* Protected Farmer routes */}
       <Route element={<ProtectedRoute allowedRoles={['FARMER']} />}>
         <Route path="/farmer" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="/farmer/dashboard" replace />} />
           <Route path="dashboard" element={<FarmerDashboard />} />
           <Route path="profile" element={<FarmerProfile />} />
           <Route path="farms" element={<MyFarms />} />
           <Route path="equipment" element={<SearchEquipment />} />
-          <Route path="search-equipment" element={<SearchEquipment />} />
+          <Route path="search-equipment" element={<RedirectTo to="/farmer/equipment" />} />
           <Route path="equipment/:id" element={<EquipmentDetails />} />
           <Route path="book/:equipmentId" element={<BookEquipment />} />
           <Route path="book-equipment" element={<BookEquipment />} />
           <Route path="bookings" element={<MyBookings />} />
-          <Route path="my-bookings" element={<MyBookings />} />
+          <Route path="my-bookings" element={<RedirectTo to="/farmer/bookings" />} />
           <Route path="bookings/:id" element={<BookingDetails />} />
           <Route path="bookings/:id/pay" element={<CheckoutPayment />} />
           <Route path="bookings/:id/invoice" element={<Invoice />} />
           <Route path="bookings/:id/review" element={<WriteReview />} />
           <Route path="bookings/:id/tracking" element={<LiveTracking />} />
-          <Route path="live-tracking" element={<LiveTracking />} />
+          {/* Tracking needs a booking; without one LiveTracking showed placeholder data. Pick a booking instead. */}
+          <Route path="live-tracking" element={<Navigate to="/farmer/bookings" replace />} />
           <Route path="payments" element={<FarmerPayments />} />
           <Route path="complaints" element={<FarmerComplaints />} />
           <Route path="notifications" element={<FarmerNotifications />} />
@@ -128,12 +136,13 @@ function AppRoutes() {
       {/* Protected Partner routes */}
       <Route element={<ProtectedRoute allowedRoles={['PARTNER']} />}>
         <Route path="/partner" element={<PartnerLayout />}>
+          <Route index element={<Navigate to="/partner/dashboard" replace />} />
           <Route path="dashboard" element={<PartnerDashboard />} />
           <Route path="profile" element={<PartnerProfile />} />
           <Route path="equipment" element={<MyEquipment />} />
-          <Route path="my-equipment" element={<MyEquipment />} />
+          <Route path="my-equipment" element={<RedirectTo to="/partner/equipment" />} />
           <Route path="equipment/add" element={<AddEquipment />} />
-          <Route path="add-equipment" element={<AddEquipment />} />
+          <Route path="add-equipment" element={<RedirectTo to="/partner/equipment/add" />} />
           <Route path="equipment/availability" element={<EquipmentAvailability />} />
           <Route path="bookings" element={<BookingRequests />} />
           <Route path="bookings/:id/assign-operator" element={<AssignOperator />} />
@@ -146,6 +155,7 @@ function AppRoutes() {
       {/* Protected Operator routes */}
       <Route element={<ProtectedRoute allowedRoles={['OPERATOR']} />}>
         <Route path="/operator" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="/operator/dashboard" replace />} />
           <Route path="dashboard" element={<OperatorDashboard />} />
           <Route path="profile" element={<OperatorProfile />} />
           <Route path="jobs" element={<AssignedJobs />} />
@@ -163,8 +173,10 @@ function AppRoutes() {
       {/* Protected Admin routes */}
       <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
         <Route path="/admin" element={<AdminDashboardLayout />}>
+          <Route index element={<Navigate to="/admin/overview" replace />} />
           <Route path="overview" element={<AdminOverview />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
+          {/* The old dashboard was an empty placeholder; the console home is the overview */}
+          <Route path="dashboard" element={<Navigate to="/admin/overview" replace />} />
           <Route path="farmers" element={<ManageFarmers />} />
           <Route path="partners" element={<ManagePartners />} />
           <Route path="operators" element={<ManageOperators />} />

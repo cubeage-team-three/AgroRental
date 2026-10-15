@@ -95,7 +95,7 @@ class BookingDateOverlapTest {
         request.setStartDate(start);
         request.setEndDate(end);
 
-        when(equipmentRepository.findById(1L)).thenReturn(Optional.of(testEquipment));
+        when(equipmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testEquipment));
         when(bookingRepository.existsOverlappingBooking(
                 eq(1L),
                 eq(List.of(BookingStatus.PENDING, BookingStatus.ACCEPTED, BookingStatus.CONFIRMED, BookingStatus.OPERATOR_ASSIGNED, BookingStatus.ON_THE_WAY, BookingStatus.WORK_STARTED)),

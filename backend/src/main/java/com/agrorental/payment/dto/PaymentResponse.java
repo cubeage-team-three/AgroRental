@@ -30,4 +30,8 @@ public class PaymentResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String invoiceReference;
+
+    // BIZ-20: NONE, REFUND_PENDING, REFUNDED or REFUND_FAILED; paymentStatus keeps the original outcome
+    private String refundStatus;
+    private BigDecimal refundAmount;
 }

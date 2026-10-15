@@ -70,16 +70,58 @@ class UserRegistrationServiceTest {
         when(passwordEncoder.encode(any())).thenReturn("hashed-password");
         when(userRepository.save(any())).thenReturn(savedUser);
 
-        userRegistrationService.registerUser(request);
+        com.agrorental.user.dto.UserRegistrationResponse response = userRegistrationService.registerUser(request);
 
         verify(userRepository).save(any());
         verify(emailService).sendVerificationEmail(any(), any());
+        // No dead end: the linked farmer is ACTIVE and can log in with its password right away
+        org.mockito.ArgumentCaptor<User> userCaptor = org.mockito.ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertEquals("ACTIVE", userCaptor.getValue().getFarmer().getAccountStatus());
+        assertEquals("hashed-password", userCaptor.getValue().getFarmer().getPassword());
+        assertEquals("User registered successfully. You can now log in with your email address and password.", response.getMessage());
     }
 
     @Test
-    @DisplayName("Should reject ADMIN registration and throw BadRequestException")
-    void shouldRejectAdminRegistration() {
-        request.setRole(Role.ADMIN);
+    @DisplayName("Email verification token is stored only as a SHA-256 hash of the emailed token")
+    void verificationTokenIsStoredHashed() {
+        User savedUser = new User();
+        savedUser.setId(1L);
+        savedUser.setEmail(request.getEmail());
+        savedUser.setRole(Role.FARMER);
+        when(userRepository.existsByEmail(any())).thenReturn(false);
+        when(passwordEncoder.encode(any())).thenReturn("hashed-password");
+        when(userRepository.save(any())).thenReturn(savedUser);
+
+        userRegistrationService.registerUser(request);
+
+        org.mockito.ArgumentCaptor<String> sentToken = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendVerificationEmail(any(), sentToken.capture());
+        org.mockito.ArgumentCaptor<com.agrorental.user.entity.EmailVerificationToken> stored =
+                org.mockito.ArgumentCaptor.forClass(com.agrorental.user.entity.EmailVerificationToken.class);
+        verify(tokenRepository).save(stored.capture());
+        assertEquals(com.agrorental.auth.service.PasswordResetService.sha256Hex(sentToken.getValue()), stored.getValue().getToken());
+        org.junit.jupiter.api.Assertions.assertNotEquals(sentToken.getValue(), stored.getValue().getToken());
+    }
+
+    @Test
+    @DisplayName("Weak passwords are rejected by the shared policy before anything is saved")
+    void shouldRejectWeakPassword() {
+        request.setPassword("password");
+        when(userRepository.existsByEmail(any())).thenReturn(false);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> userRegistrationService.registerUser(request));
+
+        assertEquals(com.agrorental.auth.service.PasswordPolicy.REQUIREMENTS_MESSAGE, exception.getMessage());
+        verify(userRepository, never()).save(any());
+        verify(emailService, never()).sendVerificationEmail(any(), any());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest(name = "rejects self-registration as {0}")
+    @org.junit.jupiter.params.provider.EnumSource(value = Role.class, names = {"ADMIN", "PARTNER", "OPERATOR"})
+    @DisplayName("Should reject ADMIN, PARTNER and OPERATOR self-registration and throw BadRequestException")
+    void shouldRejectNonFarmerRegistration(Role role) {
+        request.setRole(role);
 
         when(userRepository.existsByEmail(any())).thenReturn(false);
 
@@ -87,7 +129,8 @@ class UserRegistrationServiceTest {
             userRegistrationService.registerUser(request);
         });
 
-        assertEquals("Registration as ADMIN is not permitted.", exception.getMessage());
+        assertEquals("Only farmer accounts can be registered here. Partners and operators must use "
+                + "their dedicated registration and approval process.", exception.getMessage());
         verify(userRepository, never()).save(any());
         verify(emailService, never()).sendVerificationEmail(any(), any());
     }

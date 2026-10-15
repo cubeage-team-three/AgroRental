@@ -19,7 +19,11 @@ import com.agrorental.payment.dto.PaymentRequest;
 import com.agrorental.payment.dto.PaymentResponse;
 import com.agrorental.payment.entity.Payment;
 import com.agrorental.payment.entity.PaymentMethod;
+import com.agrorental.payment.entity.PaymentRefund;
 import com.agrorental.payment.entity.PaymentStatus;
+import com.agrorental.payment.entity.RefundStatus;
+import com.agrorental.payment.repository.PaymentRefundEventRepository;
+import com.agrorental.payment.repository.PaymentRefundRepository;
 import com.agrorental.payment.repository.PaymentRepository;
 import com.agrorental.payment.service.PaymentService;
 import org.junit.jupiter.api.AfterEach;
@@ -78,6 +82,12 @@ class PaymentCancellationConcurrencyE2E004IntegrationTest {
     private PaymentRepository paymentRepository;
 
     @Autowired
+    private PaymentRefundRepository paymentRefundRepository;
+
+    @Autowired
+    private PaymentRefundEventRepository paymentRefundEventRepository;
+
+    @Autowired
     private BookingRepository bookingRepository;
 
     @Autowired
@@ -96,6 +106,8 @@ class PaymentCancellationConcurrencyE2E004IntegrationTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
+        paymentRefundEventRepository.deleteAll();
+        paymentRefundRepository.deleteAll();
         paymentRepository.deleteAll();
         bookingRepository.deleteAll();
         equipmentRepository.deleteAll();
@@ -143,6 +155,20 @@ class PaymentCancellationConcurrencyE2E004IntegrationTest {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+    }
+
+    /** BIZ-20: a paid booking that was cancelled/rejected carries exactly one full REFUND_PENDING obligation. */
+    private void assertSinglePendingFullRefund(Long bookingId, Payment payment) {
+        List<PaymentRefund> refunds = paymentRefundRepository.findAll().stream()
+                .filter(r -> r.getBookingId().equals(bookingId)).toList();
+        assertThat(refunds).hasSize(1);
+        assertThat(refunds.get(0).getStatus()).isEqualTo(RefundStatus.REFUND_PENDING);
+        assertThat(refunds.get(0).getAmount()).isEqualByComparingTo(payment.getAmount());
+        assertThat(refunds.get(0).getPayment().getId()).isEqualTo(payment.getId());
+    }
+
+    private void assertNoRefund(Long bookingId) {
+        assertThat(paymentRefundRepository.findAll().stream().filter(r -> r.getBookingId().equals(bookingId))).isEmpty();
     }
 
     private Booking createBooking(BookingStatus initialStatus, BigDecimal cost) {
@@ -221,7 +247,8 @@ class PaymentCancellationConcurrencyE2E004IntegrationTest {
             assertThat(paymentException.get()).isInstanceOf(BadRequestException.class);
             assertThat(paymentException.get().getMessage()).contains("Cannot process payment for a booking with status: CANCELLED");
             assertThat(finalBooking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
-            assertThat(finalPayment).isEmpty(); // NEVER fabricated or saved a payment
+            assertThat(finalPayment).isEmpty();
+            assertNoRefund(bookingId); // nothing was paid, so nothing is owed // NEVER fabricated or saved a payment
         } else {
             // ORDERING B: Payment won the row lock first
             // Payment completed successfully; cancellation then completed per supported rules
@@ -231,7 +258,9 @@ class PaymentCancellationConcurrencyE2E004IntegrationTest {
             assertThat(cancelException.get()).isNull();
             assertThat(finalBooking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
             assertThat(finalPayment).isPresent();
-            assertThat(finalPayment.get().getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS);
+            assertThat(finalPayment.get().getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS); // original payment preserved
+            // BIZ-20: the cancel saw the committed payment (booking -> payment lock order) and owes a full refund
+            assertSinglePendingFullRefund(bookingId, finalPayment.get());
         }
 
         // Integrity assertion: Final booking state must never remain unexamined or corrupted
@@ -239,9 +268,9 @@ class PaymentCancellationConcurrencyE2E004IntegrationTest {
     }
 
     @Test
-    @DisplayName("Race Condition 2: Payment vs. Partner Rejection on the same booking serializes safely with explicit permitted states")
+    @DisplayName("Race Condition 2: Payment vs. Partner Rejection of a PENDING booking never records a payment")
     void testPaymentVsRejection_ConcurrentRace() throws Exception {
-        Booking booking = createBooking(BookingStatus.CONFIRMED, new BigDecimal("7500.00"));
+        Booking booking = createBooking(BookingStatus.PENDING, new BigDecimal("7500.00"));  // BIZ-14: only PENDING bookings can be rejected
         final Long bookingId = booking.getId();
         final Long partnerId = testPartner.getId();
         final Long farmerId = testFarmer.getId();
@@ -293,22 +322,16 @@ class PaymentCancellationConcurrencyE2E004IntegrationTest {
         Booking finalBooking = bookingRepository.findById(bookingId).orElseThrow();
         Optional<Payment> finalPayment = paymentRepository.findByBookingId(bookingId);
 
-        if (rejectException.get() == null && paymentException.get() != null) {
-            // ORDERING A: Partner Rejection won the lock first
-            assertThat(paymentException.get()).isInstanceOf(BadRequestException.class);
-            assertThat(paymentException.get().getMessage()).contains("Cannot process payment for a booking with status: REJECTED");
-            assertThat(finalBooking.getStatus()).isEqualTo(BookingStatus.REJECTED);
-            assertThat(finalPayment).isEmpty();
-        } else {
-            // ORDERING B: Payment won the lock first
-            assertThat(paymentException.get()).isNull();
-            assertThat(paymentResult.get()).isNotNull();
-            assertThat(paymentResult.get().getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS);
-            assertThat(rejectException.get()).isNull();
-            assertThat(finalBooking.getStatus()).isEqualTo(BookingStatus.REJECTED);
-            assertThat(finalPayment).isPresent();
-            assertThat(finalPayment.get().getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS);
-        }
+        // BIZ-20: payment is accepted only for CONFIRMED bookings, and only PENDING bookings can be rejected, so
+        // whichever request wins the booking lock, the payment is refused (PENDING or REJECTED) and nothing is owed.
+        assertThat(rejectException.get()).isNull();
+        assertThat(paymentResult.get()).isNull();
+        assertThat(paymentException.get()).isInstanceOf(BadRequestException.class);
+        assertThat(paymentException.get().getMessage())
+                .containsAnyOf("Cannot process payment for a booking with status: PENDING",
+                        "Cannot process payment for a booking with status: REJECTED");
+        assertThat(finalPayment).isEmpty();
+        assertNoRefund(bookingId);
 
         assertThat(finalBooking.getStatus()).isEqualTo(BookingStatus.REJECTED);
         assertThat(finalBooking.getRejectionReason()).contains("emergency government relief");
@@ -336,12 +359,13 @@ class PaymentCancellationConcurrencyE2E004IntegrationTest {
 
         assertThat(ex.getMessage()).contains("Cannot process payment for a booking with status: CANCELLED");
         assertThat(paymentRepository.findByBookingId(booking.getId())).isEmpty();
+        assertNoRefund(booking.getId());
     }
 
     @Test
     @DisplayName("Ordering Verification: When Rejection commits first, subsequent payment attempt is strictly rejected without recording payment")
     void testRejectionCommittedFirst_PaymentStrictlyRejected() {
-        Booking booking = createBooking(BookingStatus.CONFIRMED, new BigDecimal("5000.00"));
+        Booking booking = createBooking(BookingStatus.PENDING, new BigDecimal("5000.00"));  // BIZ-14: only PENDING bookings can be rejected
         bookingService.rejectBooking(booking.getId(), testPartner.getId(), "Machinery undergoing scheduled maintenance");
 
         Booking rejectedBooking = bookingRepository.findById(booking.getId()).orElseThrow();
@@ -385,6 +409,7 @@ class PaymentCancellationConcurrencyE2E004IntegrationTest {
 
         assertThat(reloadedBooking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(reloadedPayment.getPaymentStatus()).isEqualTo(PaymentStatus.SUCCESS);
+        assertSinglePendingFullRefund(booking.getId(), reloadedPayment);
     }
 
     @Test

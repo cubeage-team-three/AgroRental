@@ -8,6 +8,7 @@ import { getFarmerId } from '../../services/authService';
 import { bookingService } from '../../services/bookingService';
 import { paymentService } from '../../services/paymentService';
 import agroRentLogo from '../../assets/images/agrorent-logo.jpeg';
+import { RefundNotice } from '../../components/payment/RefundStatus';
 
 function CheckoutPayment() {
   const { id } = useParams();
@@ -55,7 +56,8 @@ function CheckoutPayment() {
 
   const calculateSubtotal = () => {
     const total = booking?.totalCost ? Number(booking.totalCost) : 0;
-    return (total * 0.82).toFixed(2);
+    // Total includes 18% GST: taxable value = total / 1.18, rounded to paise (mirrors server GstCalculator)
+    return (Math.round((total / 1.18) * 100) / 100).toFixed(2);
   };
 
   const calculateGST = () => {
@@ -168,6 +170,15 @@ function CheckoutPayment() {
             Payment for Reservation #{booking?.id || id} was successfully processed.
           </p>
 
+          {existingPayment.refundStatus && existingPayment.refundStatus !== 'NONE' && (
+            <RefundNotice
+              refundStatus={existingPayment.refundStatus}
+              refundAmount={existingPayment.refundAmount}
+              bookingId={booking?.id || id}
+              className="max-w-md mx-auto text-left"
+            />
+          )}
+
           <div className="pt-2 flex justify-center gap-3">
             <Link
               to={`/farmer/bookings/${id}/invoice`}
@@ -210,6 +221,21 @@ function CheckoutPayment() {
             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700"
           >
             <FileText className="h-4 w-4" /> View & Download Invoice
+          </Link>
+        </div>
+      ) : booking && booking.status !== 'CONFIRMED' ? (
+        // Payment is accepted only for confirmed bookings; the server enforces this, the page just stops offering it
+        <div className="max-w-xl mx-auto p-8 bg-white border border-slate-200 rounded-3xl text-center space-y-4">
+          <AlertCircle className="w-12 h-12 text-amber-500 mx-auto" />
+          <h2 className="text-xl font-extrabold text-slate-900">Payment Not Available</h2>
+          <p className="text-xs text-slate-500">
+            Payment opens once the equipment owner confirms this booking. Current status: {booking.status}.
+          </p>
+          <Link
+            to={`/farmer/bookings/${booking.id || id}`}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700"
+          >
+            <ArrowLeft className="w-4 h-4" /> View Booking Details
           </Link>
         </div>
       ) : (
@@ -378,7 +404,7 @@ function CheckoutPayment() {
                 ) : (
                   <>
                     <ShieldCheck className="h-5 w-5" />
-                    <span>Pay ₹{booking?.totalCost != null ? Number(booking.totalCost).toFixed(2) : '0.00'} & Confirm Booking</span>
+                    <span>Pay ₹{booking?.totalCost != null ? Number(booking.totalCost).toFixed(2) : '0.00'} Securely</span>
                   </>
                 )}
               </button>

@@ -363,6 +363,20 @@ class DataInitializerTest {
     }
 
     @Test
+    @DisplayName("Should skip mock-data seeding when 'dev' is only the implicit default profile (no explicit profile)")
+    void shouldSeed_WhenDevIsOnlyImplicitDefaultProfile_ReturnsFalseAndSkips() {
+        dataInitializer.setSeedMockDataEnabled(true);
+        when(environment.getActiveProfiles()).thenReturn(new String[]{});
+        when(environment.getDefaultProfiles()).thenReturn(new String[]{"dev"});
+
+        assertFalse(dataInitializer.shouldSeed());
+        dataInitializer.run();
+
+        verify(partnerRepository, never()).save(any());
+        verify(partnerRepository, never()).count();
+    }
+
+    @Test
     @DisplayName("Should skip seeding when database already contains existing partner records")
     void shouldSeed_WhenDatabaseAlreadyHasData_ReturnsFalseAndSkips() {
         dataInitializer.setSeedMockDataEnabled(true);

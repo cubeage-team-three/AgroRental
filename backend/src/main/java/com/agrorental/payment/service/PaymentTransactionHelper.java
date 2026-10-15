@@ -64,13 +64,20 @@ public class PaymentTransactionHelper {
                     .or(() -> bookingRepository.findById(request.getBookingId()))
                     .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + request.getBookingId()));
 
-            if (lockedBooking.getStatus() == BookingStatus.CANCELLED || lockedBooking.getStatus() == BookingStatus.REJECTED) {
-                throw new BadRequestException("Cannot process payment for a booking with status: " + lockedBooking.getStatus());
+            // Authoritative eligibility check under the booking row lock (serialized with cancel/reject)
+            if (lockedBooking.getStatus() != BookingStatus.CONFIRMED) {
+                throw new BadRequestException("Cannot process payment for a booking with status: " + lockedBooking.getStatus()
+                        + ". Payment is accepted only for confirmed bookings.");
             }
 
-            if (lockedBooking.getTotalCost() != null && request.getAmount() != null && request.getAmount().compareTo(lockedBooking.getTotalCost()) < 0) {
-                throw new BadRequestException("Payment amount is less than the required booking total cost: ₹" + lockedBooking.getTotalCost());
+            // Re-validate against the locked booking and always record the server-side total
+            if (lockedBooking.getTotalCost() == null) {
+                throw new BadRequestException("Booking total is not available; payment cannot be processed.");
             }
+            if (request.getAmount() != null && request.getAmount().compareTo(lockedBooking.getTotalCost()) != 0) {
+                throw new BadRequestException("Payment amount must equal the booking total of ₹" + lockedBooking.getTotalCost());
+            }
+            request.setAmount(lockedBooking.getTotalCost());
         }
 
         Optional<Payment> existingPayment = paymentRepository.findByBookingId(request.getBookingId());

@@ -2,36 +2,24 @@ package com.agrorental.auth;
 
 import com.agrorental.auth.dto.LoginRequest;
 import com.agrorental.auth.dto.LoginResponse;
-import com.agrorental.auth.dto.ResetPasswordRequest;
 import com.agrorental.auth.service.AuthService;
-import com.agrorental.auth.service.PasswordResetService;
 import com.agrorental.common.enums.Role;
 import com.agrorental.common.exception.BadRequestException;
-import com.agrorental.common.exception.UnauthorizedException;
-import com.agrorental.farmer.entity.Farmer;
 import com.agrorental.farmer.repository.FarmerRepository;
-import com.agrorental.farmer.service.FarmerOtpService;
-import com.agrorental.operator.dto.OperatorLoginRequest;
-import com.agrorental.operator.dto.OperatorLoginResponse;
 import com.agrorental.operator.dto.OperatorRegistrationRequest;
 import com.agrorental.operator.dto.OperatorResponse;
 import com.agrorental.operator.entity.Operator;
 import com.agrorental.operator.entity.OperatorStatus;
 import com.agrorental.operator.mapper.OperatorDocumentMapper;
 import com.agrorental.operator.mapper.OperatorMapper;
-import com.agrorental.operator.otp.OperatorOtpRepository;
 import com.agrorental.operator.repository.OperatorRepository;
-import com.agrorental.operator.service.OperatorAuthService;
 import com.agrorental.operator.service.OperatorService;
-import com.agrorental.partner.entity.Partner;
 import com.agrorental.partner.repository.PartnerRepository;
 import com.agrorental.admin.repository.AdminRepository;
 import com.agrorental.security.jwt.JwtProperties;
 import com.agrorental.security.jwt.JwtService;
 import com.agrorental.user.entity.User;
-import com.agrorental.user.repository.PasswordResetTokenRepository;
 import com.agrorental.user.repository.UserRepository;
-import com.agrorental.user.service.EmailService;
 import com.agrorental.booking.repository.BookingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,11 +47,14 @@ import static org.mockito.Mockito.*;
  * 5. Case-insensitive email lookup succeeds.
  * 6. Safe legacy compatibility allows unhashed passwords to authenticate and upgrades them to BCrypt.
  * 7. Accidental leading/trailing whitespace in entered password is handled safely.
- * 8. Password reset produces a password that subsequently authenticates.
- * 9. Pending, inactive, and unverified accounts remain subject to existing lifecycle policies.
+ * 8. Approval/inactive messages are only returned after the password was verified (no status leak).
+ * 9. Pending and inactive accounts remain blocked; mobile (OTP) verification is no longer required.
  * 10. Role isolation: Farmer and Partner cannot authenticate as Operator.
- * 11. Existing dedicated Operator login (/api/operators/login) remains fully compatible.
+ * 11. The registration onboarding token is never an operator session token.
  * 12. JWT claims accurately reflect the OPERATOR role.
+ *
+ * <p>Password reset followed by login is covered end to end (real JPA) by PasswordResetFlowIntegrationTest,
+ * and the retired duplicate /api/operators/login by OperatorAuthControllerTest.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Operator Authentication P0 Regression Tests")
@@ -86,27 +76,13 @@ class OperatorAuthenticationRegressionTest {
     private OperatorRepository operatorRepository;
 
     @Mock
-    private OperatorOtpRepository operatorOtpRepository;
-
-    @Mock
-    private PasswordResetTokenRepository resetTokenRepository;
-
-    @Mock
-    private FarmerOtpService farmerOtpService;
-
-    @Mock
-    private EmailService emailService;
-
-    @Mock
     private BookingRepository bookingRepository;
 
     private PasswordEncoder passwordEncoder;
     private JwtService jwtService;
     private OperatorMapper operatorMapper;
     private AuthService authService;
-    private OperatorAuthService operatorAuthService;
     private OperatorService operatorService;
-    private PasswordResetService passwordResetService;
 
     private Operator eligibleOperator;
 
@@ -127,34 +103,16 @@ class OperatorAuthenticationRegressionTest {
                 partnerRepository,
                 adminRepository,
                 operatorRepository,
-                farmerOtpService,
                 passwordEncoder,
                 jwtService
-        );
-
-        operatorAuthService = new OperatorAuthService(
-                operatorRepository,
-                passwordEncoder,
-                jwtService,
-                operatorMapper
         );
 
         operatorService = new OperatorService(
                 operatorRepository,
                 passwordEncoder,
                 operatorMapper,
-                bookingRepository
-        );
-
-        passwordResetService = new PasswordResetService(
-                userRepository,
-                farmerRepository,
-                partnerRepository,
-                operatorRepository,
-                operatorOtpRepository,
-                resetTokenRepository,
-                emailService,
-                passwordEncoder
+                bookingRepository,
+                jwtService
         );
 
         // Pre-configure eligible approved operator with BCrypt password "Operator@2026"
@@ -218,7 +176,7 @@ class OperatorAuthenticationRegressionTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessage("Invalid mobile/email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
@@ -248,13 +206,16 @@ class OperatorAuthenticationRegressionTest {
         OperatorResponse regResponse = operatorService.registerOperator(regRequest);
         assertThat(regResponse).isNotNull();
         assertThat(regResponse.getId()).isEqualTo(88L);
+        assertThat(regResponse.getStatus()).isEqualTo(OperatorStatus.PENDING);
+        assertThat(regResponse.isMobileVerified()).isFalse();
+        assertThat(regResponse.getOnboardingToken()).isNotBlank();
 
-        // Capture saved entity and simulate approval & mobile verification
+        // Capture saved entity and simulate admin approval (no OTP / mobile verification step any more)
         Operator registeredEntity = operatorMapper.toEntity(regRequest, passwordEncoder.encode(registeredPassword));
         registeredEntity.setId(88L);
         registeredEntity.setStatus(OperatorStatus.APPROVED);
-        registeredEntity.setMobileVerified(true);
         registeredEntity.setActive(true);
+        assertThat(registeredEntity.isMobileVerified()).isFalse();
 
         when(operatorRepository.findByMobileNumberOrEmailIgnoreCase("9876543233", "9876543233"))
                 .thenReturn(Optional.of(registeredEntity));
@@ -370,49 +331,29 @@ class OperatorAuthenticationRegressionTest {
     }
 
     @Test
-    @DisplayName("8. Password reset produces a password that subsequently authenticates")
-    void testPasswordResetProducesAuthenticatablePassword() {
-        when(operatorRepository.findById(77L)).thenReturn(Optional.of(eligibleOperator));
-
-        // 1. Reset password
-        passwordResetService.registerTestToken(
-                "valid-operator-reset-token",
-                "OPERATOR",
-                77L,
-                "sahilkarale22@gmail.com",
-                LocalDateTime.now().plusHours(1),
-                false
-        );
-
-        ResetPasswordRequest resetRequest = ResetPasswordRequest.builder()
-                .token("valid-operator-reset-token")
-                .role("OPERATOR")
-                .newPassword("NewBrandPass@2027")
-                .confirmPassword("NewBrandPass@2027")
-                .build();
-
-        String result = passwordResetService.processResetPassword(resetRequest);
-        assertThat(result).contains("Password reset successfully");
-
-        // Verify entity password updated and matches new password
-        assertThat(passwordEncoder.matches("NewBrandPass@2027", eligibleOperator.getPassword())).isTrue();
-        assertThat(passwordEncoder.matches("Operator@2026", eligibleOperator.getPassword())).isFalse();
-
-        // 2. Subsequent login with new password succeeds
-        when(operatorRepository.findByMobileNumberOrEmailIgnoreCase("sahilkarale22@gmail.com", "sahilkarale22@gmail.com"))
+    @DisplayName("8. Approval state is only revealed after the password was verified")
+    void testStatusIsNotRevealedBeforePasswordVerification() {
+        eligibleOperator.setStatus(OperatorStatus.PENDING);
+        when(operatorRepository.findByMobileNumberOrEmailIgnoreCase("9876543220", "9876543220"))
                 .thenReturn(Optional.of(eligibleOperator));
 
-        LoginRequest loginWithNewPass = LoginRequest.builder()
-                .mobileOrEmail("sahilkarale22@gmail.com")
-                .password("NewBrandPass@2027")
+        LoginRequest wrongPassword = LoginRequest.builder()
+                .mobileOrEmail("9876543220")
+                .password("NotTheRightPassword9")
                 .role("OPERATOR")
                 .loginType("PASSWORD")
                 .build();
 
-        LoginResponse loginResponse = authService.login(loginWithNewPass);
-        assertThat(loginResponse).isNotNull();
-        assertThat(loginResponse.getRole()).isEqualTo("OPERATOR");
-        assertThat(loginResponse.getOperatorId()).isEqualTo(77L);
+        assertThatThrownBy(() -> authService.login(wrongPassword))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
+
+        eligibleOperator.setStatus(OperatorStatus.REJECTED);
+        eligibleOperator.setActive(false);
+        eligibleOperator.setRejectionReason("Expired licence");
+        assertThatThrownBy(() -> authService.login(wrongPassword))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
@@ -454,8 +395,8 @@ class OperatorAuthenticationRegressionTest {
     }
 
     @Test
-    @DisplayName("11. Unverified mobile Operator account is rejected with unverified message")
-    void testUnverifiedMobileOperatorIsBlockedFromLogin() {
+    @DisplayName("11. Approved operator whose mobile was never OTP-verified can log in (mobileVerified is informational)")
+    void testUnverifiedMobileOperatorCanLogIn() {
         eligibleOperator.setMobileVerified(false);
         when(operatorRepository.findByMobileNumberOrEmailIgnoreCase("9876543220", "9876543220"))
                 .thenReturn(Optional.of(eligibleOperator));
@@ -467,17 +408,16 @@ class OperatorAuthenticationRegressionTest {
                 .loginType("PASSWORD")
                 .build();
 
-        assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessage("Mobile number is not verified. Please verify mobile before logging in.");
+        LoginResponse response = authService.login(request);
+        assertThat(response.getOperatorId()).isEqualTo(77L);
+        assertThat(jwtService.extractRole(response.getToken())).isEqualTo("OPERATOR");
+        assertThat(jwtService.extractAccountType(response.getToken())).isEqualTo("OPERATOR");
     }
 
     @Test
     @DisplayName("12. Role isolation: Farmer account cannot authenticate as Operator")
     void testFarmerCannotAuthenticateAsOperator() {
         when(operatorRepository.findByMobileNumberOrEmailIgnoreCase("farmer@agrorent.in", "farmer@agrorent.in"))
-                .thenReturn(Optional.empty());
-        when(userRepository.findByEmailAndRole("farmer@agrorent.in", Role.OPERATOR))
                 .thenReturn(Optional.empty());
         when(userRepository.findByEmailIgnoreCaseAndRole("farmer@agrorent.in", Role.OPERATOR))
                 .thenReturn(Optional.empty());
@@ -491,15 +431,13 @@ class OperatorAuthenticationRegressionTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessage("Invalid email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
     @DisplayName("13. Role isolation: Partner account cannot authenticate as Operator")
     void testPartnerCannotAuthenticateAsOperator() {
         when(operatorRepository.findByMobileNumberOrEmailIgnoreCase("partner@agrorent.in", "partner@agrorent.in"))
-                .thenReturn(Optional.empty());
-        when(userRepository.findByEmailAndRole("partner@agrorent.in", Role.OPERATOR))
                 .thenReturn(Optional.empty());
         when(userRepository.findByEmailIgnoreCaseAndRole("partner@agrorent.in", Role.OPERATOR))
                 .thenReturn(Optional.empty());
@@ -513,33 +451,35 @@ class OperatorAuthenticationRegressionTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessage("Invalid email or password.");
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     @Test
-    @DisplayName("14. Dedicated Operator login (/api/operators/login) remains compatible and supports normalized mobile")
-    void testDedicatedOperatorLoginWithNormalizedMobile() {
-        when(operatorRepository.findByMobileNumber("9876543220"))
-                .thenReturn(Optional.of(eligibleOperator));
+    @DisplayName("14. The registration onboarding token is bound to operators.id but is never an OPERATOR session token")
+    void testOnboardingTokenIsNotASessionToken() {
+        String onboardingToken = jwtService.generateOperatorOnboardingToken(77L);
 
-        OperatorLoginRequest request = OperatorLoginRequest.builder()
-                .mobileNumber("9876543220")
-                .password("Operator@2026")
-                .build();
+        assertThat(jwtService.validateToken(onboardingToken)).isTrue();
+        assertThat(jwtService.extractUserId(onboardingToken)).isEqualTo(77L);
+        assertThat(jwtService.extractAccountType(onboardingToken)).isEqualTo("OPERATOR");
+        assertThat(jwtService.extractRole(onboardingToken)).isEqualTo(JwtService.OPERATOR_ONBOARDING_ROLE).isNotEqualTo("OPERATOR");
+        assertThat(jwtService.extractScope(onboardingToken)).isEqualTo(JwtService.OPERATOR_ONBOARDING_SCOPE);
+        long lifetime = jwtService.extractClaims(onboardingToken).get("exp").asLong()
+                - jwtService.extractClaims(onboardingToken).get("iat").asLong();
+        assertThat(lifetime).isPositive().isLessThanOrEqualTo(2 * 60 * 60);
 
-        OperatorLoginResponse response = operatorAuthService.login(request);
-
-        assertThat(response).isNotNull();
-        assertThat(response.getAccessToken()).isNotBlank();
-        assertThat(response.getTokenType()).isEqualTo("Bearer");
-        assertThat(response.getOperator()).isNotNull();
-        assertThat(response.getOperator().getId()).isEqualTo(77L);
-        assertThat(response.getOperator().getRole()).isEqualTo("OPERATOR");
+        // Session tokens can never be scoped, so a session token cannot be turned into an onboarding token
+        assertThatThrownBy(() -> jwtService.generateToken(77L, "OPERATOR", "9876543220",
+                new java.util.HashMap<>(java.util.Map.of(JwtService.ACCOUNT_TYPE_CLAIM, "OPERATOR",
+                        JwtService.SCOPE_CLAIM, JwtService.OPERATOR_ONBOARDING_SCOPE))))
+                .isInstanceOf(IllegalArgumentException.class);
+        // Session tokens carry no scope
+        assertThat(jwtService.extractScope(jwtService.generateOperatorToken(77L, "9876543220"))).isNull();
     }
 
     @Test
-    @DisplayName("15. Core User repository registered Operator can authenticate via shared login")
-    void testCoreUserRegisteredOperatorCanAuthenticate() {
+    @DisplayName("15. P0-3: A users-table OPERATOR account cannot authenticate (operators table only, no fallback)")
+    void testCoreUserRegisteredOperatorCannotAuthenticate() {
         User coreUserOperator = User.builder()
                 .name("Core Operator User")
                 .email("core.operator@agrorent.in")
@@ -552,7 +492,7 @@ class OperatorAuthenticationRegressionTest {
 
         when(operatorRepository.findByMobileNumberOrEmailIgnoreCase("core.operator@agrorent.in", "core.operator@agrorent.in"))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByEmailAndRole("core.operator@agrorent.in", Role.OPERATOR))
+        when(userRepository.findByEmailIgnoreCaseAndRole("core.operator@agrorent.in", Role.OPERATOR))
                 .thenReturn(Optional.of(coreUserOperator));
 
         LoginRequest request = LoginRequest.builder()
@@ -562,11 +502,8 @@ class OperatorAuthenticationRegressionTest {
                 .loginType("PASSWORD")
                 .build();
 
-        LoginResponse response = authService.login(request);
-
-        assertThat(response).isNotNull();
-        assertThat(response.getRole()).isEqualTo("OPERATOR");
-        assertThat(response.getUserId()).isEqualTo(105L);
-        assertThat(response.getToken()).isNotBlank();
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 }

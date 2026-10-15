@@ -53,6 +53,27 @@ public interface OperatorRepository extends JpaRepository<Operator, Long> {
 
     Page<Operator> findByStatusAndActiveAndMobileVerified(OperatorStatus status, boolean active, boolean mobileVerified, Pageable pageable);
 
+    /**
+     * Eligible-operator search for partners: matches name and skills only, so mobile numbers and home
+     * addresses cannot be probed through search results.
+     */
+    @Query("""
+        SELECT o FROM Operator o
+        WHERE o.status = :status
+          AND o.active = :active
+          AND o.mobileVerified = :mobileVerified
+          AND (
+              LOWER(o.fullName) LIKE LOWER(CONCAT('%', :search, '%'))
+              OR LOWER(o.skills) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+    """)
+    Page<Operator> searchEligibleOperatorsByNameOrSkills(
+            @Param("status") OperatorStatus status,
+            @Param("active") boolean active,
+            @Param("mobileVerified") boolean mobileVerified,
+            @Param("search") String search,
+            Pageable pageable);
+
     @Query("""
         SELECT o FROM Operator o
         WHERE o.status = :status
@@ -77,4 +98,48 @@ public interface OperatorRepository extends JpaRepository<Operator, Long> {
 
     @Query("SELECT o FROM Operator o WHERE o.status = :status AND (o.partner.id = :partnerId OR o.partner IS NULL)")
     List<Operator> findAvailableOperatorsForPartner(@Param("status") OperatorStatus status, @Param("partnerId") Long partnerId);
+
+    // ---- Assignment eligibility (contract v1.1): operational gates are status + active only. ----
+    // mobileVerified is informational and deliberately NOT a filter here; the *MobileVerified methods
+    // above remain for the admin listing filters.
+
+    /** Assignable operators (e.g. APPROVED + active), regardless of mobile verification. */
+    Page<Operator> findByStatusAndActive(OperatorStatus status, boolean active, Pageable pageable);
+
+    /**
+     * Assignable-operator search for partners: matches name and skills only, so mobile numbers and home
+     * addresses cannot be probed through search results. No mobile-verification filter.
+     */
+    @Query("""
+        SELECT o FROM Operator o
+        WHERE o.status = :status
+          AND o.active = :active
+          AND (
+              LOWER(o.fullName) LIKE LOWER(CONCAT('%', :search, '%'))
+              OR LOWER(o.skills) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+    """)
+    Page<Operator> searchAssignableOperatorsByNameOrSkills(
+            @Param("status") OperatorStatus status,
+            @Param("active") boolean active,
+            @Param("search") String search,
+            Pageable pageable);
+
+    /** Assignable-operator search for admins (name, skills, mobile, address). No mobile-verification filter. */
+    @Query("""
+        SELECT o FROM Operator o
+        WHERE o.status = :status
+          AND o.active = :active
+          AND (
+              LOWER(o.fullName) LIKE LOWER(CONCAT('%', :search, '%'))
+              OR LOWER(o.skills) LIKE LOWER(CONCAT('%', :search, '%'))
+              OR o.mobileNumber LIKE CONCAT('%', :search, '%')
+              OR LOWER(o.address) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+    """)
+    Page<Operator> searchAssignableOperators(
+            @Param("status") OperatorStatus status,
+            @Param("active") boolean active,
+            @Param("search") String search,
+            Pageable pageable);
 }

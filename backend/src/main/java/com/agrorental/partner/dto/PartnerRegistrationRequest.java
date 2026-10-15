@@ -33,6 +33,7 @@ public class PartnerRegistrationRequest {
 
     private String panNumber;
 
+    /** Must satisfy {@link com.agrorental.auth.service.PasswordPolicy} (checked by the service). */
     @NotBlank(message = "Password is required")
     private String password;
 

@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -81,10 +82,12 @@ public class EquipmentController {
 
     /**
      * Retrieves all equipment listings (including disabled) for administrative catalog management (FR-39).
+     * Admin only: farmers discover equipment through /available and /search, which hide disabled listings.
      *
      * @return ResponseEntity containing HTTP 200 OK and List of EquipmentSummaryResponse
      */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<EquipmentSummaryResponse>>> getAllEquipment() {
 
         List<EquipmentSummaryResponse> response = equipmentService.getAllEquipment();
@@ -100,6 +103,7 @@ public class EquipmentController {
      * @return ResponseEntity containing HTTP 200 OK and Page of EquipmentSummaryResponse
      */
     @GetMapping("/page")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<EquipmentSummaryResponse>>> getAllEquipmentPaginated(
             @PageableDefault(size = 20) Pageable pageable) {
 

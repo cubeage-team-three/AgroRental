@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @NoArgsConstructor
@@ -24,6 +25,9 @@ public class FarmerRegisterRequest {
     @Email(message = "Invalid email address format")
     private String email;
 
+    /** Required; must satisfy {@link com.agrorental.auth.service.PasswordPolicy}. */
+    @NotBlank(message = "Password is required")
+    @ToString.Exclude
     private String password;
 
     private String preferredLanguage;
