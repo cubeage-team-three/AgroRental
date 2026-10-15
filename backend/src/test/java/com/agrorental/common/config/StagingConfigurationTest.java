@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.StandardEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -406,7 +407,11 @@ class StagingConfigurationTest {
     @DisplayName("5. Spring Boot ApplicationContextRunner Configuration Loading Tests")
     class ContextRunnerTests {
 
+        // Drop the host OS environment so these tests see only the properties they supply. CI exports
+        // SPRING_DATASOURCE_URL etc., which would otherwise satisfy application-staging.properties placeholders.
         private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+                .withInitializer(context -> context.getEnvironment().getPropertySources()
+                        .remove(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME))
                 .withInitializer(new org.springframework.boot.test.context.ConfigDataApplicationContextInitializer())
                 .withUserConfiguration(
                         StagingConfigurationValidator.class,

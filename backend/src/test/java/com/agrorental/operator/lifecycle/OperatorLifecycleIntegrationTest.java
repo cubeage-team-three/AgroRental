@@ -56,6 +56,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -1038,7 +1039,9 @@ class OperatorLifecycleIntegrationTest {
             drive(id, operatorX, "accept", "start-travel");
             start(id, operatorX).andExpect(status().isOk());
             update(id, operatorX, 18.91, 73.91).andExpect(status().isOk());
-            LocalDateTime fixTime = LocalDateTime.now().minusMinutes(45);
+            // recorded_at is DATETIME(6)/TIMESTAMP(6): the database keeps microseconds (rounding the rest), while
+            // LocalDateTime.now() can carry nanoseconds on Linux. Use a value the column can hold exactly.
+            LocalDateTime fixTime = LocalDateTime.now().minusMinutes(45).truncatedTo(ChronoUnit.MICROS);
             tx.executeWithoutResult(s -> locationRepository.findTopByAssignmentIdOrderByRecordedAtDesc(id).orElseThrow().setRecordedAt(fixTime));
             call(patch("/api/operators/jobs/" + id + "/location/stop"), op(operatorX)).andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.trackingActive").value(false));
