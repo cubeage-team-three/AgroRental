@@ -75,7 +75,9 @@ function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-t from-emerald-950 via-transparent to-emerald-950/40" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_35%,rgba(217,164,65,0.22),transparent_50%)]" />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 md:gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14 lg:py-28 xl:py-32">
+      {/* Same max-w-7xl / px gutters as the Navbar so the hero lines up with the logo and actions.
+          Desktop padding is kept modest so heading, copy and CTAs fit a 768px-tall laptop screen. */}
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 md:gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:gap-10 lg:py-14 xl:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] xl:gap-16 xl:py-16 2xl:py-20">
         {/* Headline — set directly on the image, no glass box */}
         <RevealGroup stagger={0.12} delayChildren={0.1} amount={0.1}>
           <RevealItem>
@@ -88,7 +90,9 @@ function HeroSection() {
             </span>
           </RevealItem>
 
-          <h1 className="mt-5 max-w-2xl font-display text-4xl font-bold leading-[1.1] tracking-tight text-white drop-shadow-[0_2px_20px_rgba(0,0,0,0.5)] sm:mt-7 sm:text-5xl md:text-6xl lg:leading-[1.05] lg:text-7xl">
+          {/* Fluid desktop size (≈56px at 1280 → 64px cap) instead of a fixed 72px, which broke into four lines;
+              text-balance keeps the first line pair even ("Book Farm Equipment / & Operators") */}
+          <h1 className="mt-5 max-w-2xl text-balance font-display text-[2.125rem] font-bold leading-[1.1] tracking-tight text-white drop-shadow-[0_2px_20px_rgba(0,0,0,0.5)] min-[360px]:text-4xl sm:mt-6 sm:text-5xl md:text-6xl lg:text-[clamp(3.25rem,4.4vw,4rem)] lg:leading-[1.06]">
             <RevealText text="Book Farm Equipment & Operators" delay={0.15} />
             <RevealText
               text="Any Crop, Any Acre."
@@ -98,7 +102,7 @@ function HeroSection() {
           </h1>
 
           <RevealItem>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-white/80 drop-shadow-[0_1px_10px_rgba(0,0,0,0.6)] sm:mt-7 sm:text-lg">
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-white/80 drop-shadow-[0_1px_10px_rgba(0,0,0,0.6)] sm:mt-6 sm:text-lg">
               Connects farmers with nearby tractors, harvesters, drones, and
               skilled operators. Acre-based pricing, live GPS tracking,
               WhatsApp booking — built for rural India.
@@ -106,7 +110,7 @@ function HeroSection() {
           </RevealItem>
 
           <RevealItem>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 lg:mt-10">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
               <MagneticButton className="w-full sm:w-auto">
                 <span
                   aria-hidden="true"
@@ -131,7 +135,7 @@ function HeroSection() {
           </RevealItem>
 
           <RevealItem>
-            <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-7 lg:mt-12">
+            <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-7 lg:mt-10">
               {trustBadges.map(({ icon: Icon, label }) => (
                 <div
                   key={label}

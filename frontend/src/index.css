@@ -16,6 +16,17 @@
   --color-gold-500: #d9a441;
 
   --font-display: "Playfair Display", ui-serif, Georgia, serif;
+
+  --animate-news-ticker: news-ticker 45s linear infinite;
+
+  @keyframes news-ticker {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }
 
 body {

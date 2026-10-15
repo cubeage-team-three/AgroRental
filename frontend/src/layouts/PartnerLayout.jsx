@@ -27,6 +27,7 @@ import { partnerService } from '../services/partnerService';
 import { notificationService } from '../services/notificationService';
 import { useMobileDrawer, drawerPanelClasses, DRAWER_BACKDROP_CLASSES } from '../components/layout/useMobileDrawer';
 import { getLoginPath } from '../utils/auth';
+import LanguageSelector from '../components/common/LanguageSelector';
 import agroRentLogo from '../assets/images/agrorent-logo.jpeg';
 
 const SIDEBAR_ID = 'partner-sidebar';
@@ -323,6 +324,10 @@ function PartnerLayout() {
                 <span className="text-[10px] text-slate-500 font-medium">Owner Profile</span>
               </div>
             </Link>
+
+            {/* Language switcher docked here instead of floating over page content; kept last so its
+                right-aligned menu stays on screen */}
+            <LanguageSelector placement="inline" />
 
           </div>
 

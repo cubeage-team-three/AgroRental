@@ -183,6 +183,28 @@ function Navbar() {
                 {t(link.label.toLowerCase().replace(/ /g, '_'), link.label)}
               </a>
             ))}
+            {/* Same language control as the desktop bar (the floating selector is off on the home page) */}
+            {Array.isArray(LANGUAGES) && LANGUAGES.length > 0 && (
+              <label className="mt-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm font-medium text-slate-700">
+                <Globe className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+                <span className="sr-only">Language</span>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="w-full cursor-pointer bg-transparent font-medium focus:outline-none"
+                >
+                  {LANGUAGES.map((lang) => {
+                    const code = typeof lang === 'string' ? lang : (lang.code || lang.label);
+                    const label = typeof lang === 'string' ? lang : (lang.native || lang.label);
+                    return (
+                      <option key={code} value={code}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+            )}
             <div className="flex flex-col gap-2 pt-3">
               {/* Same signed-in actions as the desktop bar */}
               {auth.isAuthenticated ? (

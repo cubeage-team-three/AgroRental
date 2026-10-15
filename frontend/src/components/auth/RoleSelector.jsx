@@ -55,7 +55,7 @@ function RoleSelector({
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <span className="mb-2.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <span className="mb-2.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
           {label}
         </span>
       )}
@@ -79,17 +79,17 @@ function RoleSelector({
               role="radio"
               aria-checked={isSelected}
               onClick={() => onSelectRole?.(role.id, role.path)}
-              className={`group relative flex min-h-[82px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 p-2.5 sm:p-3 text-center transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${
+              className={`group relative flex min-h-[82px] flex-col items-center justify-center gap-1.5 rounded-xl border p-2.5 sm:p-3 text-center transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${
                 isSelected
-                  ? 'border-emerald-600 bg-emerald-50/80 text-emerald-950 shadow-sm ring-2 ring-emerald-600/10'
-                  : 'border-slate-200/90 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/30'
+                  ? 'border-transparent text-emerald-950'
+                  : 'border-slate-200 bg-white text-slate-600 shadow-xs hover:border-emerald-300 hover:bg-emerald-50/40'
               }`}
             >
               {isSelected && (
                 <motion.span
                   layoutId="auth-role-highlight"
                   transition={{ type: 'spring', stiffness: 440, damping: 32 }}
-                  className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-emerald-600 bg-emerald-50/60"
+                  className="pointer-events-none absolute -inset-px rounded-xl border-[1.5px] border-emerald-600 bg-emerald-50/70 shadow-[0_0_0_3px_rgba(5,150,105,0.10)]"
                   aria-hidden="true"
                 />
               )}
@@ -104,10 +104,10 @@ function RoleSelector({
               />
 
               <span
-                className={`relative z-10 text-xs font-semibold leading-tight transition-colors duration-200 ${
+                className={`relative z-10 text-xs leading-tight transition-colors duration-200 ${
                   isSelected
-                    ? 'text-emerald-950 font-bold'
-                    : 'text-slate-600 group-hover:text-slate-900'
+                    ? 'font-semibold text-emerald-900'
+                    : 'font-medium text-slate-600 group-hover:text-slate-900'
                 }`}
               >
                 {role.label}

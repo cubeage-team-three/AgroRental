@@ -11,7 +11,7 @@ function AuthModeToggle({
     <div
       role="tablist"
       aria-label="Authentication method"
-      className={`flex rounded-2xl bg-[#F0EFE9] p-1 ${className}`}
+      className={`flex rounded-xl border border-slate-200/80 bg-slate-100/80 p-1 ${className}`}
     >
       {modes.map((mode) => {
         const isActive = activeMode === mode.id;
@@ -22,10 +22,10 @@ function AuthModeToggle({
             aria-selected={isActive}
             type="button"
             onClick={() => onChange(mode.id)}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${
+            className={`flex-1 rounded-lg py-2.5 text-sm transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${
               isActive
-                ? 'bg-white text-emerald-800 shadow-sm font-bold'
-                : 'text-slate-500 hover:text-slate-800 font-medium'
+                ? 'bg-white font-semibold text-emerald-800 shadow-sm ring-1 ring-slate-900/5'
+                : 'font-medium text-slate-500 hover:bg-white/60 hover:text-slate-800'
             }`}
           >
             {mode.label}

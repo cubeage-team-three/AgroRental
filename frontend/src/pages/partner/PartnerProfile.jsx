@@ -264,11 +264,11 @@ function PartnerProfile() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => setIsEditModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all duration-150 cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all duration-150 cursor-pointer whitespace-nowrap"
           >
             <Edit3 className="w-4 h-4" />
             <span>Edit Profile</span>
@@ -280,14 +280,15 @@ function PartnerProfile() {
       <div className="bg-white rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
         
         {/* Agricultural Pattern Cover Banner */}
-        <div className="relative h-36 sm:h-44 bg-gradient-to-r from-[#0F382C] via-[#1B4D3E] to-[#2E7D32] overflow-hidden flex items-end p-6">
+        {/* Decorative only: the identity block below sits under it in normal flow, never on top of it */}
+        <div className="relative min-h-24 sm:min-h-32 bg-gradient-to-r from-[#0F382C] via-[#1B4D3E] to-[#2E7D32] overflow-hidden p-4 sm:p-6">
           <img
             src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1400&q=80"
             alt="Agro Fields Cover"
             className="absolute inset-0 w-full h-full object-cover opacity-25 mix-blend-overlay"
           />
 
-          <div className="absolute top-4 left-6 right-6 flex items-center justify-between z-10">
+          <div className="relative flex flex-wrap items-center justify-between gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-md text-white rounded-full text-xs font-bold uppercase tracking-wider border border-white/20">
               <Sparkles className="w-3.5 h-3.5 text-lime-300" />
               <span>AgroRent Verified Partner</span>
@@ -307,10 +308,10 @@ function PartnerProfile() {
 
         {/* Profile Card Body */}
         <div className="p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 -mt-16 sm:-mt-20 mb-6">
-            
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+
             {/* Avatar & Identifiers */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left min-w-0">
               
               {/* Photo Avatar with Ring */}
               <div className="relative group shrink-0">
@@ -340,9 +341,9 @@ function PartnerProfile() {
               </div>
 
               {/* Names & Contact */}
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight min-w-0 wrap-break-word">
                     {partnerName}
                   </h2>
                   {verificationStatus === 'APPROVED' && (
@@ -350,19 +351,19 @@ function PartnerProfile() {
                   )}
                 </div>
 
-                <p className="text-sm font-bold text-emerald-700 flex items-center justify-center sm:justify-start gap-1.5">
-                  <Building2 className="w-4 h-4" />
-                  <span>{businessName}</span>
+                {/* Icons are inline (not flex siblings) so they stay next to the first word when centred text wraps */}
+                <p className="text-sm font-bold text-emerald-700 wrap-break-word">
+                  <Building2 className="inline-block w-4 h-4 mr-1.5 align-[-3px]" />
+                  {businessName}
                 </p>
 
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs font-semibold text-slate-500 pt-0.5">
-                  <span className="flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1 text-xs font-semibold text-slate-500 pt-0.5">
+                  <span>
+                    <Phone className="inline-block w-3.5 h-3.5 mr-1 text-slate-400 align-[-2px]" />
                     +91 {mobileNumber}
                   </span>
-                  <span className="text-slate-300">•</span>
-                  <span className="flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="min-w-0 break-all">
+                    <Mail className="inline-block w-3.5 h-3.5 mr-1 text-slate-400 align-[-2px]" />
                     {email}
                   </span>
                 </div>
@@ -371,7 +372,7 @@ function PartnerProfile() {
             </div>
 
             {/* Quick Stat Pill */}
-            <div className="w-full sm:w-auto flex sm:flex-col items-center justify-between sm:items-end gap-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+            <div className="w-full md:w-auto shrink-0 flex md:flex-col items-center justify-between md:items-end gap-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Partner Since</span>
               <span className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-emerald-700" />
@@ -395,7 +396,7 @@ function PartnerProfile() {
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Partner Status</span>
               <div className="flex items-center gap-1.5 mt-1">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
                 <span className="text-sm font-extrabold text-emerald-900 uppercase">
                   {verificationStatus}
                 </span>
@@ -433,7 +434,7 @@ function PartnerProfile() {
         </div>
 
         {/* Tabbed Navigation Bar */}
-        <div className="flex items-center gap-2 bg-slate-50 px-6 py-2 border-t border-slate-200">
+        <div className="flex items-center gap-2 bg-slate-50 px-4 sm:px-6 py-2 border-t border-slate-200 overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
@@ -497,10 +498,12 @@ function PartnerProfile() {
 
       {/* TAB 1: Overview (Personal & Business Information) */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
+        // Three columns only from xl: with the 18rem partner sidebar, at lg the right column is too
+        // narrow for the Legal & Tax IDs rows
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
           {/* Main Information Panels (Left 2 Cols) */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="xl:col-span-2 space-y-6">
             
             {/* Personal Details */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 shadow-sm border border-slate-200 space-y-4">
@@ -526,7 +529,7 @@ function PartnerProfile() {
 
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Mobile Number</span>
-                  <span className="text-sm font-extrabold text-slate-900 mt-0.5 flex items-center gap-1.5">
+                  <span className="text-sm font-extrabold text-slate-900 mt-0.5 flex flex-wrap items-center gap-1.5">
                     <span>+91 {mobileNumber}</span>
                     <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[9px] font-black rounded">VERIFIED</span>
                   </span>
@@ -534,7 +537,7 @@ function PartnerProfile() {
 
                 <div className="sm:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Registered Email</span>
-                  <span className="text-sm font-extrabold text-slate-900 mt-0.5 block">{email}</span>
+                  <span className="text-sm font-extrabold text-slate-900 mt-0.5 block wrap-anywhere">{email}</span>
                 </div>
               </div>
             </div>
@@ -581,23 +584,23 @@ function PartnerProfile() {
               </h3>
 
               <div className="space-y-3 text-xs">
-                <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 p-3 bg-slate-50 border border-slate-200 rounded-xl">
                   <span className="text-slate-500 font-semibold">GST Number</span>
-                  <span className="font-mono font-bold text-slate-800">
+                  <span className="font-mono font-bold text-slate-800 min-w-0 wrap-anywhere">
                     {partner?.gstNumber || 'Not Registered'}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 p-3 bg-slate-50 border border-slate-200 rounded-xl">
                   <span className="text-slate-500 font-semibold">PAN Card</span>
-                  <span className="font-mono font-bold text-slate-800">
+                  <span className="font-mono font-bold text-slate-800 min-w-0 wrap-anywhere">
                     {partner?.panNumber || 'Not Provided'}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 p-3 bg-slate-50 border border-slate-200 rounded-xl">
                   <span className="text-slate-500 font-semibold">Aadhaar Card</span>
-                  <span className="font-mono font-bold text-slate-800">
+                  <span className="font-mono font-bold text-slate-800 min-w-0 wrap-anywhere">
                     {partner?.aadhaarNumber ? `•••• •••• ${partner.aadhaarNumber.slice(-4)}` : 'Not Provided'}
                   </span>
                 </div>
@@ -745,7 +748,7 @@ function PartnerProfile() {
         <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
           <div className="border-b border-slate-200 pb-4">
             <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-emerald-600" />
+              <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
               <span>Partner KYC & Business Verification Status</span>
             </h3>
             <p className="text-xs text-slate-500 mt-1">
@@ -753,10 +756,10 @@ function PartnerProfile() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             
             <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-bold uppercase text-slate-500">Aadhaar Verification</span>
                 <span
   className={`px-2 py-0.5 text-[10px] font-extrabold rounded ${
@@ -775,7 +778,7 @@ function PartnerProfile() {
             </div>
 
             <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-bold uppercase text-slate-500">PAN Card</span>
                 <span
   className={`px-2 py-0.5 text-[10px] font-extrabold rounded ${
@@ -794,7 +797,7 @@ function PartnerProfile() {
             </div>
 
             <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-bold uppercase text-slate-500">GST Registration</span>
                 <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-extrabold rounded">OPTIONAL</span>
               </div>

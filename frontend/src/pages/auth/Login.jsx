@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Smartphone, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info, Smartphone, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { RevealGroup, RevealItem } from '../../components/motion/Reveal';
@@ -174,22 +174,22 @@ function Login({ initialRole: propRole }) {
   return (
     <RevealGroup stagger={0.07} delayChildren={0.04}>
       <RevealItem>
-        <h1 className="font-display text-[28px] font-bold tracking-tight text-slate-900 sm:text-[32px]">
+        <h1 className="font-display text-[28px] font-bold leading-tight tracking-tight text-slate-900 sm:text-[32px]">
           Welcome back
         </h1>
-        <p className="mt-2 text-[15px] text-slate-500">
+        <p className="mt-2 text-[15px] leading-relaxed text-slate-500">
           Sign in with your mobile number or email and your password.
         </p>
       </RevealItem>
 
       <RevealItem className="mt-6">
-        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+        <label className="mb-2.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
           Log In As
         </label>
         <div
           role="tablist"
           aria-label="Select role to log in as"
-          className="grid grid-cols-3 gap-1 rounded-2xl bg-[#F0EFE9] p-1"
+          className="grid grid-cols-3 gap-1 rounded-xl border border-slate-200/80 bg-slate-100/80 p-1"
         >
           {ROLES.map((r) => {
             const isActive = selectedRole === r.id;
@@ -201,10 +201,10 @@ function Login({ initialRole: propRole }) {
                 aria-selected={isActive}
                 type="button"
                 onClick={() => handleRoleChange(r.id)}
-                className={`rounded-xl py-2.5 text-xs sm:text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${
+                className={`rounded-lg py-2.5 text-xs sm:text-sm transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${
                   isActive
-                    ? 'bg-white text-emerald-800 shadow-sm font-bold'
-                    : 'text-slate-500 hover:text-slate-800 font-medium'
+                    ? 'bg-white font-semibold text-emerald-800 shadow-sm ring-1 ring-slate-900/5'
+                    : 'font-medium text-slate-500 hover:bg-white/60 hover:text-slate-800'
                 }`}
               >
                 {r.label}
@@ -218,9 +218,10 @@ function Login({ initialRole: propRole }) {
         <RevealItem className="mt-4">
           <div
             role="alert"
-            className="flex items-start justify-between gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+            className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-snug text-red-700"
           >
-            <span>{errorMessage}</span>
+            <AlertCircle className="mt-px h-4 w-4 shrink-0 text-red-500" aria-hidden="true" />
+            <span className="flex-1">{errorMessage}</span>
             <button
               type="button"
               onClick={() => setErrorMessage('')}
@@ -237,9 +238,10 @@ function Login({ initialRole: propRole }) {
         <RevealItem className="mt-4">
           <div
             role="status"
-            className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+            className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium leading-snug text-emerald-800"
           >
-            {successMessage}
+            <CheckCircle2 className="mt-px h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+            <span>{successMessage}</span>
           </div>
         </RevealItem>
       )}
@@ -248,9 +250,10 @@ function Login({ initialRole: propRole }) {
         <RevealItem className="mt-4">
           <div
             role="status"
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600"
+            className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium leading-snug text-slate-600"
           >
-            {infoMessage}
+            <Info className="mt-px h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+            <span>{infoMessage}</span>
           </div>
         </RevealItem>
       )}
@@ -286,7 +289,7 @@ function Login({ initialRole: propRole }) {
                   search: `?role=${selectedRole}`,
                 }}
                 state={{ identifier: formData.mobileOrEmail, role: selectedRole }}
-                className="text-xs font-semibold text-emerald-700 underline-offset-2 transition-colors duration-200 hover:text-emerald-800 hover:underline"
+                className="rounded text-xs font-semibold text-emerald-700 underline-offset-2 transition-colors duration-200 hover:text-emerald-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
               >
                 Forgot password?
               </Link>
@@ -307,7 +310,7 @@ function Login({ initialRole: propRole }) {
                 <div className="w-full border-t border-slate-200" />
               </div>
               <div className="relative flex justify-center">
-                <span className="bg-white px-3 text-xs font-medium uppercase tracking-wide text-slate-400">
+                <span className="bg-white px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
                   or continue with
                 </span>
               </div>
@@ -322,7 +325,7 @@ function Login({ initialRole: propRole }) {
                   'Google sign-in is coming soon. Please sign in with your mobile number or email and password.'
                 )
               }
-              className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-all duration-200 ease-out hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
+              className="flex min-h-[50px] w-full items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-xs transition-all duration-200 ease-out hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 active:scale-[0.99]"
             >
               <GoogleIcon />
               Google

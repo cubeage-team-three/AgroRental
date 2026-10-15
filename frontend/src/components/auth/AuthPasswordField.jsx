@@ -32,7 +32,7 @@ function AuthPasswordField({
         <button
           type="button"
           onClick={() => setShowPassword((prev) => !prev)}
-          className="rounded-lg p-1 text-slate-400 transition-colors hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+          className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/30"
           aria-label={showPassword ? 'Hide password' : 'Show password'}
         >
           {showPassword ? (

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
+  AlertCircle,
   ArrowRight,
   Award,
   Building2,
+  CheckCircle2,
+  ChevronDown,
   Clock,
   Globe,
   HardHat,
@@ -455,10 +458,10 @@ function Register({ initialRole: propRole }) {
   return (
     <RevealGroup stagger={0.06} delayChildren={0.04}>
       <RevealItem>
-        <h1 className="font-display text-[28px] font-bold tracking-tight text-slate-900 sm:text-[32px]">
+        <h1 className="font-display text-[28px] font-bold leading-tight tracking-tight text-slate-900 sm:text-[32px]">
           {headerInfo.title}
         </h1>
-        <p className="mt-2 text-[15px] text-slate-500">{headerInfo.subtitle}</p>
+        <p className="mt-2 text-[15px] leading-relaxed text-slate-500">{headerInfo.subtitle}</p>
       </RevealItem>
 
       <RevealItem className="mt-7">
@@ -467,12 +470,14 @@ function Register({ initialRole: propRole }) {
 
       {errorMessage && (
         <RevealItem className="mt-5">
-          <div className="space-y-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-            <div className="flex items-start justify-between gap-2">
-              <span>{errorMessage}</span>
+          <div role="alert" className="space-y-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-snug text-red-700">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="mt-px h-4 w-4 shrink-0 text-red-500" aria-hidden="true" />
+              <span className="flex-1">{errorMessage}</span>
               <button
                 type="button"
                 onClick={clearAlerts}
+                aria-label="Dismiss error"
                 className="shrink-0 text-red-400 transition-colors hover:text-red-600"
               >
                 <X className="h-4 w-4" />
@@ -496,8 +501,9 @@ function Register({ initialRole: propRole }) {
 
       {successMessage && (
         <RevealItem className="mt-5">
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-            {successMessage}
+          <div role="status" className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium leading-snug text-emerald-800">
+            <CheckCircle2 className="mt-px h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+            <span>{successMessage}</span>
           </div>
         </RevealItem>
       )}
@@ -566,20 +572,20 @@ function Register({ initialRole: propRole }) {
                 autoComplete="new-password"
                 required
               />
-              <p id="farmer-password-hint" className="-mt-2 pl-1 text-xs text-slate-500">
+              <p id="farmer-password-hint" className="-mt-2 pl-1 text-xs leading-relaxed text-slate-500">
                 {PASSWORD_POLICY_HINT}
               </p>
 
               <div>
                 <label
                   htmlFor="preferredLanguage"
-                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500"
+                  className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500"
                 >
                   {t('preferred_language')}
                 </label>
-                <div className="relative flex items-center rounded-2xl border border-slate-200/80 bg-[#F7F6F0] transition-all duration-300 ease-out focus-within:border-emerald-600 focus-within:bg-white focus-within:shadow-[0_0_0_4px_rgba(16,185,129,0.12)]">
+                <div className="group relative flex items-center rounded-xl border border-slate-200 bg-white shadow-xs transition-[border-color,box-shadow] duration-200 ease-out hover:border-slate-300 focus-within:border-emerald-600 focus-within:shadow-[0_0_0_3px_rgba(5,150,105,0.14)] focus-within:hover:border-emerald-600">
                   <Globe
-                    className="pointer-events-none absolute left-4 h-[18px] w-[18px] text-slate-400"
+                    className="pointer-events-none absolute left-4 h-[18px] w-[18px] text-slate-400 transition-colors duration-200 group-focus-within:text-emerald-700"
                     aria-hidden="true"
                   />
                   <select
@@ -590,7 +596,7 @@ function Register({ initialRole: propRole }) {
                       handleFarmerChange(e);
                       setLanguage(e.target.value);
                     }}
-                    className="min-h-[56px] w-full cursor-pointer rounded-2xl bg-transparent pl-11 pr-8 text-[15px] font-medium text-slate-900 outline-none"
+                    className="min-h-[54px] w-full cursor-pointer appearance-none rounded-xl bg-transparent pl-11 pr-10 text-[15px] font-medium text-slate-900 outline-none"
                   >
                     {LANGUAGES.map((lang) => (
                       <option key={lang.code} value={lang.code}>
@@ -598,6 +604,10 @@ function Register({ initialRole: propRole }) {
                       </option>
                     ))}
                   </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-4 h-4 w-4 text-slate-400"
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
 
@@ -716,7 +726,7 @@ function Register({ initialRole: propRole }) {
                 autoComplete="new-password"
                 required
               />
-              <p id="partner-password-hint" className="-mt-2 pl-1 text-xs text-slate-500">
+              <p id="partner-password-hint" className="-mt-2 pl-1 text-xs leading-relaxed text-slate-500">
                 {PASSWORD_POLICY_HINT} Your account is activated after an administrator approves it.
               </p>
 
@@ -851,7 +861,7 @@ function Register({ initialRole: propRole }) {
                       key={skill}
                       type="button"
                       onClick={() => handleAddSkill(skill)}
-                      className="rounded-lg border border-emerald-200/70 bg-emerald-50/70 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
+                      className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 transition-colors hover:border-emerald-300 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
                     >
                       + {skill}
                     </button>
@@ -883,7 +893,7 @@ function Register({ initialRole: propRole }) {
                 autoComplete="new-password"
                 required
               />
-              <p id="operator-password-hint" className="-mt-2 pl-1 text-xs text-slate-500">
+              <p id="operator-password-hint" className="-mt-2 pl-1 text-xs leading-relaxed text-slate-500">
                 {PASSWORD_POLICY_HINT} After registering you can upload your KYC documents; you can log in once an
                 administrator approves your account.
               </p>
